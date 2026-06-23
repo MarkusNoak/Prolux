@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   // Protect portal, admin and crm routes
-  const protectedPaths = ['/dashboard', '/catalog', '/orders', '/checkout', '/admin', '/crm']
+  const protectedPaths = ['/portal', '/admin', '/crm']
   const isProtected = protectedPaths.some(p => path.startsWith(p))
 
   if (isProtected && !user) {
@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (path === '/login' && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL('/portal/dashboard', request.url))
   }
 
   return supabaseResponse
