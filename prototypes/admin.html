@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ProLuxShine — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Override -->:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0C0C0C;--s1:#131313;--s2:#1A1A1A;--s3:#212121;--s4:#2A2A2A;--s5:#333;
+  --ink:#F0EDE8;--ink2:rgba(240,237,232,.6);--ink3:rgba(240,237,232,.28);--ink4:rgba(240,237,232,.08);
+  --copper:#C4873A;--copper2:rgba(196,135,58,.15);
+  --line:rgba(240,237,232,.08);--line2:rgba(240,237,232,.04);
+  --green:#4E9E72;--red:#A85252;--amber:#B8882A;
+  --sidebar:240px;--bar:56px;
+  --f-display:'Fraunces',serif;
+  --f-ui:'Syne',sans-serif;
+  --f-mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;-webkit-font-smoothing:antialiased}
+body{font-family:var(--f-ui);background:var(--bg);color:var(--ink)}
+
+/* ── TOPBAR ─────────────────────────────────── */
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--bar);background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 28px 0 calc(var(--sidebar)+28px);z-index:100;gap:16px}
+.t-wordmark{font-family:var(--f-display);font-size:15px;font-weight:300;color:var(--ink2);letter-spacing:.04em}
+.t-wordmark em{font-style:italic;color:var(--copper)}
+.t-sep{width:1px;height:12px;background:var(--line)}
+.t-path{font-family:var(--f-mono);font-size:10px;color:var(--ink3);letter-spacing:.12em}
+.t-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.t-session{font-family:var(--f-mono);font-size:10px;color:var(--ink3);letter-spacing:.06em}
+
+/* ── SIDEBAR ─────────────────────────────────── */
+.sidebar{position:fixed;top:var(--bar);left:0;bottom:0;width:var(--sidebar);background:var(--s1);border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:90}
+.sb-mark{padding:32px 24px 24px;border-bottom:1px solid var(--line2)}
+.sb-name{font-family:var(--f-display);font-size:20px;font-weight:300;color:var(--ink);letter-spacing:.02em;margin-bottom:2px}
+.sb-name em{font-style:italic;color:var(--copper)}
+.sb-role{font-family:var(--f-mono);font-size:9px;color:var(--ink3);letter-spacing:.2em;text-transform:uppercase}
+.sb-nav{flex:1;padding:12px 0;overflow-y:auto}
+.sb-group{margin-bottom:4px}
+.sb-group-label{font-family:var(--f-mono);font-size:8px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink3);padding:16px 24px 6px;display:block}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:400;color:var(--ink3);cursor:pointer;transition:all .15s;border-left:2px solid transparent;position:relative}
+.sb-item svg{width:13px;flex-shrink:0;opacity:.3;transition:opacity .15s}
+.sb-item:hover{color:var(--ink2);border-left-color:var(--line)}
+.sb-item:hover svg{opacity:.6}
+.sb-item.active{color:var(--ink);border-left-color:var(--copper);background:var(--copper2)}
+.sb-item.active svg{opacity:1;color:var(--copper)}
+.sb-foot{padding:20px 24px;border-top:1px solid var(--line2)}
+.sb-user{font-size:12px;color:var(--ink2);margin-bottom:4px}
+.sb-out{font-family:var(--f-mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);cursor:pointer;transition:color .15s;display:flex;align-items:center;gap:8px;background:none;border:none}
+.sb-out:hover{color:var(--red)}
+
+/* ── MAIN ─────────────────────────────────────── */
+.main{position:fixed;top:var(--bar);left:var(--sidebar);right:0;bottom:0;overflow-y:auto;background:var(--bg)}
+.view{display:none;min-height:100%}
+.view.active{display:block}
+
+/* ── PAGE HEADER ───────────────────────────────── */
+.page-head{padding:48px 48px 36px;border-bottom:1px solid var(--line);display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.ph-left{}
+.ph-num{font-family:var(--f-mono);font-size:9px;color:var(--ink3);letter-spacing:.28em;text-transform:uppercase;margin-bottom:12px;display:block}
+.ph-title{font-family:var(--f-display);font-size:48px;font-weight:300;line-height:.9;letter-spacing:-.02em;color:var(--ink)}
+.ph-title em{font-style:italic;color:var(--copper)}
+.ph-actions{display:flex;gap:10px;align-items:center;flex-shrink:0}
+
+/* ── BUTTONS ─────────────────────────────────── */
+.btn{padding:9px 18px;font-family:var(--f-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:all .15s;border:none}
+.btn-primary{background:var(--ink);color:var(--bg)}
+.btn-primary:hover{background:var(--ink2)}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink3)}
+.btn-ghost:hover{border-color:var(--ink3);color:var(--ink2)}
+.btn-copper{background:var(--copper);color:var(--bg)}
+.btn-copper:hover{opacity:.85}
+.btn-danger{background:transparent;border:1px solid rgba(168,82,82,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(168,82,82,.1)}
+.btn-sm{padding:6px 12px;font-size:8px}
+.icon-btn{width:34px;height:34px;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:var(--ink3)}
+.icon-btn:hover{border-color:var(--ink3);color:var(--ink)}
+.icon-btn svg{width:14px}
+
+/* ── KPIs ────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.kpi-cell{padding:32px 40px;border-right:1px solid var(--line)}
+.kpi-cell:last-child{border-right:none}
+.kpi-label{font-family:var(--f-mono);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;display:block}
+.kpi-value{font-family:var(--f-display);font-size:52px;font-weight:300;color:var(--ink);letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.kpi-meta{font-size:12px;color:var(--ink3)}
+
+/* ── CHART ─────────────────────────────────── */
+.chart-wrap{padding:28px 40px 32px;border-bottom:1px solid var(--line)}
+.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.chart-title{font-family:var(--f-mono);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3)}
+.chart-tabs{display:flex;gap:0}
+.chart-tab{padding:6px 14px;font-family:var(--f-mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);cursor:pointer;background:transparent;border:1px solid var(--line);border-right:none;transition:all .15s}
+.chart-tab:last-child{border-right:1px solid var(--line)}
+.chart-tab.active{background:var(--ink4);color:var(--ink2);border-color:var(--ink3)}
+canvas{display:block}
+
+/* ── TABLES ─────────────────────────────────── */
+.tbl-wrap{padding:0 40px}
+.tbl-filters{padding:20px 40px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line2)}
+.tbl-search{flex:1;max-width:320px;padding:9px 14px;background:transparent;border:1px solid var(--line);color:var(--ink);font-family:var(--f-ui);font-size:13px;outline:none;transition:border-color .15s}
+.tbl-search:focus{border-color:var(--ink3)}
+.tbl-search::placeholder{color:var(--ink3);font-size:12px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-family:var(--f-mono);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3);padding:14px 0;text-align:left;border-bottom:1px solid var(--line);font-weight:400}
+.tbl td{padding:16px 0;font-size:13px;color:var(--ink2);border-bottom:1px solid var(--line2);vertical-align:middle}
+.tbl td:first-child{padding-left:0}
+.tbl tr{transition:all .12s}
+.tbl tr:hover td{color:var(--ink)}
+.tbl tr.clickable{cursor:pointer}
+.tbl-num{font-family:var(--f-mono);font-size:13px;color:var(--ink)}
+.tbl-price{font-family:var(--f-mono);font-size:13px;color:var(--copper)}
+
+/* STATUS BADGES */
+.badge{display:inline-block;font-family:var(--f-mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px;border:1px solid}
+.b-delivered{border-color:rgba(78,158,114,.35);color:#4E9E72}
+.b-shipped{border-color:rgba(90,144,210,.35);color:#5A90D2}
+.b-confirmed,.b-packed{border-color:rgba(196,135,58,.35);color:var(--copper)}
+.b-pending{border-color:rgba(184,136,42,.35);color:var(--amber)}
+.b-draft{border-color:var(--line);color:var(--ink3)}
+.b-cancelled{border-color:rgba(168,82,82,.35);color:var(--red)}
+.b-active{border-color:rgba(78,158,114,.35);color:#4E9E72}
+.b-inactive{border-color:var(--line);color:var(--ink3)}
+
+/* PL BADGE */
+.pl-badge{display:inline-block;font-family:var(--f-mono);font-size:8px;letter-spacing:.14em;padding:3px 10px;border:1px solid var(--line);color:var(--ink3)}
+.pl-A{border-color:rgba(196,135,58,.4);color:var(--copper);background:var(--copper2)}
+.pl-B{border-color:rgba(240,237,232,.2);color:var(--ink2)}
+.pl-C{border-color:var(--line);color:var(--ink3)}
+.pl-Standard{border-color:var(--line2);color:var(--ink3)}
+
+/* CUSTOMER PANEL */
+.cust-panel{position:fixed;top:var(--bar);right:0;bottom:0;width:440px;background:var(--s1);border-left:1px solid var(--line);z-index:80;transform:translateX(100%);transition:transform .28s cubic-bezier(.22,.68,0,1.1);display:flex;flex-direction:column}
+.cust-panel.open{transform:translateX(0)}
+.cp-hd{padding:20px 28px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.cp-hd-name{font-family:var(--f-display);font-size:20px;font-weight:300;color:var(--ink);letter-spacing:.01em}
+.cp-body{flex:1;overflow-y:auto;padding:24px 28px}
+.cp-section{margin-bottom:28px}
+.cp-section-title{font-family:var(--f-mono);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--line2);display:block}
+.cp-row{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.cp-row:last-child{border-bottom:none}
+.cp-row span{color:var(--ink3)}.cp-row strong{color:var(--ink);font-weight:400}
+.ord-mini{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.ord-mini:last-child{border-bottom:none}
+.ord-mini-num{font-family:var(--f-mono);font-size:12px;color:var(--copper)}
+
+/* ACTIVITY LOG */
+.act-types{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.act-type{padding:6px 14px;font-family:var(--f-mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);border:1px solid var(--line);background:transparent;cursor:pointer;transition:all .15s}
+.act-type.sel{border-color:var(--ink3);color:var(--ink);background:var(--ink4)}
+.act-inputs{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.act-field{padding:10px 0;background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--ink);font-family:var(--f-ui);font-size:13px;outline:none;width:100%;transition:border-color .15s}
+.act-field:focus{border-bottom-color:var(--ink3)}
+.act-field::placeholder{color:var(--ink3);font-size:12px}
+textarea.act-field{resize:vertical;min-height:56px;padding-top:6px}
+.act-save{padding:9px 20px;background:var(--ink);color:var(--bg);font-family:var(--f-mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;border:none;cursor:pointer;transition:background .15s;align-self:flex-end}
+.act-save:hover{background:var(--ink2)}
+.act-log{display:flex;flex-direction:column;gap:8px}
+.act-item{display:flex;gap:12px;padding:12px;border:1px solid var(--line2)}
+.act-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.act-note{background:rgba(196,135,58,.1)}.act-call{background:rgba(78,158,114,.1)}.act-email{background:rgba(90,144,210,.1)}.act-meeting{background:rgba(180,100,200,.1)}.act-order{background:rgba(196,135,58,.08)}
+.act-content{flex:1}
+.act-title{font-size:13px;color:var(--ink);margin-bottom:3px}
+.act-meta{font-family:var(--f-mono);font-size:9px;color:var(--ink3);letter-spacing:.06em;margin-bottom:4px}
+.act-body{font-size:12px;color:var(--ink2);line-height:1.6}
+
+/* ORDER DETAIL PANEL */
+.order-panel{position:fixed;top:var(--bar);right:0;bottom:0;width:480px;background:var(--s1);border-left:1px solid var(--line);z-index:80;transform:translateX(100%);transition:transform .28s cubic-bezier(.22,.68,0,1.1);display:flex;flex-direction:column}
+.order-panel.open{transform:translateX(0)}
+.op-hd{padding:20px 28px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.op-hd-num{font-family:var(--f-mono);font-size:14px;color:var(--copper);letter-spacing:.06em}
+.op-body{flex:1;overflow-y:auto;padding:24px 28px}
+.op-section{margin-bottom:24px}
+.op-section-title{font-family:var(--f-mono);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line2);display:block}
+.op-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.op-row:last-child{border-bottom:none}
+.op-row span{color:var(--ink3)}.op-row strong{color:var(--ink);font-weight:400}
+.op-item{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line2);font-size:13px}
+.op-item:last-child{border-bottom:none}
+.op-item-name{color:var(--ink);margin-bottom:2px}
+.op-item-sub{font-family:var(--f-mono);font-size:10px;color:var(--ink3);letter-spacing:.06em}
+.op-item-price{font-family:var(--f-mono);font-size:13px;color:var(--copper);white-space:nowrap;margin-left:12px}
+.op-total{display:flex;justify-content:space-between;padding-top:14px;font-family:var(--f-mono);font-size:12px;color:var(--ink3);letter-spacing:.06em}
+.op-total strong{color:var(--copper);font-size:18px;font-weight:400}
+.op-select{padding:9px 14px;background:var(--s2);border:1px solid var(--line);color:var(--ink);font-family:var(--f-ui);font-size:13px;outline:none;cursor:pointer;width:100%;appearance:none;transition:border-color .15s}
+.op-select:focus{border-color:var(--ink3)}
+.op-int-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:12px;border-bottom:1px solid var(--line2)}
+.op-int-ok{font-family:var(--f-mono);font-size:8px;letter-spacing:.12em;color:var(--green);text-transform:uppercase}
+.op-int-err{font-family:var(--f-mono);font-size:8px;letter-spacing:.12em;color:var(--amber);text-transform:uppercase}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:0 40px 40px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:span 2}
+.form-label{font-family:var(--f-mono);font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:var(--ink3)}
+.form-input{padding:10px 14px;background:var(--s2);border:1px solid var(--line);color:var(--ink);font-family:var(--f-ui);font-size:14px;outline:none;transition:all .15s;border-radius:0;appearance:none}
+.form-input:focus{border-color:var(--ink3);background:var(--s3)}
+.form-input::placeholder{color:var(--ink3);font-size:13px}
+.form-input select{background:var(--s2)}
+.form-actions{padding:20px 40px;border-top:1px solid var(--line);display:flex;gap:10px}
+.form-textarea{min-height:80px;resize:vertical}
+
+/* INTEGRATION CARDS */
+.int-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);margin:0 40px 40px}
+.int-card{background:var(--s1);padding:24px 28px}
+.int-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.int-card-name{font-size:14px;color:var(--ink);font-weight:500}
+.int-dot{width:8px;height:8px;border-radius:50%}
+.int-dot.connected{background:var(--green);box-shadow:0 0 8px rgba(78,158,114,.4)}
+.int-dot.pending{background:var(--amber)}
+.int-dot.disconnected{background:var(--red)}
+.int-status{font-family:var(--f-mono);font-size:9px;letter-spacing:.12em;color:var(--ink3);margin-bottom:12px;text-transform:uppercase}
+.int-desc{font-size:12px;color:var(--ink3);line-height:1.65}
+.int-action{margin-top:16px}
+.int-log{margin:0 40px;padding:20px 0}
+.int-log-title{font-family:var(--f-mono);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;display:block}
+.int-log-row{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--line2);font-size:12px}
+.int-log-time{font-family:var(--f-mono);font-size:10px;color:var(--ink3);flex-shrink:0;letter-spacing:.04em}
+.int-log-type{font-family:var(--f-mono);font-size:9px;padding:2px 8px;border:1px solid;text-transform:uppercase;flex-shrink:0}
+.int-log-ok{border-color:rgba(78,158,114,.3);color:#4E9E72}
+.int-log-fail{border-color:rgba(168,82,82,.3);color:var(--red)}
+.int-log-msg{color:var(--ink2);flex:1}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-ov.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--line);width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column}
+.modal-hd{padding:20px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-title{font-family:var(--f-display);font-size:20px;font-weight:300;color:var(--ink)}
+.modal-close{width:28px;height:28px;border:1px solid var(--line);background:transparent;color:var(--ink3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-size:18px;line-height:1}
+.modal-close:hover{border-color:var(--ink3);color:var(--ink)}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+.mg{margin-bottom:16px}
+.mg label{font-family:var(--f-mono);font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;display:block}
+.mg input,.mg select,.mg textarea{width:100%;padding:10px 14px;background:var(--s2);border:1px solid var(--line);color:var(--ink);font-family:var(--f-ui);font-size:14px;outline:none;transition:border-color .15s;appearance:none;border-radius:0}
+.mg input:focus,.mg select:focus,.mg textarea:focus{border-color:var(--ink3)}
+.mg input::placeholder,.mg textarea::placeholder{color:var(--ink3);font-size:13px}
+.mg textarea{min-height:72px;resize:vertical}
+.mg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mg select option{background:var(--s2);color:var(--ink)}
+
+/* CAMPAIGNS */
+.camp-badge{display:inline-block;font-family:var(--f-mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px;border:1px solid}
+.camp-on{border-color:rgba(78,158,114,.3);color:#4E9E72}
+.camp-off{border-color:var(--line);color:var(--ink3)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(50px);background:var(--s3);border:1px solid var(--line);color:var(--ink);padding:12px 20px;font-family:var(--f-ui);font-size:13px;z-index:9998;transition:transform .25s cubic-bezier(.22,.68,0,1.1);pointer-events:none;white-space:nowrap;max-width:92vw;display:flex;align-items:center;gap:10px}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.t-dot{width:6px;height:6px;border-radius:50%;background:var(--copper);flex-shrink:0}
+
+.section-pad{padding:32px 40px}
+.empty{padding:48px 40px;font-family:var(--f-mono);font-size:10px;color:var(--ink3);letter-spacing:.2em;text-transform:uppercase}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--s5)}
+
+@media(max-width:1100px){.kpi-row{grid-template-columns:1fr 1fr}.kpi-cell{border-bottom:1px solid var(--line)}}
+@media(max-width:768px){.page-head{padding:36px 24px 24px}.ph-title{font-size:36px}.tbl-wrap,.tbl-filters,.form-grid,.int-grid,.int-log,.section-pad{padding-left:20px;padding-right:20px}.form-grid{grid-template-columns:1fr}.form-group.full{grid-column:span 1}.cust-panel,.order-panel{width:100%;border-left:none}.int-grid{grid-template-columns:1fr}.kpi-cell{padding:20px 24px}}
+</style>
+
+<style>
+/* Reset admin to match webshop contrast standards */
+:root {
+  --bg:#111318;--s1:#191C23;--s2:#20232B;--s3:#282B34;--s4:#30343E;--s5:#383C47;
+  --ink:#E8ECF0;--ink2:#9BA3B0;--ink3:#636B78;--ink4:rgba(232,236,240,.08);
+  --copper:#D4A843;--copper2:rgba(212,168,67,.1);
+  --line:rgba(232,236,240,.08);--line2:rgba(232,236,240,.04);
+  --green:#4CAF7D;--red:#E05555;--amber:#D4853A;
+  --sidebar:248px;--bar:58px;
+  --f-display:'Playfair Display',Georgia,serif;
+  --f-ui:'Inter',system-ui,sans-serif;
+  --f-mono:'Roboto Mono',monospace;
+}
+.topbar{background:var(--s1)}
+.sidebar{background:var(--s1)}
+.main{background:var(--bg)}
+.kpi-cell{padding:28px 36px;border-right:1px solid var(--line);background:var(--bg)}
+.kpi-label{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;display:block}
+.kpi-value{font-family:var(--f-display);font-size:44px;font-weight:500;color:var(--ink);line-height:1;margin-bottom:4px;letter-spacing:-.01em}
+.kpi-sub{font-size:13px;color:var(--ink2)}
+.tbl th{font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.08em}
+.tbl td{font-size:13px;color:var(--ink)}
+.tbl-num{font-family:var(--f-mono);color:var(--copper);font-weight:500}
+.tbl-price{font-family:var(--f-mono);color:var(--copper);font-weight:500}
+.sb-item{font-size:13px;font-weight:400;color:var(--ink2)}
+.sb-item.active{color:var(--ink);font-weight:600}
+.page-head{padding:40px 40px 28px}
+.ph-title{font-family:var(--f-display);font-size:40px;font-weight:500;color:var(--ink);line-height:1.1}
+.btn{font-family:var(--f-ui);font-size:12px;font-weight:600;letter-spacing:.04em;border-radius:6px;padding:9px 18px}
+.btn-primary{background:var(--copper);color:#111}
+.btn-primary:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:6px}
+.btn-ghost:hover{border-color:var(--copper);color:var(--copper);background:var(--copper2)}
+.btn-danger{background:transparent;border:1px solid rgba(224,85,85,.3);color:var(--red);border-radius:6px}
+.btn-danger:hover{background:rgba(224,85,85,.08)}
+.modal{background:var(--s1);border:1px solid var(--line);border-radius:10px}
+.modal-title{font-family:var(--f-display);font-size:22px;font-weight:500;color:var(--ink)}
+.mg input,.mg select,.mg textarea{background:var(--s2);border:1px solid var(--line);color:var(--ink);font-size:14px;border-radius:6px;padding:10px 14px;font-family:var(--f-ui)}
+.mg input:focus,.mg select:focus,.mg textarea:focus{border-color:var(--copper)}
+.mg label{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+.form-input{background:var(--s2);border:1px solid var(--line);color:var(--ink);font-size:14px;border-radius:6px;padding:10px 14px;font-family:var(--f-ui)}
+.tbl-search{background:var(--s2);border:1px solid var(--line);color:var(--ink);border-radius:6px;font-family:var(--f-ui);font-size:13px}
+.badge{border-radius:4px;font-size:11px;font-weight:600;padding:3px 10px;display:inline-flex;align-items:center;gap:5px}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.b-delivered{background:rgba(76,175,125,.1);color:#4CAF7D;border:none}
+.b-shipped{background:rgba(66,153,225,.1);color:#4299E1;border:none}
+.b-confirmed,.b-packed{background:var(--copper2);color:var(--copper);border:none}
+.b-pending{background:rgba(212,133,58,.1);color:var(--amber);border:none}
+.b-cancelled{background:rgba(224,85,85,.1);color:var(--red);border:none}
+.b-draft{background:rgba(155,163,176,.08);color:var(--ink2);border:none}
+.b-active{background:rgba(76,175,125,.1);color:#4CAF7D;border:none}
+.b-inactive{background:rgba(155,163,176,.08);color:var(--ink2);border:none}
+.pl-badge{border-radius:4px;font-size:11px;font-weight:600;padding:3px 10px}
+.pl-A{background:var(--copper2);color:var(--copper)}
+.pl-B{background:rgba(232,236,240,.08);color:var(--ink)}
+.pl-C{background:rgba(232,236,240,.06);color:var(--ink2)}
+.pl-Standard{background:rgba(232,236,240,.04);color:var(--ink3)}
+.camp-badge{border-radius:4px;font-size:11px;font-weight:600;padding:3px 10px}
+.camp-on{background:rgba(76,175,125,.1);color:#4CAF7D}
+.camp-off{background:rgba(155,163,176,.08);color:var(--ink2)}
+.cp-hd-name{font-family:var(--f-display);font-size:20px;font-weight:500;color:var(--ink)}
+.act-field{border-radius:6px;font-size:14px;padding:10px 14px;font-family:var(--f-ui);color:var(--ink);border:1px solid var(--line);background:var(--s3)}
+.act-save{background:var(--copper);color:#111;border-radius:6px;font-size:12px;font-weight:700;padding:10px 20px}
+.chart-tab{border-radius:0;font-size:11px;font-weight:600}
+.chart-tab.active{background:var(--copper2);color:var(--copper);border-color:rgba(212,168,67,.3)}
+.int-card{background:var(--s1);border-radius:8px}
+.int-card-name{font-size:14px;font-weight:600;color:var(--ink)}
+.int-desc{font-size:13px;color:var(--ink2);line-height:1.7}
+.op-hd-num{font-family:var(--f-mono);font-size:16px;color:var(--copper);font-weight:500}
+.op-section-title{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.08em}
+.op-row span{color:var(--ink2)}.op-row strong{color:var(--ink);font-weight:500}
+.op-item-name{font-size:13px;color:var(--ink);font-weight:500}
+.op-item-sub{font-size:12px;color:var(--ink2)}
+.op-item-price{font-family:var(--f-mono);font-size:14px;color:var(--copper);font-weight:500}
+.op-select{background:var(--s2);border:1px solid var(--line);color:var(--ink);font-size:14px;border-radius:6px;font-family:var(--f-ui)}
+.sb-name{font-family:var(--f-display);font-size:17px;font-weight:500;color:var(--ink)}
+.sb-role{font-size:12px;color:var(--ink2)}
+.sb-user{font-size:13px;font-weight:500;color:var(--ink)}
+.sb-group-label{font-size:10px;font-weight:600;color:var(--ink2);letter-spacing:.1em}
+.sb-out{font-size:12px;font-weight:500}
+.toast{background:var(--s3);border:1px solid var(--line);color:var(--ink);font-family:var(--f-ui);border-radius:8px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="t-wordmark">Prolux <em>Shine</em></div>
+  <div class="t-sep"></div>
+  <div class="t-path" id="t-path">/ dashboard</div>
+  <div class="t-right">
+    <div class="t-session" id="t-session">Admin</div>
+  </div>
+</div>
+
+<nav class="sidebar">
+  <div class="sb-mark">
+    <div class="sb-name">Prolux <em>Shine</em></div>
+    <div class="sb-role">Administratör</div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-group">
+      <span class="sb-group-label">Översikt</span>
+      <div class="sb-item active" id="sbi-dashboard" onclick="navigate('dashboard')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</div>
+    </div>
+    <div class="sb-group">
+      <span class="sb-group-label">Hantera</span>
+      <div class="sb-item" id="sbi-orders" onclick="navigate('orders')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Ordrar</div>
+      <div class="sb-item" id="sbi-customers" onclick="navigate('customers')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Kunder</div>
+      <div class="sb-item" id="sbi-products" onclick="navigate('products')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Produkter</div>
+      <div class="sb-item" id="sbi-campaigns" onclick="navigate('campaigns')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Kampanjer</div>
+    </div>
+    <div class="sb-group">
+      <span class="sb-group-label">System</span>
+      <div class="sb-item" id="sbi-automations" onclick="navigate('automations')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Automationer</div>
+      <div class="sb-item" id="sbi-integrations" onclick="navigate('integrations')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Integrationer</div>
+    </div>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-user" id="sb-user">admin@proluxshine.se</div>
+    <button class="sb-out" onclick="doLogout()"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="13"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logga ut</button>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="view active" id="view-dashboard">
+    <div class="page-head">
+      <div class="ph-left">
+        <span class="ph-num">001 / Översikt</span>
+        <div class="ph-title">Dashboard</div>
+      </div>
+    </div>
+    <div class="kpi-row" id="kpi-row"></div>
+    <div class="chart-wrap">
+      <div class="chart-head">
+        <div class="chart-title">Omsättning</div>
+        <div class="chart-tabs">
+          <button class="chart-tab active" onclick="switchChart(this,'week')">7 dagar</button>
+          <button class="chart-tab" onclick="switchChart(this,'month')">30 dagar</button>
+        </div>
+      </div>
+      <canvas id="sales-chart" height="160"></canvas>
+    </div>
+    <div class="section-pad">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px">
+        <div>
+          <div style="font-family:var(--f-mono);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px">Senaste ordrar</div>
+          <table class="tbl"><thead><tr><th>#</th><th>Kund</th><th>Belopp</th><th>Status</th></tr></thead><tbody id="dash-orders"></tbody></table>
+        </div>
+        <div>
+          <div style="font-family:var(--f-mono);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink3);margin-bottom:16px">Lågt lager</div>
+          <table class="tbl"><thead><tr><th>Produkt</th><th>SKU</th><th>Lager</th></tr></thead><tbody id="dash-stock"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="view" id="view-orders">
+    <div class="page-head">
+      <div class="ph-left"><span class="ph-num">002 / Hantera</span><div class="ph-title">Ordrar</div></div>
+      <div class="ph-actions">
+        <button class="btn btn-ghost" onclick="exportOrders()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportera CSV</button>
+      </div>
+    </div>
+    <div class="tbl-filters">
+      <input class="tbl-search" id="ord-search" placeholder="Sök order, kund…" oninput="filterOrders()">
+      <select class="form-input" style="width:auto;padding:8px 14px;font-size:13px" onchange="filterOrders(this.value)" id="ord-status-filter">
+        <option value="">Alla statusar</option>
+        <option value="pending">Väntande</option>
+        <option value="confirmed">Bekräftad</option>
+        <option value="packed">Packad</option>
+        <option value="shipped">Skickad</option>
+        <option value="delivered">Levererad</option>
+        <option value="cancelled">Avbruten</option>
+      </select>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Datum</th><th>Kund</th><th>Prislista</th><th>Belopp</th><th>Status</th><th></th></tr></thead><tbody id="orders-tbody"></tbody></table></div>
+    <div class="order-panel" id="order-panel">
+      <div class="op-hd"><div class="op-hd-num" id="op-num">—</div><button class="icon-btn" onclick="closePanel('order-panel')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+      <div class="op-body" id="op-body"></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="view" id="view-customers">
+    <div class="page-head">
+      <div class="ph-left"><span class="ph-num">003 / Hantera</span><div class="ph-title">Kunder</div></div>
+      <div class="ph-actions"><button class="btn btn-primary" onclick="openModal('modal-customer')">+ Ny kund</button></div>
+    </div>
+    <div class="tbl-filters"><input class="tbl-search" id="cust-search" placeholder="Sök kund, företag…" oninput="filterCustomers()"></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Företag</th><th>Kontakt</th><th>E-post</th><th>Prislista</th><th>Status</th><th>Ordrar</th></tr></thead><tbody id="customers-tbody" class="customers-tbody"></tbody></table></div>
+    <div class="cust-panel" id="cust-panel">
+      <div class="cp-hd"><div class="cp-hd-name" id="cp2-title">—</div><button class="icon-btn" onclick="closeCustPanel()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+      <div class="cp-body">
+        <div class="cp-section" id="cp2-info"></div>
+        <div class="cp-section">
+          <span class="cp-section-title">Senaste ordrar</span>
+          <div id="cp2-orders"></div>
+        </div>
+        <div class="cp-section">
+          <span class="cp-section-title">Aktiviteter</span>
+          <div class="act-types" id="act-type-row">
+            <button class="act-type sel" onclick="selectActType(this,'note')">📝 Anteckning</button>
+            <button class="act-type" onclick="selectActType(this,'call')">📞 Samtal</button>
+            <button class="act-type" onclick="selectActType(this,'email')">✉️ E-post</button>
+            <button class="act-type" onclick="selectActType(this,'meeting')">🤝 Möte</button>
+          </div>
+          <div class="act-inputs">
+            <input class="act-field" id="act-title" placeholder="Rubrik…">
+            <textarea class="act-field" id="act-body" placeholder="Detaljer (valfritt)…"></textarea>
+            <button class="act-save" onclick="saveActivity()">Spara</button>
+          </div>
+          <div class="act-log" id="act-log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS -->
+  <div class="view" id="view-products">
+    <div class="page-head">
+      <div class="ph-left"><span class="ph-num">004 / Hantera</span><div class="ph-title">Produkter</div></div>
+      <div class="ph-actions"><button class="btn btn-primary" onclick="openModal('modal-product')">+ Ny produkt</button></div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>SKU</th><th>Produkt</th><th>Kategori</th><th>Listpris</th><th>Lager</th><th>Status</th><th></th></tr></thead><tbody id="products-tbody"></tbody></table></div>
+  </div>
+
+  <!-- CAMPAIGNS -->
+  <div class="view" id="view-campaigns">
+    <div class="page-head">
+      <div class="ph-left"><span class="ph-num">005 / System</span><div class="ph-title">Kampanjer</div></div>
+      <div class="ph-actions"><button class="btn btn-primary" onclick="openCampModal()">+ Ny kampanj</button></div>
+    </div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Kod</th><th>Namn</th><th>Rabatt</th><th>Min. order</th><th>Giltig till</th><th>Använd</th><th>Status</th><th></th></tr></thead><tbody id="camps-tbody"></tbody></table></div>
+  </div>
+
+  <!-- AUTOMATIONS -->
+  <div class="view" id="view-automations">
+    <div class="page-head"><div class="ph-left"><span class="ph-num">006 / System</span><div class="ph-title">Automationer</div></div></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Automation</th><th>Typ</th><th>Trigger</th><th>Senast körd</th><th>Status</th><th></th></tr></thead><tbody id="auto-tbody"></tbody></table></div>
+  </div>
+
+  <!-- INTEGRATIONS -->
+  <div class="view" id="view-integrations">
+    <div class="page-head"><div class="ph-left"><span class="ph-num">007 / System</span><div class="ph-title">Integrationer</div></div></div>
+    <div class="int-grid" id="int-grid"></div>
+    <div class="int-log">
+      <span class="int-log-title">Aktivitetslogg</span>
+      <div id="int-log-body"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- MODALS -->
+<div class="modal-ov" id="modal-customer">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">Ny kund</div><button class="modal-close" onclick="closeModal('modal-customer')">×</button></div>
+    <div class="modal-body">
+      <div class="mg"><label>Företag *</label><input id="cm-co" placeholder="AB Bolaget"></div>
+      <div class="mg-row"><div class="mg"><label>Kontaktperson *</label><input id="cm-name" placeholder="Anna Lindqvist"></div><div class="mg"><label>Roll</label><input id="cm-role" placeholder="Inköpschef"></div></div>
+      <div class="mg"><label>E-post *</label><input id="cm-email" type="email" placeholder="anna@bolaget.se"></div>
+      <div class="mg-row"><div class="mg"><label>Telefon</label><input id="cm-phone" placeholder="+46 70 …"></div><div class="mg"><label>Stad</label><input id="cm-city" placeholder="Stockholm"></div></div>
+      <div class="mg"><label>Org.nr</label><input id="cm-org" placeholder="556123-4567"></div>
+      <div class="mg-row">
+        <div class="mg"><label>Prislista *</label><select id="cm-pl"><option value="Standard">Standard (0%)</option><option value="C">C — Volym (–20%)</option><option value="B">B — Återförsäljare (–30%)</option><option value="A">A — Partner (–40%)</option></select></div>
+        <div class="mg"><label>Status</label><select id="cm-status"><option value="prospect">Prospekt</option><option value="active">Aktiv</option><option value="inactive">Inaktiv</option></select></div>
+      </div>
+      <div class="mg"><label>Födelsedag (för automation)</label><input id="cm-bday" type="date"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-customer')">Avbryt</button><button class="btn btn-primary" onclick="saveCustomer()">Spara kund</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-product">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">Hantera produkt</div><button class="modal-close" onclick="closeModal('modal-product')">×</button></div>
+    <div class="modal-body">
+      <div class="mg-row"><div class="mg"><label>SKU *</label><input id="pm-sku" placeholder="VIR-AKT-5L"></div><div class="mg"><label>Namn *</label><input id="pm-name" placeholder="Produktnamn"></div></div>
+      <div class="mg"><label>Beskrivning</label><textarea id="pm-desc" placeholder="Produktbeskrivning…"></textarea></div>
+      <div class="mg-row"><div class="mg"><label>Kategori</label><select id="pm-cat"><option value="wash">Tvätt</option><option value="wheels">Fälg & Däck</option><option value="polish">Polering</option><option value="exterior">Exteriör</option><option value="interior">Interiör</option><option value="degreaser">Avfettning</option></select></div><div class="mg"><label>Varumärke</label><input id="pm-brand" placeholder="Frescura"></div></div>
+      <div class="mg-row"><div class="mg"><label>Listpris (SEK) *</label><input id="pm-price" type="number" placeholder="595"></div><div class="mg"><label>Lagerantal</label><input id="pm-stock" type="number" placeholder="100"></div></div>
+      <div class="mg"><label>Bild-URL</label><input id="pm-img" placeholder="https://…"></div>
+      <div class="mg"><label>Märkning</label><select id="pm-badge"><option value="">Ingen</option><option value="top">Bästsäljare</option><option value="new">Nyhet</option></select></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-product')">Avbryt</button><button class="btn btn-primary" onclick="saveProduct()">Spara produkt</button></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="modal-campaign">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">Ny kampanj</div><button class="modal-close" onclick="closeModal('modal-campaign')">×</button></div>
+    <div class="modal-body">
+      <div class="mg-row"><div class="mg"><label>Kampanjkod *</label><input id="cm2-code" placeholder="SOMMAR25"></div><div class="mg"><label>Namn *</label><input id="cm2-name" placeholder="Sommarkampanj"></div></div>
+      <div class="mg-row"><div class="mg"><label>Typ</label><select id="cm2-type"><option value="percent">Procent (%)</option><option value="fixed">Fast belopp (kr)</option></select></div><div class="mg"><label>Värde *</label><input id="cm2-val" type="number" placeholder="10"></div></div>
+      <div class="mg-row"><div class="mg"><label>Min. orderbelopp</label><input id="cm2-min" type="number" placeholder="0" value="0"></div><div class="mg"><label>Max användningar</label><input id="cm2-max" type="number" placeholder="Obegränsat"></div></div>
+      <div class="mg-row"><div class="mg"><label>Giltig från</label><input id="cm2-from" type="date"></div><div class="mg"><label>Giltig till</label><input id="cm2-to" type="date"></div></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-campaign')">Avbryt</button><button class="btn btn-primary" onclick="saveCampaign()">Spara kampanj</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="t-dot"></div><span id="toast-txt"></span></div>
+
+<script>
+function g(id){return document.getElementById(id)||{textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},value:'',options:[],selectedIndex:0};}
+
+const SUPABASE_URL = 'https://fopshubqliboxgokbhnr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvcHNodWJxbGlib3hnb2tiaG5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDIzNjAsImV4cCI6MjA5NTM3ODM2MH0.K9M5lM4DZ6IYxCee4zGHVLDmy7ONUmCyFOgFtalkLu0';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const fmt = n => Number(n||0).toLocaleString('sv-SE');
+const STATUS_LABELS = {draft:'Utkast',pending:'Väntande',confirmed:'Bekräftad',packed:'Packad',shipped:'Skickad',delivered:'Levererad',cancelled:'Avbruten'};
+const STATUS_CSS = {draft:'b-draft',pending:'b-pending',confirmed:'b-confirmed',packed:'b-packed',shipped:'b-shipped',delivered:'b-delivered',cancelled:'b-cancelled'};
+const CAT_NAMES = {polish:'Polering & Lackskydd',wash:'Schampo & Förtvätt',protection:'Skydd',wheel:'Fälg & Däck',wheels:'Fälg & Däck',interior:'Interiör',exterior:'Exteriör',degreaser:'Avfettning'};
+const INT_LABELS = {visma:'Visma eEkonomi',transport:'Transportbolag',email:'E-postbekräftelse',automation:'Automation'};
+
+let allOrders = [];
+let allProducts = [];
+let allCustomers = [];
+let editingProductId = null;
+
+// ── AUTH ──
+function doLogin() {
+  const pass = document.getElementById('l-pass').value;
+  const user = document.getElementById('l-user').value;
+  if(pass !== 'admin2024' || !user) { document.getElementById('login-err').style.display='block'; return; }
+  document.getElementById('login-err').style.display='none';
+  document.getElementById('t-user').textContent = user;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  loadAll();
+}
+document.addEventListener('keydown', e => { if(e.key==='Enter' && document.getElementById('login-screen').style.display!=='none') doLogin(); });
+
+function doLogout() {
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('l-pass').value='';
+}
+
+// ── LOAD ALL ──
+async function loadAll() {
+  const [{ data: orders }, { data: products }, { data: customers }] = await Promise.all([
+    sb.from('orders').select('*,customers(company,contact_name)').order('created_at',{ascending:false}),
+    sb.from('products').select('*').order('sort_order'),
+    sb.from('customers').select('*').order('company'),
+  ]);
+  allOrders = orders || [];
+  allProducts = products || [];
+  allCustomers = customers || [];
+
+  const pending = allOrders.filter(o=>o.status==='pending').length;
+  document.getElementById('pending-badge').textContent = pending;
+
+  navigate('dashboard');
+}
+
+// ── NAV ──
+function navigate(v) {
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  const sbi = document.getElementById('sbi-'+v);
+  if(sbi) sbi.classList.add('active');
+  const labs={dashboard:'Dashboard',orders:'Ordrar',customers:'Kunder',products:'Produkter',automations:'Automationer',integrations:'Integrationer',campaigns:'Kampanjer'};
+  document.getElementById('tb-br').textContent = labs[v]||'';
+  closeDetail();
+  if(v==='dashboard') renderDashboard();
+  if(v==='orders') renderOrders();
+  if(v==='customers') renderCustomers();
+  if(v==='products') renderProducts();
+  if(v==='automations') renderAutomations();
+  if(v==='integrations') renderIntegrations();
+  if(v==='campaigns') renderCampaigns();
+  if(v==='dashboard') { renderDashboard(); setTimeout(drawSalesChart,200); }
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const revenue = allOrders.filter(o=>o.status!=='cancelled').reduce((a,o)=>a+Number(o.subtotal||0),0);
+  const pending = allOrders.filter(o=>o.status==='pending').length;
+  const today = allOrders.filter(o=>new Date(o.created_at).toDateString()===new Date().toDateString()).length;
+
+  g('kpi-row').innerHTML = `
+    <div class="kpi"><div class="kpi-lbl">Total omsättning</div><div class="kpi-val">${fmt(revenue)}</div><div class="kpi-sub">kr exkl. moms</div></div>
+    <div class="kpi"><div class="kpi-lbl">Aktiva ordrar</div><div class="kpi-val" style="color:${pending?'var(--amber)':'var(--ink)'}">${pending}</div><div class="kpi-sub">väntande behandling</div></div>
+    <div class="kpi"><div class="kpi-lbl">Ordrar idag</div><div class="kpi-val">${today}</div><div class="kpi-sub">nya ordrar</div></div>
+    <div class="kpi"><div class="kpi-lbl">Kunder</div><div class="kpi-val">${allCustomers.length}</div><div class="kpi-sub">${allCustomers.filter(c=>c.status==='active').length} aktiva</div></div>
+  `;
+
+  g('dash-orders').innerHTML = allOrders.slice(0,6).map(o=>`
+    <tr style="cursor:pointer" onclick="openOrderDetail('${o.id}')">
+      <td style="font-weight:700;color:var(--gold)">#${o.order_nr}</td>
+      <td>${(o.customers?.company||o.delivery_name||'—').slice(0,20)}</td>
+      <td>${fmt(o.subtotal)} kr</td>
+      <td><span class="sbadge ${STATUS_CSS[o.status]||'b-draft'}">${STATUS_LABELS[o.status]||o.status}</span></td>
+    </tr>`).join('');
+
+  const lowStock = allProducts.filter(p=>p.stock_qty<20).sort((a,b)=>a.stock_qty-b.stock_qty);
+  g('dash-stock').innerHTML = lowStock.length
+    ? lowStock.slice(0,6).map(p=>`
+        <tr>
+          <td style="font-size:11px">${p.name.slice(0,28)}…</td>
+          <td style="font-size:11px;color:var(--mid)">${p.sku}</td>
+          <td><span class="stock ${p.stock_qty===0?'stock-out':p.stock_qty<10?'stock-low':'stock-ok'}">${p.stock_qty} st</span></td>
+        </tr>`).join('')
+    : `<tr><td colspan="3"><div class="empty"><p>Allt lager OK ✓</p></div></td></tr>`;
+}
+
+// ── ORDERS ──
+function renderOrders(orders) {
+  const list = orders || allOrders;
+  g('orders-tbody').innerHTML = list.map(o=>`
+    <tr style="cursor:pointer" onclick="openOrderDetail('${o.id}')">
+      <td style="font-weight:700;color:var(--gold)">#${o.order_nr}</td>
+      <td>${o.customers?.company||o.delivery_name||'—'}</td>
+      <td>${new Date(o.created_at).toLocaleDateString('sv-SE')}</td>
+      <td>${fmt(o.subtotal)} kr</td>
+      <td><span class="pl-badge pl-${o.price_list_id||'Standard'}">${o.price_list_id||'Standard'}</span></td>
+      <td><span class="sbadge ${STATUS_CSS[o.status]||'b-draft'}">${STATUS_LABELS[o.status]||o.status}</span></td>
+      <td>
+        <select onchange="updateOrderStatus('${o.id}',this.value)" onclick="event.stopPropagation()" style="font-size:11px;padding:4px 8px;border:1px solid var(--line);border-radius:2px;cursor:pointer;background:var(--white)">
+          ${['pending','confirmed','packed','shipped','delivered','cancelled'].map(s=>`<option ${s===o.status?'selected':''} value="${s}">${STATUS_LABELS[s]}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`).join('');
+}
+
+function filterOrders() {
+  const q = document.getElementById('ord-search').value.toLowerCase();
+  const st = document.getElementById('ord-status').value;
+  let list = allOrders;
+  if(q) list=list.filter(o=>(o.customers?.company||'').toLowerCase().includes(q)||(o.delivery_name||'').toLowerCase().includes(q)||String(o.order_nr).includes(q));
+  if(st) list=list.filter(o=>o.status===st);
+  renderOrders(list);
+}
+
+async function updateOrderStatus(id, status) {
+  await sb.from('orders').update({status,updated_at:new Date().toISOString()}).eq('id',id);
+  const idx = allOrders.findIndex(o=>o.id===id);
+  if(idx>=0) allOrders[idx].status=status;
+  toast(`Status uppdaterad → ${STATUS_LABELS[status]}`);
+  document.getElementById('pending-badge').textContent = allOrders.filter(o=>o.status==='pending').length;
+}
+
+async function openOrderDetail(id) {
+  const order = allOrders.find(o=>o.id===id);
+  if(!order) return;
+  const {data:items} = await sb.from('order_items').select('*').eq('order_id',id);
+  const {data:logs} = await sb.from('integration_log').select('*').eq('order_id',id).order('created_at');
+
+  document.getElementById('dp-title').textContent = `Order #${order.order_nr}`;
+  document.getElementById('dp-body').innerHTML = `
+    <div class="dp-section">
+      <h4>Orderinfo</h4>
+      <div class="dp-row"><span>Order</span><strong>#${order.order_nr}</strong></div>
+      <div class="dp-row"><span>Datum</span><strong>${new Date(order.created_at).toLocaleString('sv-SE')}</strong></div>
+      <div class="dp-row"><span>Status</span><strong><span class="sbadge ${STATUS_CSS[order.status]}">${STATUS_LABELS[order.status]}</span></strong></div>
+      <div class="dp-row"><span>Prislista</span><strong><span class="pl-badge pl-${order.price_list_id||'Standard'}">${order.price_list_id||'Standard'}</span></strong></div>
+    </div>
+    <div class="dp-section">
+      <h4>Leverans</h4>
+      <div class="dp-row"><span>Mottagare</span><strong>${order.delivery_name||'—'}</strong></div>
+      <div class="dp-row"><span>Adress</span><strong>${order.delivery_address||'—'}</strong></div>
+      <div class="dp-row"><span>Stad</span><strong>${order.delivery_city||'—'} ${order.delivery_zip||''}</strong></div>
+      ${order.customer_ref?`<div class="dp-row"><span>Kund-ref</span><strong>${order.customer_ref}</strong></div>`:''}
+    </div>
+    <div class="dp-section">
+      <h4>Produkter</h4>
+      ${(items||[]).map(i=>`<div class="dp-row"><span>${i.product_name} × ${i.qty}</span><strong>${fmt(i.total_price)} kr</strong></div>`).join('')}
+      <div class="dp-row" style="font-weight:600"><span>Subtotal</span><strong>${fmt(order.subtotal)} kr</strong></div>
+      <div class="dp-row"><span>Moms (25%)</span><strong>${fmt(order.vat_amount)} kr</strong></div>
+      <div class="dp-row" style="font-size:13px"><span><strong>Totalt</strong></span><strong style="color:var(--gold)">${fmt(order.total)} kr</strong></div>
+    </div>
+    <div class="dp-section">
+      <h4>Integrationer</h4>
+      ${(logs||[]).length===0?'<div style="font-size:12px;color:var(--mid)">Inga loggposter</div>':''}
+      ${(logs||[]).map(l=>`
+        <div class="int-item">
+          <div class="int-dot ${l.status}"></div>
+          <div class="int-info">
+            <div class="int-type">${INT_LABELS[l.type]||l.type}</div>
+            <div class="int-detail">${l.response?JSON.stringify(l.response).slice(0,60):l.error_message||'—'}</div>
+          </div>
+          <div class="int-time">${new Date(l.created_at).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>`).join('')}
+    </div>
+  `;
+  document.getElementById('order-detail').classList.add('open');
+}
+
+function closeDetail() { document.getElementById('order-detail').classList.remove('open'); }
+
+// ── CUSTOMERS ──
+function renderCustomers() {
+  g('customers-tbody').innerHTML = allCustomers.map(c=>{
+    const orderCount = allOrders.filter(o=>o.customer_id===c.id).length;
+    return `<tr onclick="openCustPanel('${c.id}')" title="Klicka för kundkort">
+      <td><strong>${c.company}</strong><br><span style="font-size:10px;color:var(--mid)">${c.org_nr||''}</span></td>
+      <td>${c.contact_name}<br><span style="font-size:10px;color:var(--mid)">${c.contact_role||''}</span></td>
+      <td>${c.city||'—'}</td>
+      <td><span class="pl-badge pl-${c.price_list_id}">${c.price_list_id}</span></td>
+      <td><span class="sbadge ${c.status==='active'?'b-delivered':c.status==='prospect'?'b-pending':'b-draft'}">${c.status==='active'?'Aktiv':c.status==='prospect'?'Prospect':'Inaktiv'}</span></td>
+      <td>${orderCount}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveCustomer() {
+  const co=document.getElementById('cm-co').value.trim();
+  const name=document.getElementById('cm-name').value.trim();
+  const email=document.getElementById('cm-email').value.trim();
+  if(!co||!name||!email){toast('Fyll i obligatoriska fält *');return;}
+  const {data,error} = await sb.from('customers').insert({
+    company:co, org_nr:document.getElementById('cm-org').value,
+    contact_name:name, contact_role:document.getElementById('cm-role').value,
+    email, phone:document.getElementById('cm-phone').value,
+    city:document.getElementById('cm-city').value,
+    price_list_id:document.getElementById('cm-pl').value,
+    birthday:document.getElementById('cm-bday').value||null,
+    status:'active'
+  }).select().single();
+  if(error){toast('Fel: '+error.message);return;}
+  allCustomers.push(data);
+  allCustomers.sort((a,b)=>a.company.localeCompare(b.company));
+  renderCustomers();
+  closeModal('modal-customer');
+  toast('✓ Kund skapad: '+co);
+}
+
+function openCustomerModal() { openModal('modal-customer'); }
+
+// ── PRODUCTS ──
+function renderProducts() {
+  g('products-tbody').innerHTML = allProducts.map(p=>`
+    <tr>
+      <td><strong style="font-size:12px">${p.name}</strong><br><span style="font-size:10px;color:var(--mid)">${p.brand}</span></td>
+      <td style="font-family:monospace;font-size:11px">${p.sku}</td>
+      <td>${CAT_NAMES[p.category_id]||p.category_id}</td>
+      <td>${fmt(p.list_price)} kr</td>
+      <td><span class="stock ${p.stock_qty===0?'stock-out':p.stock_qty<10?'stock-low':'stock-ok'}">${p.stock_qty} ${p.unit}</span></td>
+      <td><span class="sbadge ${p.active?'b-delivered':'b-draft'}">${p.active?'Aktiv':'Inaktiv'}</span></td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="editProduct('${p.id}')">Redigera</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Ta bort</button>
+      </td>
+    </tr>`).join('');
+}
+
+function openProductModal(prod) {
+  editingProductId = prod?.id || null;
+  document.getElementById('pm-title').textContent = prod ? 'Redigera produkt' : 'Ny produkt';
+  document.getElementById('pm-name').value = prod?.name || '';
+  document.getElementById('pm-sku').value = prod?.sku || '';
+  document.getElementById('pm-desc').value = prod?.description || '';
+  document.getElementById('pm-cat').value = prod?.category_id || 'polish';
+  document.getElementById('pm-brand').value = prod?.brand || 'Frescura';
+  document.getElementById('pm-price').value = prod?.list_price || '';
+  document.getElementById('pm-unit').value = prod?.unit || 'st';
+  document.getElementById('pm-stock').value = prod?.stock_qty || 0;
+  document.getElementById('pm-badge').value = prod?.badge || '';
+  openModal('modal-product');
+}
+
+function editProduct(id) { openProductModal(allProducts.find(p=>p.id===id)); }
+
+async function saveProduct() {
+  const name=document.getElementById('pm-name').value.trim();
+  const sku=document.getElementById('pm-sku').value.trim();
+  const price=parseFloat(document.getElementById('pm-price').value);
+  if(!name||!sku||!price){toast('Fyll i obligatoriska fält *');return;}
+  const data = { name, sku, description:document.getElementById('pm-desc').value, category_id:document.getElementById('pm-cat').value, brand:document.getElementById('pm-brand').value, list_price:price, unit:document.getElementById('pm-unit').value, stock_qty:parseInt(document.getElementById('pm-stock').value)||0, badge:document.getElementById('pm-badge').value||null };
+  if(editingProductId) {
+    await sb.from('products').update(data).eq('id',editingProductId);
+    const idx=allProducts.findIndex(p=>p.id===editingProductId);
+    if(idx>=0) allProducts[idx]={...allProducts[idx],...data};
+    toast('✓ Produkt uppdaterad');
+  } else {
+    const {data:prod,error}=await sb.from('products').insert({...data,active:true,sort_order:allProducts.length+1}).select().single();
+    if(error){toast('Fel: '+error.message);return;}
+    allProducts.push(prod);
+    toast('✓ Produkt skapad: '+name);
+  }
+  renderProducts();
+  closeModal('modal-product');
+}
+
+async function deleteProduct(id) {
+  if(!confirm('Ta bort produkten?')) return;
+  await sb.from('products').delete().eq('id',id);
+  allProducts = allProducts.filter(p=>p.id!==id);
+  renderProducts();
+  toast('Produkt borttagen');
+}
+
+// ── AUTOMATIONS ──
+async function renderAutomations() {
+  const {data:autos} = await sb.from('automations').select('*').order('created_at');
+  const TYPE_ICONS = {birthday:'🎂',inactivity:'💤',reorder:'🔄',status_update:'📦'};
+  const TYPE_LABELS = {birthday:'Födelsedag',inactivity:'Inaktivitet',reorder:'Återköp',status_update:'Orderstatus'};
+  document.getElementById('auto-grid').innerHTML = (autos||[]).map(a=>`
+    <div class="auto-card ${a.active?'':'inactive'}">
+      <div class="auto-type">${TYPE_LABELS[a.type]||a.type}</div>
+      <div class="auto-name">${TYPE_ICONS[a.type]||'⚡'} ${a.name}</div>
+      <div class="auto-desc">${a.email_subject||'Ingen ämnesrad konfigurerad'}</div>
+      ${a.trigger_days?`<div class="auto-desc" style="margin-top:-8px">Triggar efter ${a.trigger_days} dagar</div>`:''}
+      <div class="auto-foot">
+        <div class="auto-meta">Senast körning: ${a.last_run_at?new Date(a.last_run_at).toLocaleDateString('sv-SE'):'Aldrig'}</div>
+        <label class="toggle">
+          <input type="checkbox" ${a.active?'checked':''} onchange="toggleAuto('${a.id}',this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleAuto(id, active) {
+  await sb.from('automations').update({active}).eq('id',id);
+  toast(`Automation ${active?'aktiverad':'pausad'}`);
+}
+
+// ── INTEGRATIONS ──
+async function renderIntegrations() {
+  const {data:logs} = await sb.from('integration_log').select('*').order('created_at',{ascending:false}).limit(20);
+  const intTypes = ['visma','transport','email','automation'];
+  const intStatus = intTypes.map(type=>{
+    const recent = (logs||[]).filter(l=>l.type===type)[0];
+    const ok = recent?.status==='success';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line)">
+      <div style="width:10px;height:10px;border-radius:50%;background:${ok?'var(--green)':recent?'var(--red)':'var(--mid)'}"></div>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${INT_LABELS[type]||type}</div>
+        <div style="font-size:11px;color:var(--mid)">${recent?new Date(recent.created_at).toLocaleString('sv-SE'):'Ingen aktivitet'}</div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:${ok?'var(--green)':recent?'var(--red)':'var(--mid)'}">${ok?'OK':recent?'FEL':'—'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('int-status').innerHTML = intStatus;
+
+  document.getElementById('int-log').innerHTML = (logs||[]).slice(0,10).map(l=>`
+    <div class="log-item">
+      <div class="log-dot ${l.status}">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">${l.status==='success'?'<polyline points="20 6 9 17 4 12"/>':'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'}</svg>
+      </div>
+      <div class="log-body">
+        <div class="log-hd">
+          <span class="log-type">${INT_LABELS[l.type]||l.type}</span>
+          <span class="log-time">${new Date(l.created_at).toLocaleString('sv-SE',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})}</span>
+        </div>
+        <div class="log-detail">${l.response?JSON.stringify(l.response).slice(0,80):l.error_message||'—'}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── MODAL ──
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+// ── TOAST ──
+
+// ── MOBILE MENU ──────────────────────────────────────────────
+function toggleMobMenu(){
+  document.getElementById('sidebar').classList.toggle('mob-open');
+  document.getElementById('mob-overlay').classList.toggle('show');
+}
+function closeMobMenu(){
+  document.getElementById('sidebar').classList.remove('mob-open');
+  document.getElementById('mob-overlay').classList.remove('show');
+}
+// Close menu when nav item clicked on mobile
+document.querySelectorAll('.sb-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    if(window.innerWidth<=768) closeMobMenu();
+  });
+});
+
+
+// ── SÄLJGRAF ─────────────────────────────────────────────────
+let chartPeriod = 'week';
+
+function switchChart(el, period) {
+  document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  chartPeriod = period;
+  drawSalesChart();
+}
+
+async function drawSalesChart() {
+  const canvas = g('sales-chart');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const days = chartPeriod === 'week' ? 7 : 30;
+
+  // Hämta ordrar
+  const from = new Date();
+  from.setDate(from.getDate() - days);
+  const { data: orders } = await sb.from('orders')
+    .select('subtotal, created_at')
+    .gte('created_at', from.toISOString())
+    .neq('status', 'cancelled');
+
+  // Gruppera per dag
+  const dayMap = {};
+  for(let i=days-1; i>=0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    dayMap[key] = 0;
+  }
+  (orders||[]).forEach(o => {
+    const key = o.created_at.slice(0,10);
+    if(dayMap[key] !== undefined) dayMap[key] += Number(o.subtotal||0);
+  });
+
+  const labels = Object.keys(dayMap);
+  const vals   = Object.values(dayMap);
+  const maxVal = Math.max(...vals, 1);
+  const W=860, H=200, pad={t:20,r:20,b:36,l:60};
+  const bW  = Math.floor((W-pad.l-pad.r)/labels.length);
+  const bGap = Math.floor(bW*0.25);
+
+  ctx.clearRect(0,0,W,H);
+
+  // Y-axel
+  ctx.strokeStyle='rgba(200,160,48,.12)';ctx.lineWidth=1;
+  ctx.fillStyle='rgba(237,232,223,.35)';ctx.font='10px DM Sans,sans-serif';
+  ctx.textAlign='right';
+  [0,0.25,0.5,0.75,1].forEach(pct => {
+    const y = pad.t + (1-pct)*(H-pad.t-pad.b);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillText(Math.round(maxVal*pct).toLocaleString('sv-SE')+' kr',pad.l-6,y+4);
+  });
+
+  // Staplar
+  vals.forEach((v,i) => {
+    const x = pad.l + i*bW + bGap;
+    const barH = v>0 ? Math.max(3, Math.round((v/maxVal)*(H-pad.t-pad.b))) : 3;
+    const y = pad.t + (H-pad.t-pad.b) - barH;
+    const alpha = v > 0 ? 0.45 : 0.1;
+    ctx.fillStyle=`rgba(200,160,48,${alpha})`;
+    ctx.fillRect(x, y, bW-bGap*2, barH);
+
+    // Värde om > 0
+    if(v > 0) {
+      ctx.fillStyle='rgba(200,160,48,.9)';ctx.font='bold 9px DM Sans,sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText(Math.round(v/1000)+'k', x+(bW-bGap*2)/2, y-5);
+    }
+
+    // X-label
+    ctx.fillStyle='rgba(237,232,223,.35)';ctx.font='9px DM Sans,sans-serif';ctx.textAlign='center';
+    const label = chartPeriod==='week'
+      ? ['Mån','Tis','Ons','Tor','Fre','Lör','Sön'][new Date(labels[i]).getDay()]||labels[i].slice(5)
+      : labels[i].slice(5);
+    ctx.fillText(label, x+(bW-bGap*2)/2, H-pad.b+14);
+  });
+}
+
+// ── KAMPANJER ─────────────────────────────────────────────────
+async function renderCampaigns() {
+  const { data: camps } = await sb.from('campaigns').select('*').order('created_at',{ascending:false});
+  const TYPE = { percent: '%', fixed: 'kr' };
+  g('camps-tbody').innerHTML = (camps||[]).map(c => `
+    <tr>
+      <td style="font-family:monospace;font-weight:700;color:var(--g1);letter-spacing:.08em">${c.code}</td>
+      <td>${c.name}</td>
+      <td style="font-weight:600">${c.discount_value} ${TYPE[c.discount_type]}</td>
+      <td>${c.min_order_amount > 0 ? Math.round(c.min_order_amount)+' kr' : '—'}</td>
+      <td>${c.valid_to || '—'}</td>
+      <td>${c.used_count||0}${c.max_uses?'/'+c.max_uses:''}</td>
+      <td><span class="camp-badge ${c.active?'camp-active':'camp-inactive'}">${c.active?'Aktiv':'Inaktiv'}</span></td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="toggleCampaign('${c.id}',${!c.active})">${c.active?'Pausa':'Aktivera'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCampaign('${c.id}')">Ta bort</button>
+      </td>
+    </tr>`).join('');
+}
+
+function openCampModal() {
+  document.getElementById('cm2-from').value = new Date().toISOString().slice(0,10);
+  openCampModal();
+}
+
+async function saveCampaign() {
+  const code = document.getElementById('cm2-code').value.trim().toUpperCase();
+  const name = document.getElementById('cm2-name').value.trim();
+  const val  = parseFloat(document.getElementById('cm2-val').value);
+  if(!code||!name||!val) { toast('Fyll i obligatoriska fält'); return; }
+  const { error } = await sb.from('campaigns').insert({
+    code, name,
+    discount_type: document.getElementById('cm2-type').value,
+    discount_value: val,
+    min_order_amount: parseFloat(document.getElementById('cm2-min').value)||0,
+    max_uses: parseInt(document.getElementById('cm2-max').value)||null,
+    valid_from: document.getElementById('cm2-from').value || new Date().toISOString().slice(0,10),
+    valid_to: document.getElementById('cm2-to').value || null,
+    active: true,
+  });
+  if(error) { toast('Fel: '+error.message); return; }
+  closeModal('modal-campaign');
+  toast('✓ Kampanj skapad: '+code);
+  renderCampaigns();
+}
+
+async function toggleCampaign(id, active) {
+  await sb.from('campaigns').update({ active }).eq('id', id);
+  toast(`Kampanj ${active?'aktiverad':'pausad'}`);
+  renderCampaigns();
+}
+
+async function deleteCampaign(id) {
+  if(!confirm('Ta bort kampanjen?')) return;
+  await sb.from('campaigns').delete().eq('id', id);
+  toast('Kampanj borttagen');
+  renderCampaigns();
+}
+
+// ── CSV EXPORT ────────────────────────────────────────────────
+async function exportOrders() {
+  const { data: orders } = await sb.from('orders')
+    .select('order_nr, status, price_list_id, delivery_name, delivery_city, subtotal, vat_amount, total, visma_invoice_id, created_at, customers(company, email)')
+    .order('order_nr', { ascending: false });
+
+  if(!orders?.length) { toast('Inga ordrar att exportera'); return; }
+
+  const headers = ['Order #','Datum','Kund','Företag','Stad','Prislista','Subtotal','Moms','Total','Status','Visma-faktura'];
+  const rows = orders.map(o => [
+    o.order_nr,
+    new Date(o.created_at).toLocaleDateString('sv-SE'),
+    o.delivery_name || o.customers?.email || '',
+    o.customers?.company || '',
+    o.delivery_city || '',
+    o.price_list_id || '',
+    o.subtotal,
+    o.vat_amount,
+    o.total,
+    o.status,
+    o.visma_invoice_id || '',
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(';'))
+    .join('\n');
+
+  const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`proluxshine-ordrar-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast(`✓ ${orders.length} ordrar exporterade`);
+}
+
+
+// ── KUNDPANEL & AKTIVITETSLOGG ────────────────────────────────
+let activeCustId = null;
+let selectedActType = 'note';
+
+const ACT_ICON  = { note:'📝', call:'📞', email:'✉️', meeting:'🤝', order:'📦' };
+const ACT_CLASS = { note:'act-note', call:'act-call', email:'act-email', meeting:'act-meeting', order:'act-order' };
+const ACT_LABEL = { note:'Anteckning', call:'Samtal', email:'E-post', meeting:'Möte', order:'Order' };
+const STATUS_LBL2 = {pending:'Väntande',confirmed:'Bekräftad',packed:'Packad',shipped:'Skickad',delivered:'Levererad',cancelled:'Avbruten'};
+
+async function openCustPanel(customerId) {
+  activeCustId = customerId;
+  const cust = allCustomers.find(c => c.id === customerId);
+  if(!cust) return;
+
+  g('cp2-title').textContent = cust.company;
+
+  // Info-sektion
+  g('cp2-info').innerHTML = `
+    <h4>Kontaktinfo</h4>
+    <div class="cp2-row"><span>Kontakt</span><strong>${cust.contact_name}</strong></div>
+    <div class="cp2-row"><span>Roll</span><strong>${cust.contact_role||'—'}</strong></div>
+    <div class="cp2-row"><span>E-post</span><strong>${cust.email}</strong></div>
+    <div class="cp2-row"><span>Telefon</span><strong>${cust.phone||'—'}</strong></div>
+    <div class="cp2-row"><span>Stad</span><strong>${cust.city||'—'}</strong></div>
+    <div class="cp2-row"><span>Prislista</span><strong><span class="pl-badge pl-${cust.price_list_id}">${cust.price_list_id}</span></strong></div>
+    <div class="cp2-row"><span>Status</span><strong>${cust.status==='active'?'Aktiv':cust.status==='prospect'?'Prospekt':'Inaktiv'}</strong></div>
+  `;
+
+  // Ordrar
+  const custOrders = allOrders.filter(o => o.customer_id === customerId).slice(0,5);
+  g('cp2-orders').innerHTML = custOrders.length
+    ? custOrders.map(o=>`
+        <div class="dp-row">
+          <span style="color:var(--g1);font-weight:600">#${o.order_nr}</span>
+          <span>${new Date(o.created_at).toLocaleDateString('sv-SE')}</span>
+          <span>${fmt(o.subtotal)} kr</span>
+          <span><span class="sbadge ${STATUS_CSS[o.status]||'b-draft'}">${STATUS_LBL2[o.status]||o.status}</span></span>
+        </div>`).join('')
+    : '<div style="font-size:12px;color:var(--txt3);padding:8px 0">Inga ordrar ännu</div>';
+
+  // Aktiviteter
+  await loadActivities(customerId);
+
+  document.getElementById('cust-panel')?.classList.add('open');
+}
+
+function closeCustPanel() {
+  document.getElementById('cust-panel')?.classList.remove('open');
+  activeCustId = null;
+}
+
+async function loadActivities(custId) {
+  const { data } = await sb.from('customer_activities')
+    .select('*').eq('customer_id', custId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  const log = g('act-log');
+  if(!data?.length) {
+    log.innerHTML = '<div style="font-size:11px;color:var(--txt3);letter-spacing:.06em">Inga aktiviteter ännu</div>';
+    return;
+  }
+  log.innerHTML = data.map(a => `
+    <div class="act-item">
+      <div class="act-icon ${ACT_CLASS[a.type]||'act-note'}">${ACT_ICON[a.type]||'📝'}</div>
+      <div class="act-body">
+        <div class="act-title">${a.title}</div>
+        <div class="act-meta">${ACT_LABEL[a.type]||a.type} · ${new Date(a.created_at).toLocaleDateString('sv-SE')} · ${a.created_by}</div>
+        ${a.body?`<div class="act-body-text">${a.body}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+function selectActType(el, type) {
+  document.querySelectorAll('.act-type-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedActType = type;
+}
+
+async function saveActivity() {
+  const title = g('act-title').value.trim();
+  if(!title || !activeCustId) { toast('Ange en rubrik'); return; }
+  const { error } = await sb.from('customer_activities').insert({
+    customer_id: activeCustId,
+    type: selectedActType,
+    title,
+    body: g('act-body').value.trim() || null,
+    created_by: 'Admin',
+  });
+  if(error) { toast('Fel: '+error.message); return; }
+  g('act-title').value = '';
+  g('act-body').value = '';
+  toast('✓ Aktivitet sparad');
+  await loadActivities(activeCustId);
+}
+
+
+// ── REALTIDSUPPDATERINGAR FRÅN WEBSHOPEN ─────────────────────
+// Lyssnar på nya ordrar — visar notis i admin utan sidladdning
+function startRealtimeListener(){
+  try{
+    sb.channel('admin-orders')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},
+        async (payload)=>{
+          // Ny order inlagd — uppdatera lista och visa notis
+          allOrders.unshift(payload.new);
+          if(document.getElementById('view-orders')?.classList.contains('active')){
+            renderOrders();
+          }
+          if(document.getElementById('view-dashboard')?.classList.contains('active')){
+            renderDashboard();setTimeout(drawSalesChart,200);startRealtimeListener();
+          }
+          toast(`✦ Ny order #${payload.new.order_nr||''} inlagd`);
+        })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'orders'},
+        (payload)=>{
+          const idx=allOrders.findIndex(o=>o.id===payload.new.id);
+          if(idx>=0) allOrders[idx]={...allOrders[idx],...payload.new};
+          if(document.getElementById('view-orders')?.classList.contains('active')) renderOrders();
+        })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'products'},
+        (payload)=>{
+          const idx=allProducts.findIndex(p=>p.id===payload.new.id);
+          if(idx>=0) allProducts[idx]={...allProducts[idx],...payload.new};
+          if(document.getElementById('view-products')?.classList.contains('active')) renderProducts();
+        })
+      .subscribe();
+    console.log('[Admin] Realtidslyssning aktiv');
+  }catch(e){console.log('[Admin] Realtime ej tillgänglig');}
+}
+
+function toast(msg){const t=document.getElementById('toast');document.getElementById('toast-txt').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+</script>
+</body>
+</html>

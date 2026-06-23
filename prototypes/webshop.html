@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>ProLuxShine — B2B Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #111318;
+  --bg2:     #191C23;
+  --bg3:     #20232B;
+  --bg4:     #282B34;
+  --border:  #2E3240;
+  --border2: #252830;
+  --text:    #E8ECF0;
+  --text2:   #9BA3B0;
+  --text3:   #636B78;
+  --gold:    #D4A843;
+  --gold-bg: rgba(212,168,67,.1);
+  --green:   #4CAF7D;
+  --red:     #E05555;
+  --amber:   #D4853A;
+  --sidebar: 248px;
+  --topbar:  58px;
+  --sans:    'Inter', system-ui, sans-serif;
+  --serif:   'Playfair Display', Georgia, serif;
+  --mono:    'Roboto Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+/* ─── LOADER ─────────────────────────────────── */
+#loader { position:fixed; inset:0; background:var(--bg); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; transition:opacity .5s .2s; }
+#loader.out { opacity:0; pointer-events:none; }
+.l-brand { font-family:var(--serif); font-size:36px; font-weight:500; color:var(--text); letter-spacing:.04em; }
+.l-brand span { color:var(--gold); font-style:italic; }
+.l-sub { font-size:11px; color:var(--text3); letter-spacing:.12em; text-transform:uppercase; }
+.l-bar { width:180px; height:2px; background:var(--bg3); border-radius:1px; overflow:hidden; }
+.l-fill { height:100%; background:var(--gold); width:0; transition:width .8s ease; }
+
+/* ─── LOGIN ──────────────────────────────────── */
+#login { position:fixed; inset:0; display:none; background:var(--bg); z-index:500; align-items:center; justify-content:center; padding:20px; }
+.lbox { width:100%; max-width:400px; }
+.l-logo { font-family:var(--serif); font-size:28px; font-weight:500; color:var(--text); margin-bottom:6px; }
+.l-logo span { color:var(--gold); font-style:italic; }
+.l-tagline { font-size:13px; color:var(--text3); margin-bottom:32px; }
+.auth-tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:28px; }
+.auth-tab { flex:1; padding:10px 0; font-size:12px; font-weight:500; color:var(--text3); cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; background:none; border-top:none; border-left:none; border-right:none; margin-bottom:-1px; letter-spacing:.03em; }
+.auth-tab.active { color:var(--text); border-bottom-color:var(--gold); }
+.ap { display:none; }
+.ap.active { display:block; }
+.lf { margin-bottom:18px; }
+.lf label { display:block; font-size:11px; font-weight:500; color:var(--text2); margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; }
+.lf input, .lf select { width:100%; padding:11px 14px; background:var(--bg2); border:1px solid var(--border); color:var(--text); font-family:var(--sans); font-size:14px; outline:none; transition:border-color .2s; border-radius:6px; appearance:none; }
+.lf input:focus, .lf select:focus { border-color:var(--gold); }
+.lf input::placeholder { color:var(--text3); }
+.lf select option { background:var(--bg2); }
+.lf-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.lbtn { width:100%; padding:13px; background:var(--gold); color:#111; font-family:var(--sans); font-weight:600; font-size:13px; letter-spacing:.04em; border:none; border-radius:6px; cursor:pointer; transition:opacity .2s; margin-top:6px; }
+.lbtn:hover { opacity:.88; }
+.lerr { font-size:12px; color:var(--red); margin-bottom:10px; display:none; }
+.lhint { margin-top:18px; padding:12px 14px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; font-size:12px; color:var(--text3); line-height:1.6; }
+.lhint b { color:var(--text2); font-weight:500; }
+
+/* ─── TOPBAR ──────────────────────────────────── */
+.topbar { position:fixed; top:0; left:0; right:0; height:var(--topbar); background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 20px 0 calc(var(--sidebar) + 20px); z-index:100; gap:16px; }
+.t-brand { font-family:var(--serif); font-size:15px; font-weight:500; color:var(--text); letter-spacing:.04em; }
+.t-brand span { color:var(--gold); font-style:italic; }
+.t-divider { width:1px; height:16px; background:var(--border); }
+.t-crumb { font-size:13px; color:var(--text3); font-weight:400; }
+.t-right { margin-left:auto; display:flex; align-items:center; gap:12px; }
+.t-info { font-size:12px; color:var(--text3); }
+.t-info strong { color:var(--text2); font-weight:500; }
+.pl-badge { font-size:11px; font-weight:600; padding:3px 10px; border-radius:4px; background:var(--gold-bg); color:var(--gold); border:1px solid rgba(212,168,67,.25); }
+.cartbtn { width:38px; height:38px; border:1px solid var(--border); border-radius:8px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:all .2s; }
+.cartbtn:hover { border-color:var(--gold); background:var(--gold-bg); }
+.cartbtn svg { width:17px; color:var(--text2); }
+.cbadge { position:absolute; top:-6px; right:-6px; width:18px; height:18px; background:var(--gold); color:#111; font-size:9px; font-weight:700; border-radius:50%; display:none; align-items:center; justify-content:center; font-family:var(--mono); }
+.cbadge.show { display:flex; }
+.mob-ham { display:none; width:38px; height:38px; border:1px solid var(--border); border-radius:8px; background:transparent; cursor:pointer; align-items:center; justify-content:center; flex-shrink:0; }
+.mob-ham svg { width:16px; color:var(--text2); }
+
+/* ─── SIDEBAR ─────────────────────────────────── */
+.sidebar { position:fixed; top:var(--topbar); left:0; bottom:0; width:var(--sidebar); background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:90; }
+.sb-head { padding:28px 20px 20px; border-bottom:1px solid var(--border2); }
+.sb-brand { font-family:var(--serif); font-size:17px; font-weight:500; color:var(--text); margin-bottom:4px; }
+.sb-brand span { color:var(--gold); font-style:italic; }
+.sb-tagline { font-size:11px; color:var(--text3); font-weight:400; }
+.sb-nav { padding:12px 0; flex:1; overflow-y:auto; }
+.sb-section { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.1em; padding:16px 20px 6px; display:block; }
+.sbi { display:flex; align-items:center; gap:10px; padding:10px 20px; font-size:13px; font-weight:400; color:var(--text3); cursor:pointer; transition:all .15s; border-radius:0; border-left:2px solid transparent; }
+.sbi svg { width:15px; flex-shrink:0; opacity:.5; }
+.sbi:hover { color:var(--text2); background:rgba(255,255,255,.03); }
+.sbi.active { color:var(--text); background:var(--gold-bg); border-left-color:var(--gold); font-weight:500; }
+.sbi.active svg { opacity:1; color:var(--gold); }
+.sb-footer { padding:16px 20px; border-top:1px solid var(--border2); }
+.sb-user { font-size:13px; color:var(--text2); font-weight:500; margin-bottom:2px; }
+.sb-role { font-size:11px; color:var(--text3); margin-bottom:14px; }
+.sb-logout { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text3); cursor:pointer; background:none; border:none; font-family:var(--sans); transition:color .2s; }
+.sb-logout:hover { color:var(--red); }
+.sb-logout svg { width:14px; }
+
+/* ─── MAIN ────────────────────────────────────── */
+.main { position:fixed; top:var(--topbar); left:var(--sidebar); right:0; bottom:0; overflow-y:auto; background:var(--bg); }
+.view { display:none; min-height:100%; }
+.view.active { display:block; }
+
+/* ─── DASHBOARD ───────────────────────────────── */
+.dash-hero { padding:48px 48px 36px; border-bottom:1px solid var(--border2); }
+.dash-welcome { font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; }
+.dash-h { font-family:var(--serif); font-size:48px; font-weight:500; color:var(--text); line-height:1.1; margin-bottom:8px; }
+.dash-h em { font-style:italic; color:var(--gold); }
+.dash-sub { font-size:14px; color:var(--text3); }
+.kpi-strip { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--border2); }
+.kpi { padding:28px 36px; border-right:1px solid var(--border2); }
+.kpi:last-child { border-right:none; }
+.kpi-label { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:12px; display:block; }
+.kpi-value { font-family:var(--serif); font-size:40px; font-weight:500; color:var(--text); line-height:1; margin-bottom:4px; }
+.kpi-sub { font-size:12px; color:var(--text3); }
+.dash-body { padding:36px 48px; }
+.dash-section { margin-bottom:40px; }
+.dash-section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.dash-section-title { font-size:13px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.08em; }
+.dash-section-link { font-size:12px; color:var(--text3); background:none; border:none; cursor:pointer; transition:color .2s; font-family:var(--sans); }
+.dash-section-link:hover { color:var(--gold); }
+
+/* ─── RECOMMENDATIONS ─────────────────────────── */
+.rec-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+.rec-card { background:var(--bg2); border:1px solid var(--border2); border-radius:8px; overflow:hidden; cursor:pointer; transition:all .2s; }
+.rec-card:hover { border-color:var(--border); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.3); }
+.rec-img { height:140px; overflow:hidden; position:relative; background:var(--bg3); display:flex; align-items:center; justify-content:center; }
+.rec-img img { width:100%; height:100%; object-fit:cover; transition:transform .4s; }
+.rec-card:hover .rec-img img { transform:scale(1.04); }
+.rec-fallback { font-size:44px; }
+.rec-body { padding:14px 16px 16px; }
+.rec-brand { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
+.rec-name { font-family:var(--serif); font-size:15px; font-weight:500; color:var(--text); margin-bottom:8px; line-height:1.25; }
+.rec-price { font-size:16px; font-weight:600; color:var(--gold); font-family:var(--mono); }
+.rec-price-orig { font-size:12px; color:var(--text3); text-decoration:line-through; margin-left:6px; font-family:var(--sans); }
+.rec-reason { font-size:11px; color:var(--text3); margin-top:4px; font-style:italic; }
+.rec-add { display:block; width:100%; margin-top:12px; padding:8px; background:var(--bg3); border:1px solid var(--border); border-radius:4px; color:var(--text3); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; transition:all .2s; text-align:center; font-family:var(--sans); }
+.rec-add:hover { background:var(--gold); color:#111; border-color:var(--gold); }
+.rec-personal-sub { font-size:13px; color:var(--text3); font-style:italic; margin-bottom:4px; }
+
+/* ─── TABLES ─────────────────────────────────── */
+.dash-tbl { width:100%; border-collapse:collapse; }
+.dash-tbl th { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; padding:10px 0; text-align:left; border-bottom:1px solid var(--border); }
+.dash-tbl td { padding:14px 0; font-size:13px; color:var(--text2); border-bottom:1px solid var(--border2); }
+.dash-tbl tr { cursor:pointer; }
+.dash-tbl tr:hover td { color:var(--text); }
+.order-num { font-family:var(--mono); font-size:13px; color:var(--gold); font-weight:500; }
+
+/* ─── STATUS ─────────────────────────────────── */
+.status { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:3px 10px; border-radius:4px; text-transform:capitalize; }
+.status::before { content:''; width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.os-delivered { background:rgba(76,175,125,.12); color:#4CAF7D; }
+.os-delivered::before { background:#4CAF7D; }
+.os-shipped { background:rgba(66,153,225,.12); color:#4299E1; }
+.os-shipped::before { background:#4299E1; }
+.os-confirmed, .os-packed { background:var(--gold-bg); color:var(--gold); }
+.os-confirmed::before, .os-packed::before { background:var(--gold); }
+.os-pending { background:rgba(212,133,58,.12); color:var(--amber); }
+.os-pending::before { background:var(--amber); }
+.os-cancelled { background:rgba(224,85,85,.12); color:var(--red); }
+.os-cancelled::before { background:var(--red); }
+.os-draft { background:rgba(155,163,176,.1); color:var(--text3); }
+.os-draft::before { background:var(--text3); }
+
+/* ─── CATALOG ─────────────────────────────────── */
+.cat-hero { padding:48px 48px 36px; border-bottom:1px solid var(--border2); }
+.cat-overline { font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:.1em; margin-bottom:14px; display:block; }
+.cat-h { font-family:var(--serif); font-size:44px; font-weight:500; color:var(--text); line-height:1.1; margin-bottom:20px; }
+.cat-h em { font-style:italic; color:var(--gold); }
+.pl-pill { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:var(--gold); background:var(--gold-bg); border:1px solid rgba(212,168,67,.25); padding:6px 14px; border-radius:20px; }
+.ai-wrap { margin-top:24px; }
+.ai-label { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; display:block; }
+.ai-row { display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--bg2); transition:border-color .2s; }
+.ai-row:focus-within { border-color:var(--gold); }
+.ai-inp { flex:1; padding:13px 18px; background:transparent; border:none; color:var(--text); font-family:var(--sans); font-size:14px; outline:none; }
+.ai-inp::placeholder { color:var(--text3); font-size:13px; }
+.ai-btn { padding:13px 20px; background:var(--gold); color:#111; border:none; font-family:var(--sans); font-size:12px; font-weight:600; letter-spacing:.04em; cursor:pointer; transition:opacity .2s; flex-shrink:0; }
+.ai-btn:hover { opacity:.88; }
+.ai-status { font-size:12px; color:var(--text3); margin-top:8px; display:none; font-style:italic; }
+.ai-status.show { display:block; }
+.cat-filters { display:flex; gap:8px; flex-wrap:wrap; margin-top:20px; }
+.chip { padding:6px 16px; border:1px solid var(--border); border-radius:20px; font-size:12px; font-weight:500; color:var(--text3); cursor:pointer; background:transparent; transition:all .2s; font-family:var(--sans); }
+.chip:hover { border-color:var(--gold); color:var(--gold); }
+.chip.active { background:var(--gold); color:#111; border-color:var(--gold); font-weight:600; }
+
+/* ─── PRODUCT GRID ────────────────────────────── */
+.pgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border2); padding:1px; margin-top:1px; }
+.pgrid .pcard:first-child { grid-column:span 2; }
+.pcard { background:var(--bg); cursor:pointer; transition:background .2s; display:flex; flex-direction:column; position:relative; }
+.pcard:hover { background:var(--bg2); }
+.pimg { position:relative; overflow:hidden; background:var(--bg2); }
+.pgrid .pcard:first-child .pimg { height:480px; }
+.pimg { height:280px; }
+.pimg img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s; }
+.pcard:hover .pimg img { transform:scale(1.04); }
+.pimg-bg { position:absolute; inset:0; }
+.pico { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:64px; transition:transform .4s; z-index:1; }
+.pcard:hover .pico { transform:translate(-50%,-54%) scale(1.08); }
+.pbadge { position:absolute; top:14px; left:14px; font-size:10px; font-weight:700; padding:4px 10px; border-radius:4px; z-index:2; letter-spacing:.04em; }
+.b-top { background:var(--gold); color:#111; }
+.b-new { background:rgba(255,255,255,.1); color:var(--text); border:1px solid rgba(255,255,255,.2); backdrop-filter:blur(4px); }
+.pbody { padding:20px 22px 24px; flex:1; display:flex; flex-direction:column; }
+.pcat { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.1em; margin-bottom:6px; display:block; }
+.pname { font-family:var(--serif); font-size:20px; font-weight:500; color:var(--text); margin-bottom:8px; line-height:1.2; flex:1; }
+.pgrid .pcard:first-child .pname { font-size:28px; }
+.pdesc { font-size:12px; color:var(--text3); line-height:1.7; margin-bottom:18px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.pgrid .pcard:first-child .pdesc { font-size:13px; -webkit-line-clamp:3; }
+.pfoot { display:flex; align-items:flex-end; justify-content:space-between; margin-top:auto; gap:12px; }
+.pprice-wrap {}
+.pprice-label { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; display:block; }
+.pprice { font-family:var(--mono); font-size:24px; font-weight:500; color:var(--text); }
+.pgrid .pcard:first-child .pprice { font-size:32px; }
+.pprice-unit { font-size:12px; color:var(--text3); }
+.porig { font-size:12px; color:var(--text3); text-decoration:line-through; margin-left:6px; }
+.addbtn { width:42px; height:42px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text3); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; flex-shrink:0; }
+.addbtn svg { width:17px; transition:transform .25s; }
+.pcard:hover .addbtn { border-color:var(--gold); color:var(--gold); }
+.addbtn:hover { background:var(--gold) !important; border-color:var(--gold) !important; color:#111 !important; }
+.addbtn:hover svg { transform:rotate(90deg); }
+.empty-state { padding:80px 20px; text-align:center; }
+.empty-state p { font-size:14px; color:var(--text3); }
+
+/* ─── PRODUCT MODAL ───────────────────────────── */
+.pm-ov { display:none; position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:300; align-items:flex-end; justify-content:center; backdrop-filter:blur(8px); }
+.pm-ov.open { display:flex; }
+.pm-box { width:100%; max-width:680px; background:var(--bg2); border:1px solid var(--border); border-bottom:none; max-height:90vh; overflow-y:auto; position:relative; border-radius:12px 12px 0 0; animation:slideup .3s cubic-bezier(.22,.68,0,1.1); }
+@keyframes slideup { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+.pm-x { position:absolute; top:16px; right:16px; width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:var(--bg3); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; transition:all .2s; }
+.pm-x:hover { border-color:var(--gold); background:var(--gold-bg); }
+.pm-x svg { width:12px; color:var(--text2); }
+.pm-top { height:340px; position:relative; overflow:hidden; background:var(--bg3); border-radius:10px 10px 0 0; }
+.pm-top img { width:100%; height:100%; object-fit:cover; }
+.pm-top-ico { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:96px; }
+.pm-top-grad { position:absolute; bottom:0; left:0; right:0; height:50%; background:linear-gradient(to top,rgba(25,28,35,.9),transparent); }
+.pm-body { padding:28px 32px 24px; }
+.pm-brand { font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:.1em; margin-bottom:8px; display:block; }
+.pm-name { font-family:var(--serif); font-size:32px; font-weight:500; color:var(--text); line-height:1.1; margin-bottom:12px; }
+.pm-desc { font-size:14px; color:var(--text2); line-height:1.8; margin-bottom:24px; }
+.pm-specs { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:24px; }
+.pm-spec { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:12px 16px; }
+.pm-spec-label { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; display:block; }
+.pm-spec-val { font-size:14px; color:var(--text); font-weight:500; }
+.pm-buy { display:flex; align-items:flex-end; gap:14px; padding-top:20px; border-top:1px solid var(--border2); flex-wrap:wrap; }
+.pm-price-label { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; display:block; }
+.pm-pr { font-family:var(--mono); font-size:40px; font-weight:500; color:var(--gold); line-height:1; }
+.pm-orig { font-size:14px; color:var(--text3); text-decoration:line-through; margin-left:8px; }
+.pm-qty-wrap { display:flex; align-items:center; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.pm-qb { width:40px; height:40px; background:var(--bg3); border:none; color:var(--text2); font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.pm-qb:hover { color:var(--text); background:var(--bg4); }
+.pm-qv { min-width:40px; text-align:center; font-size:15px; font-weight:600; color:var(--text); font-family:var(--mono); }
+.pm-add { flex:1; min-width:180px; padding:15px; background:var(--gold); color:#111; border:none; border-radius:8px; font-family:var(--sans); font-weight:700; font-size:13px; letter-spacing:.04em; cursor:pointer; transition:opacity .2s; }
+.pm-add:hover { opacity:.88; }
+
+/* RELATED */
+.pm-related { border-top:1px solid var(--border2); background:var(--bg); }
+.pm-related.hide { display:none; }
+.pm-related-hd { padding:20px 32px 14px; display:flex; align-items:center; justify-content:space-between; }
+.pm-related-title { font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.08em; }
+.pm-related-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border2); margin:0 1px 1px; }
+.pm-rel-card { background:var(--bg); cursor:pointer; transition:background .2s; }
+.pm-rel-card:hover { background:var(--bg2); }
+.pm-rel-img { height:130px; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; background:var(--bg3); }
+.pm-rel-img img { width:100%; height:100%; object-fit:cover; transition:transform .35s; }
+.pm-rel-card:hover .pm-rel-img img { transform:scale(1.04); }
+.pm-rel-fallback { font-size:40px; }
+.pm-rel-body { padding:12px 14px 16px; }
+.pm-rel-brand { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; display:block; }
+.pm-rel-name { font-family:var(--serif); font-size:14px; font-weight:500; color:var(--text); line-height:1.25; margin-bottom:8px; }
+.pm-rel-foot { display:flex; align-items:center; justify-content:space-between; }
+.pm-rel-price { font-family:var(--mono); font-size:15px; font-weight:500; color:var(--gold); }
+.pm-rel-add { width:28px; height:28px; background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--text3); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; transition:all .2s; }
+.pm-rel-add:hover { background:var(--gold); border-color:var(--gold); color:#111; }
+
+/* BUNDLE */
+.pm-bundle { border-top:1px solid var(--border2); padding:22px 32px 26px; }
+.pm-bundle.hide { display:none; }
+.pm-bundle-title { font-size:12px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.08em; margin-bottom:16px; }
+.pm-bundle-row { display:flex; align-items:stretch; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.pm-b-prod { display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--border); border-radius:8px; flex:1; min-width:160px; cursor:pointer; background:var(--bg3); transition:border-color .2s; }
+.pm-b-prod:hover { border-color:var(--gold); }
+.pm-b-img { width:44px; height:44px; object-fit:cover; border-radius:6px; flex-shrink:0; }
+.pm-b-ico { width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; background:var(--bg4); border-radius:6px; }
+.pm-b-name { font-size:12px; color:var(--text2); margin-bottom:3px; line-height:1.35; }
+.pm-b-price { font-family:var(--mono); font-size:14px; font-weight:500; color:var(--gold); }
+.pm-b-plus { font-size:20px; color:var(--text3); display:flex; align-items:center; flex-shrink:0; }
+.pm-b-total { padding:12px 18px; border:1px solid rgba(212,168,67,.3); border-radius:8px; background:var(--gold-bg); display:flex; flex-direction:column; justify-content:center; align-items:center; min-width:120px; flex-shrink:0; }
+.pm-b-total-label { font-size:10px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; }
+.pm-b-total-price { font-family:var(--mono); font-size:24px; font-weight:500; color:var(--gold); line-height:1; }
+.pm-b-total-orig { font-size:11px; color:var(--text3); text-decoration:line-through; margin-top:2px; }
+.pm-b-btn { width:100%; padding:12px; background:var(--gold); color:#111; border:none; border-radius:8px; font-family:var(--sans); font-weight:700; font-size:12px; letter-spacing:.04em; cursor:pointer; transition:opacity .2s; }
+.pm-b-btn:hover { opacity:.88; }
+
+/* ─── CART PANEL ─────────────────────────────── */
+.cart-panel { position:fixed; top:var(--topbar); right:0; bottom:0; width:380px; background:var(--bg2); border-left:1px solid var(--border); z-index:80; transform:translateX(100%); transition:transform .3s cubic-bezier(.22,.68,0,1.1); display:flex; flex-direction:column; }
+.cart-panel.open { transform:translateX(0); }
+.cp-hd { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.cp-title { font-family:var(--serif); font-size:20px; font-weight:500; color:var(--text); }
+.cp-cls { width:32px; height:32px; border:1px solid var(--border); border-radius:8px; background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; }
+.cp-cls:hover { border-color:var(--gold); background:var(--gold-bg); }
+.cp-cls svg { width:13px; color:var(--text2); }
+.cp-items { flex:1; overflow-y:auto; padding:16px 24px; display:flex; flex-direction:column; gap:10px; }
+.ci { display:flex; gap:12px; padding:14px; border:1px solid var(--border2); border-radius:8px; background:var(--bg3); transition:border-color .2s; }
+.ci:hover { border-color:var(--border); }
+.ci-img { width:52px; height:52px; object-fit:cover; border-radius:6px; flex-shrink:0; }
+.ci-ico { width:52px; height:52px; background:var(--bg4); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+.ci-body { flex:1; min-width:0; }
+.ci-name { font-size:13px; font-weight:500; color:var(--text); margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ci-sub { font-size:11px; color:var(--text3); margin-bottom:8px; }
+.ci-ctrl { display:flex; align-items:center; gap:8px; }
+.qb { width:26px; height:26px; border:1px solid var(--border); border-radius:6px; background:transparent; color:var(--text2); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; line-height:1; transition:all .15s; }
+.qb:hover { border-color:var(--gold); color:var(--gold); }
+.qv { font-family:var(--mono); font-size:13px; font-weight:600; min-width:22px; text-align:center; color:var(--text); }
+.ci-price { font-family:var(--mono); font-size:15px; font-weight:500; color:var(--gold); margin-left:auto; }
+.ci-del { background:transparent; border:none; color:var(--text3); cursor:pointer; display:flex; align-items:center; transition:color .15s; }
+.ci-del:hover { color:var(--red); }
+.ci-del svg { width:14px; }
+.cart-sugg { padding:14px 24px; border-top:1px solid var(--border2); flex-shrink:0; }
+.cart-sugg-lbl { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px; display:block; }
+.sugg-items { display:flex; flex-direction:column; gap:6px; }
+.sugg-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border2); border-radius:8px; cursor:pointer; background:var(--bg3); transition:all .2s; }
+.sugg-item:hover { border-color:var(--gold); background:var(--gold-bg); }
+.sugg-ico { font-size:20px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sugg-img { width:36px; height:36px; object-fit:cover; border-radius:6px; flex-shrink:0; }
+.sugg-name { font-size:12px; color:var(--text2); flex:1; line-height:1.35; }
+.sugg-price { font-family:var(--mono); font-size:13px; font-weight:500; color:var(--gold); white-space:nowrap; }
+.sugg-add-btn { width:26px; height:26px; background:var(--gold); border:none; border-radius:6px; color:#111; display:flex; align-items:center; justify-content:center; cursor:pointer; font-weight:700; font-size:18px; flex-shrink:0; transition:opacity .2s; }
+.sugg-add-btn:hover { opacity:.85; }
+.cp-foot { padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0; background:var(--bg2); }
+.cp-row { display:flex; justify-content:space-between; font-size:13px; color:var(--text3); padding:4px 0; }
+.cp-row.big { font-size:15px; font-weight:600; color:var(--text); border-top:1px solid var(--border2); padding-top:12px; margin-top:6px; }
+.cp-row.big .cv { font-family:var(--mono); font-size:20px; color:var(--gold); font-weight:500; }
+.cp-disc-row { display:none; justify-content:space-between; font-size:13px; color:var(--green); padding:4px 0; }
+.pbtn { width:100%; padding:14px; background:var(--gold); color:#111; border:none; border-radius:8px; font-family:var(--sans); font-weight:700; font-size:13px; cursor:pointer; margin-top:14px; margin-bottom:8px; transition:opacity .2s; }
+.pbtn:hover { opacity:.88; }
+.sbtn { width:100%; padding:11px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text3); font-family:var(--sans); font-size:12px; font-weight:500; cursor:pointer; transition:all .2s; }
+.sbtn:hover { border-color:var(--gold); color:var(--gold); }
+
+/* ─── CHECKOUT ─────────────────────────────────── */
+.co-layout { display:grid; grid-template-columns:1fr 380px; min-height:100%; }
+.co-left { padding:48px; background:var(--bg); }
+.co-right { background:var(--bg2); padding:40px 36px; border-left:1px solid var(--border2); }
+.co-eyebrow { font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:.1em; margin-bottom:14px; display:block; }
+.co-h { font-family:var(--serif); font-size:40px; font-weight:500; color:var(--text); line-height:1.1; margin-bottom:40px; }
+.co-section { margin-bottom:32px; }
+.co-sec-title { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.1em; margin-bottom:18px; display:block; border-bottom:1px solid var(--border2); padding-bottom:10px; }
+.fg2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.fg { margin-bottom:16px; }
+.fg label { display:block; font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+.fg input { width:100%; padding:11px 14px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--sans); font-size:14px; outline:none; transition:border-color .2s; }
+.fg input:focus { border-color:var(--gold); }
+.fg input::placeholder { color:var(--text3); font-size:13px; }
+.camp-field { display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--bg2); transition:border-color .2s; }
+.camp-field:focus-within { border-color:var(--gold); }
+.camp-inp { flex:1; padding:11px 14px; background:transparent; border:none; color:var(--text); font-family:var(--mono); font-size:13px; text-transform:uppercase; letter-spacing:.08em; outline:none; }
+.camp-inp::placeholder { text-transform:none; color:var(--text3); letter-spacing:0; font-size:13px; }
+.camp-sub { padding:11px 16px; background:transparent; border:none; border-left:1px solid var(--border); color:var(--text3); font-family:var(--sans); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; transition:all .2s; }
+.camp-sub:hover { background:var(--gold-bg); color:var(--gold); }
+.camp-ok { font-size:12px; color:var(--green); margin-top:6px; display:none; }
+.camp-err { font-size:12px; color:var(--red); margin-top:6px; display:none; }
+.cobtn { width:100%; padding:14px; background:var(--gold); color:#111; border:none; border-radius:8px; font-family:var(--sans); font-weight:700; font-size:13px; cursor:pointer; transition:opacity .2s; }
+.cobtn:hover { opacity:.88; }
+.co-sum-title { font-family:var(--serif); font-size:22px; font-weight:500; color:var(--text); margin-bottom:24px; }
+.co-item { display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border2); }
+.co-item:last-of-type { border-bottom:none; }
+.co-item-name { font-size:13px; font-weight:500; color:var(--text); margin-bottom:3px; }
+.co-item-sub { font-size:11px; color:var(--text3); }
+.co-item-price { font-family:var(--mono); font-size:15px; font-weight:500; color:var(--text); white-space:nowrap; margin-left:12px; }
+.co-div { height:1px; background:var(--border); margin:16px 0; }
+.co-disc-row { display:none; justify-content:space-between; font-size:13px; color:var(--green); padding:5px 0; }
+.co-total-row { display:flex; justify-content:space-between; align-items:baseline; }
+.co-total-lbl { font-size:12px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; }
+.co-tot { font-family:var(--mono); font-size:28px; font-weight:500; color:var(--gold); }
+.co-vat { font-size:11px; color:var(--text3); text-align:right; margin-top:4px; }
+.co-back { display:block; width:100%; padding:11px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--text3); font-family:var(--sans); font-size:12px; font-weight:500; cursor:pointer; text-align:center; margin-top:10px; transition:all .2s; }
+.co-back:hover { border-color:var(--gold); color:var(--gold); }
+
+/* ─── ORDERS ───────────────────────────────────── */
+.ord-wrap { padding:48px; }
+.ord-eyebrow { font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:.1em; margin-bottom:14px; display:block; }
+.ord-h { font-family:var(--serif); font-size:44px; font-weight:500; color:var(--text); line-height:1.1; margin-bottom:36px; }
+.ord-h em { font-style:italic; color:var(--gold); }
+.otbl { width:100%; border-collapse:collapse; }
+.otbl th { font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.08em; padding:12px 0; text-align:left; border-bottom:1px solid var(--border); }
+.otbl td { padding:16px 0; font-size:13px; color:var(--text2); border-bottom:1px solid var(--border2); vertical-align:middle; }
+.otbl tr { transition:all .15s; }
+.otbl tr:hover td { color:var(--text); }
+.onr { font-family:var(--mono); font-size:14px; color:var(--gold); font-weight:500; }
+.reo-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border:1px solid var(--border); border-radius:6px; color:var(--text3); font-size:11px; font-weight:600; cursor:pointer; background:transparent; transition:all .2s; font-family:var(--sans); text-transform:uppercase; letter-spacing:.04em; }
+.reo-btn:hover { border-color:var(--gold); color:var(--gold); }
+.reo-btn svg { width:11px; }
+
+/* ─── TRACKING ─────────────────────────────────── */
+.track-wrap { max-width:580px; padding:48px; }
+.track-back { display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:500; color:var(--text3); cursor:pointer; background:none; border:none; font-family:var(--sans); margin-bottom:32px; transition:color .2s; }
+.track-back:hover { color:var(--gold); }
+.track-eyebrow { font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:.1em; margin-bottom:14px; display:block; }
+.track-h { font-family:var(--serif); font-size:44px; font-weight:500; color:var(--text); margin-bottom:6px; line-height:1.1; }
+.track-h em { font-style:italic; color:var(--gold); }
+.track-nr { font-size:14px; color:var(--text3); margin-bottom:40px; }
+.t-step { display:flex; gap:20px; position:relative; }
+.t-step:not(:last-child)::before { content:''; position:absolute; left:19px; top:42px; bottom:0; width:1px; background:var(--border); }
+.t-step.done::before { background:rgba(212,168,67,.3); }
+.t-dot { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; justify-content:center; flex-shrink:0; z-index:1; transition:all .3s; }
+.t-dot.done { border-color:rgba(212,168,67,.4); background:var(--gold-bg); }
+.t-dot.now { border-color:var(--gold); background:var(--gold); }
+.t-dot svg { width:15px; color:var(--text3); }
+.t-step.done .t-dot svg { color:var(--gold); }
+.t-step.now .t-dot svg { color:#111; }
+.t-body { padding:8px 0 36px; flex:1; }
+.t-label { font-family:var(--serif); font-size:20px; font-weight:500; color:var(--text3); margin-bottom:4px; }
+.t-step.done .t-label, .t-step.now .t-label { color:var(--text); }
+.t-desc { font-size:13px; color:var(--text3); line-height:1.6; }
+.t-badge { display:inline-block; margin-top:6px; font-size:11px; font-weight:600; color:var(--green); }
+
+/* ─── CONFIRM ──────────────────────────────────── */
+.conf-wrap { max-width:520px; margin:0 auto; padding:72px 48px; text-align:center; }
+.conf-eyebrow { font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:.1em; margin-bottom:12px; display:block; }
+.conf-nr { font-family:var(--mono); font-size:20px; font-weight:500; color:var(--gold); display:block; margin-bottom:12px; }
+.conf-h { font-family:var(--serif); font-size:52px; font-weight:500; color:var(--text); margin-bottom:16px; line-height:1.1; }
+.conf-sub { font-size:14px; color:var(--text3); line-height:1.8; margin-bottom:40px; max-width:400px; margin-left:auto; margin-right:auto; }
+.int-steps { display:flex; flex-direction:column; gap:10px; margin-bottom:36px; text-align:left; }
+.int-step { display:flex; align-items:center; gap:14px; padding:16px 18px; border:1px solid var(--border2); border-radius:8px; background:var(--bg2); }
+.int-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px rgba(76,175,125,.4); flex-shrink:0; }
+.int-text { flex:1; }
+.int-name { font-size:13px; font-weight:500; color:var(--text); margin-bottom:2px; }
+.int-desc { font-size:12px; color:var(--text3); }
+.int-ok { font-size:11px; font-weight:600; color:var(--green); white-space:nowrap; text-transform:uppercase; letter-spacing:.04em; }
+.conf-det { border:1px solid var(--border2); border-radius:8px; padding:20px; margin-bottom:28px; text-align:left; background:var(--bg2); }
+.cdr { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border2); font-size:13px; }
+.cdr:last-child { border-bottom:none; }
+.cdr span { color:var(--text3); }
+.cdr strong { color:var(--text); font-weight:500; }
+
+/* ─── FAB ─────────────────────────────────────── */
+.fab { position:fixed; bottom:24px; right:24px; width:52px; height:52px; background:var(--gold); border-radius:14px; display:none; align-items:center; justify-content:center; cursor:pointer; z-index:200; transition:all .2s; box-shadow:0 4px 20px rgba(212,168,67,.3); }
+.fab:hover { transform:scale(1.05); }
+.fab svg { width:20px; color:#111; }
+.fab-badge { position:absolute; top:-5px; right:-5px; width:18px; height:18px; background:var(--red); color:#fff; font-family:var(--mono); font-size:9px; font-weight:700; border-radius:50%; display:none; align-items:center; justify-content:center; }
+.fab-badge.show { display:flex; }
+.mob-ov { display:none; position:fixed; inset:0; top:var(--topbar); background:rgba(0,0,0,.7); z-index:88; }
+.mob-ov.show { display:block; }
+
+/* ─── TOAST ────────────────────────────────────── */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(60px); background:var(--bg3); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:12px 20px; font-size:13px; z-index:9998; transition:transform .3s cubic-bezier(.22,.68,0,1.1); display:flex; align-items:center; gap:10px; pointer-events:none; white-space:nowrap; max-width:90vw; }
+.toast.show { transform:translateX(-50%) translateY(0); }
+.t-dot { width:7px; height:7px; border-radius:50%; background:var(--gold); flex-shrink:0; }
+
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:2px; }
+
+/* ─── MOBILE ───────────────────────────────────── */
+@media (max-width:960px) {
+  .kpi-strip { grid-template-columns:1fr 1fr; }
+  .kpi:nth-child(even) { border-right:none; }
+  .kpi { border-bottom:1px solid var(--border2); }
+  .pgrid { grid-template-columns:1fr 1fr; }
+  .pgrid .pcard:first-child { grid-column:span 2; }
+}
+@media (max-width:768px) {
+  .sidebar { transform:translateX(-100%); transition:transform .3s cubic-bezier(.22,.68,0,1.1); z-index:150; }
+  .sidebar.mob-open { transform:translateX(0); }
+  .topbar { padding-left:12px; }
+  .main { left:0; }
+  .mob-ham { display:flex; }
+  .cartbtn { display:none; }
+  .fab { display:flex; }
+  .t-info, .t-divider, .pl-badge { display:none; }
+  .dash-hero { padding:32px 24px; }
+  .dash-h { font-size:36px; }
+  .dash-body { padding:24px; }
+  .cat-hero { padding:32px 24px 24px; }
+  .cat-h { font-size:34px; }
+  .pgrid { grid-template-columns:1fr; }
+  .pgrid .pcard:first-child { grid-column:span 1; }
+  .pcard:first-child .pimg, .pimg { height:240px; }
+  .cart-panel { width:100%; border-left:none; }
+  .co-layout { grid-template-columns:1fr; }
+  .co-right { border-left:none; border-top:1px solid var(--border2); }
+  .co-left, .co-right { padding:28px 24px; }
+  .co-h { font-size:32px; margin-bottom:28px; }
+  .ord-wrap, .track-wrap { padding:36px 24px; }
+  .ord-h, .track-h { font-size:34px; }
+  .conf-wrap { padding:48px 24px; }
+  .conf-h { font-size:40px; }
+  .pm-top { height:240px; }
+  .pm-body { padding:22px 22px 18px; }
+  .pm-name { font-size:26px; }
+  .pm-rel-grid { grid-template-columns:1fr 1fr; }
+  .pm-bundle-row { flex-direction:column; }
+  .pm-buy { flex-wrap:wrap; }
+  .pm-add { min-width:100%; }
+  .fg2 { grid-template-columns:1fr; }
+  .rec-grid { grid-template-columns:repeat(2,1fr); }
+  .kpi-strip { grid-template-columns:1fr; }
+}
+@media (max-width:480px) {
+  .rec-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="l-brand">Prolux <span>Shine</span></div>
+  <div class="l-sub">B2B-portal · Bilvårdsprodukter</div>
+  <div class="l-bar"><div class="l-fill" id="lfill"></div></div>
+</div>
+
+<div id="login" style="display:flex">
+  <div class="lbox">
+    <div class="l-logo">Prolux <span>Shine</span></div>
+    <div class="l-tagline">B2B-portal för återförsäljare</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="swAuth('login',this)">Logga in</button>
+      <button class="auth-tab" onclick="swAuth('register',this)">Skapa konto</button>
+    </div>
+    <div class="ap active" id="ap-login">
+      <div class="lf"><label>E-post</label><input id="l-em" type="email" value="stefan@detailingproffs.se" placeholder="namn@foretag.se"></div>
+      <div class="lf"><label>Lösenord</label><input id="l-pw" type="password" value="prolux2024" placeholder="••••••••"></div>
+      <div class="lf"><label>Prislista</label>
+        <select id="l-pl">
+          <option value="Standard">Standard — Listapriser</option>
+          <option value="C">C — Volymkund (–20%)</option>
+          <option value="B" selected>B — Återförsäljare (–30%)</option>
+          <option value="A">A — Strategisk partner (–40%)</option>
+        </select>
+      </div>
+      <div class="lerr" id="lerr">Fel lösenord, försök igen</div>
+      <button class="lbtn" onclick="doLogin()">Logga in</button>
+      <div class="lhint">Demo: valfri e-post · lösenord <b>prolux2024</b></div>
+    </div>
+    <div class="ap" id="ap-register">
+      <div class="lf"><label>Företag *</label><input id="r-co" placeholder="AB Bolaget"></div>
+      <div class="lf-row">
+        <div class="lf"><label>Förnamn *</label><input id="r-fn" placeholder="Anna"></div>
+        <div class="lf"><label>Efternamn *</label><input id="r-ln" placeholder="Lindqvist"></div>
+      </div>
+      <div class="lf"><label>E-post *</label><input id="r-em" type="email" placeholder="anna@bolaget.se"></div>
+      <div class="lf"><label>Lösenord *</label><input id="r-pw" type="password" placeholder="Minst 6 tecken"></div>
+      <div class="lerr" id="rerr">Kontrollera fälten och försök igen</div>
+      <button class="lbtn" onclick="doRegister()">Skapa konto</button>
+      <div class="lhint">Ditt konto granskas och aktiveras av ProLuxShine inom 24h. Du tilldelas rätt prislista vid godkännande.</div>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="mob-ov" id="mob-ov" onclick="closeMob()"></div>
+
+  <div class="topbar">
+    <button class="mob-ham" onclick="toggleMob()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    <div class="t-brand">Prolux <span>Shine</span></div>
+    <div class="t-divider"></div>
+    <div class="t-crumb" id="tbc">Dashboard</div>
+    <div class="t-right">
+      <div class="t-info">Inloggad som <strong id="t-em">—</strong></div>
+      <div class="pl-badge" id="t-pl">B</div>
+      <div class="cartbtn" onclick="toggleCart()">
+        <svg fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <div class="cbadge" id="cbadge">0</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-brand">Prolux <span>Shine</span></div>
+      <div class="sb-tagline">B2B-portal</div>
+    </div>
+    <div class="sb-nav">
+      <span class="sb-section">Navigera</span>
+      <div class="sbi active" id="sbi-dashboard" onclick="nav('dashboard')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</div>
+      <div class="sbi" id="sbi-catalog" onclick="nav('catalog')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Produkter</div>
+      <div class="sbi" id="sbi-orders" onclick="nav('orders')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mina ordrar</div>
+      <div class="sbi" id="sbi-tracking" onclick="nav('tracking')"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Spåra order</div>
+    </div>
+    <div class="sb-footer">
+      <div class="sb-user" id="sb-em">—</div>
+      <div class="sb-role">Inloggad kund</div>
+      <button class="sb-logout" onclick="doLogout()"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logga ut</button>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="view active" id="view-dashboard">
+      <div class="dash-hero">
+        <div class="dash-welcome">Välkommen tillbaka</div>
+        <div class="dash-h">Bilvård på <em>proffsnivå</em></div>
+        <div class="dash-sub" id="dash-sub">Din kontoöversikt</div>
+      </div>
+      <div class="kpi-strip" id="kpi-row"></div>
+      <div class="dash-body">
+        <div class="dash-section">
+          <div class="dash-section-head">
+            <div class="dash-section-title">Senaste ordrar</div>
+            <button class="dash-section-link" onclick="nav('orders')">Visa alla →</button>
+          </div>
+          <table class="dash-tbl"><thead><tr><th>Order #</th><th>Datum</th><th>Belopp</th><th>Status</th></tr></thead><tbody id="dash-orders"></tbody></table>
+        </div>
+        <div id="rec-section" style="display:none">
+          <div class="dash-section-head">
+            <div class="dash-section-title rec-label">Rekommenderat för dig</div>
+          </div>
+          <div class="rec-personal-sub" id="rec-personal-sub"></div>
+          <div class="rec-grid" id="rec-strip"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATALOG -->
+    <div class="view" id="view-catalog">
+      <!-- MODAL -->
+      <div class="pm-ov" id="pm-ov" onclick="if(event.target===this)closePM()">
+        <div class="pm-box">
+          <button class="pm-x" onclick="closePM()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          <div class="pm-top" id="pm-top"><div class="pm-top-grad"></div></div>
+          <div class="pm-body">
+            <span class="pm-brand" id="pm-brand"></span>
+            <div class="pm-name" id="pm-name"></div>
+            <div class="pm-desc" id="pm-desc"></div>
+            <div class="pm-specs" id="pm-meta"></div>
+            <div class="pm-buy">
+              <div><span class="pm-price-label">Ditt pris</span><div><span class="pm-pr" id="pm-pr">0 kr</span><span class="pm-orig" id="pm-orig"></span></div></div>
+              <div class="pm-qty-wrap"><button class="pm-qb" onclick="pmQ(-1)">−</button><span class="pm-qv" id="pm-qty">1</span><button class="pm-qb" onclick="pmQ(1)">+</button></div>
+              <button class="pm-add" onclick="addFromPM()">Lägg i varukorg</button>
+            </div>
+          </div>
+          <div class="pm-bundle hide" id="pm-bundle"></div>
+          <div class="pm-related hide" id="pm-related">
+            <div class="pm-related-hd"><span class="pm-related-title">Passar bra ihop med</span></div>
+            <div class="pm-related-grid" id="pm-related-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cat-hero">
+        <span class="cat-overline">Produktkatalog</span>
+        <div class="cat-h">Virtus &amp; Frescura <em>Sverige</em></div>
+        <div class="pl-pill" id="pl-pill"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:13px"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg><span id="pl-pill-txt">Prislista B</span></div>
+        <div class="ai-wrap">
+          <span class="ai-label">Smart sökning</span>
+          <div class="ai-row">
+            <input class="ai-inp" id="ai-q" placeholder='Sök — "fälgrengöring", "tar bort repor", "förtvätt"…' oninput="onSearchInput()">
+            <button class="ai-btn" id="ai-btn" onclick="onSearchInput()">Sök</button>
+          </div>
+          <div class="ai-status" id="ai-status"><span id="ai-status-txt"></span></div>
+        </div>
+        <div class="cat-filters" id="cat-filters"><button class="chip active" onclick="fCat(this,'all')">Alla</button></div>
+      </div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+
+    <!-- CHECKOUT -->
+    <div class="view" id="view-checkout">
+      <div class="co-layout">
+        <div class="co-left">
+          <span class="co-eyebrow">Kassa</span>
+          <div class="co-h">Slutför din order</div>
+          <div class="co-section">
+            <span class="co-sec-title">Leveransuppgifter</span>
+            <div class="fg2"><div class="fg"><label>Förnamn *</label><input id="f-fn" placeholder="Stefan"></div><div class="fg"><label>Efternamn *</label><input id="f-ln" placeholder="Lindqvist"></div></div>
+            <div class="fg"><label>Företag</label><input id="f-co" placeholder="AB Bolaget"></div>
+            <div class="fg"><label>Adress</label><input id="f-adr" placeholder="Storgatan 1"></div>
+            <div class="fg2"><div class="fg"><label>Postnummer</label><input id="f-zip" placeholder="111 22"></div><div class="fg"><label>Stad *</label><input id="f-city" placeholder="Stockholm"></div></div>
+          </div>
+          <div class="co-section">
+            <span class="co-sec-title">Kontakt & Referens</span>
+            <div class="fg2"><div class="fg"><label>E-post *</label><input id="f-email" type="email"></div><div class="fg"><label>Telefon</label><input id="f-phone" placeholder="+46 70 …"></div></div>
+            <div class="fg"><label>Er referens</label><input id="f-ref" placeholder="Valfritt"></div>
+            <div class="fg"><label>Kampanjkod</label>
+              <div class="camp-field"><input class="camp-inp" id="camp-code" placeholder="Ange kod…" oninput="this.value=this.value.toUpperCase()"><button class="camp-sub" onclick="applyCampaign()">Använd</button></div>
+              <div class="camp-ok" id="camp-ok"></div><div class="camp-err" id="camp-err">Ogiltig eller utgången kod</div>
+            </div>
+          </div>
+          <button class="cobtn" onclick="placeOrder()">Bekräfta order</button>
+        </div>
+        <div class="co-right">
+          <div class="co-sum-title">Orderöversikt</div>
+          <div id="co-items"></div>
+          <div class="co-div"></div>
+          <div class="co-disc-row" id="co-disc-row"><span>Kampanjrabatt</span><span id="co-disc-val">0 kr</span></div>
+          <div class="co-total-row"><span class="co-total-lbl">Totalt exkl. moms</span><span class="co-tot" id="co-tot">0 kr</span></div>
+          <div class="co-vat">Exkl. 25% moms</div>
+          <button class="co-back" onclick="nav('catalog')">← Fortsätt handla</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="view" id="view-orders">
+      <div class="ord-wrap">
+        <span class="ord-eyebrow">Historik</span>
+        <div class="ord-h">Mina <em>ordrar</em></div>
+        <table class="otbl"><thead><tr><th>Order #</th><th>Datum</th><th>Produkter</th><th>Belopp</th><th>Status</th><th></th></tr></thead><tbody id="otbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- TRACKING -->
+    <div class="view" id="view-tracking">
+      <div class="track-wrap">
+        <button class="track-back" onclick="nav('orders')">← Tillbaka till ordrar</button>
+        <span class="track-eyebrow">Orderstatus</span>
+        <div class="track-h">Spåra <em>order</em></div>
+        <div class="track-nr" id="track-nr">Välj en order från listan</div>
+        <div class="track-timeline" id="track-timeline"></div>
+      </div>
+    </div>
+
+    <!-- CONFIRM -->
+    <div class="view" id="view-confirm">
+      <div class="conf-wrap">
+        <span class="conf-eyebrow">Beställning mottagen</span>
+        <span class="conf-nr" id="conf-nr">Order #—</span>
+        <div class="conf-h">Order lagd!</div>
+        <div class="conf-sub">Bekräftelse skickas till din e-post. Faktura skapas automatiskt i Visma och transportbolaget aviseras.</div>
+        <div class="int-steps">
+          <div class="int-step"><div class="int-dot"></div><div class="int-text"><div class="int-name">Orderbekräftelse</div><div class="int-desc">Skickas till din e-post</div></div><div class="int-ok">✓ Skickat</div></div>
+          <div class="int-step"><div class="int-dot"></div><div class="int-text"><div class="int-name">Visma eEkonomi</div><div class="int-desc" id="visma-txt">Faktura skapas</div></div><div class="int-ok">✓ Skapad</div></div>
+          <div class="int-step"><div class="int-dot"></div><div class="int-text"><div class="int-name">Transportorder</div><div class="int-desc" id="trp-txt">Avisering skickad</div></div><div class="int-ok">✓ Aviserat</div></div>
+        </div>
+        <div class="conf-det" id="conf-det"></div>
+        <button class="pbtn" onclick="nav('orders')">Se mina ordrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CART -->
+  <div class="cart-panel" id="cart-panel">
+    <div class="cp-hd"><div class="cp-title">Varukorg</div><button class="cp-cls" onclick="toggleCart()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="cp-items" id="cp-items"></div>
+    <div class="cart-sugg" id="cart-sugg" style="display:none"><span class="cart-sugg-lbl">Passa ihop med</span><div class="sugg-items" id="sugg-items"></div></div>
+    <div class="cp-foot">
+      <div class="cp-row"><span>Delsumma</span><span id="c-sub">0 kr</span></div>
+      <div class="cp-row"><span>Moms (25%)</span><span id="c-vat">0 kr</span></div>
+      <div class="cp-disc-row" id="cp-disc-row"><span>Kampanjrabatt</span><span id="cp-disc-val">0 kr</span></div>
+      <div class="cp-row big"><span>Totalt inkl. moms</span><span class="cv" id="c-tot">0 kr</span></div>
+      <button class="pbtn" onclick="goCheckout()">Gå till kassa</button>
+      <button class="sbtn" onclick="toggleCart()">Fortsätt handla</button>
+    </div>
+  </div>
+
+  <div class="fab" id="fab" onclick="toggleCart()">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    <div class="fab-badge" id="fab-badge">0</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="t-dot"></div><span id="toast-txt"></span></div>
+
+<script>
+function g(id){return document.getElementById(id)||{textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},value:''};}
+
+const SB='https://fopshubqliboxgokbhnr.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvcHNodWJxbGlib3hnb2tiaG5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDIzNjAsImV4cCI6MjA5NTM3ODM2MH0.K9M5lM4DZ6IYxCee4zGHVLDmy7ONUmCyFOgFtalkLu0';
+const sb=supabase.createClient(SB,SK);
+
+const DISC={Standard:0,C:.2,B:.3,A:.4};
+const ICON={polish:'✨',wash:'🧴',protection:'🛡️',wheel:'⚙️',wheels:'⚙️',interior:'🪑',exterior:'🚗',degreaser:'🧪'};
+const BG={polish:'rgba(200,160,48,.06)',wash:'rgba(90,154,224,.06)',protection:'rgba(61,170,106,.06)',wheel:'rgba(200,144,42,.06)',wheels:'rgba(200,144,42,.06)',interior:'rgba(192,120,200,.06)',exterior:'rgba(200,80,48,.06)',degreaser:'rgba(80,160,80,.06)'};
+const SL={draft:'Utkast',pending:'Väntande',confirmed:'Bekräftad',packed:'Packad',shipped:'Skickad',delivered:'Levererad',cancelled:'Avbruten'};
+const SC={draft:'s-draft',pending:'s-pending',confirmed:'s-confirmed',packed:'s-confirmed',shipped:'s-shipped',delivered:'s-delivered',cancelled:'s-cancelled'};
+
+let user={email:'',pl:'B'},aiIds=null,pmProd=null,pmQty=1;
+
+// ── STATISK FALLBACK-DATA (laddas alltid, Supabase är bonus) ──
+const STATIC_PRODS = [
+  {id:'p1',sku:'FRE-RAP-5L', name:'RAPIDET',                     description:'Högeffektivt, alkalibaserat tvåkomponentstvättmedel. Maximal rengöringskraft för professionell biltvätt och detailing.',                                                                            category_id:'wash',     brand:'Frescura',    list_price:595,  unit:'st', stock_qty:80,  badge:'top',  active:true, sort_order:1,  image_url:'https://proluxshine.com/wp-content/uploads/2025/11/a7ffd562-aac2-42c5-88f6-d350075d4335.png'},
+  {id:'p2',sku:'FRE-GRP-5L', name:'GREEN POWER – Förtvätt',       description:'Ledande alkalisk avfettning för professionell förtvätt. Superkoncentrerad formel (späds 1:60–1:100), exceptionell mot trafikfilm, fett och insekter.',                                               category_id:'wash',     brand:'Frescura',    list_price:545,  unit:'st', stock_qty:65,  badge:'new',  active:true, sort_order:2,  image_url:'https://proluxshine.com/wp-content/uploads/2025/11/0f8717d1-b018-49b3-a835-3a186b110a6a.png'},
+  {id:'p3',sku:'FRE-RIM-1L', name:'RIMS PLUS',                    description:'Superkoncentrerat, alkaliskt rengöringsmedel för effektiv rengöring av lättmetallfälgar, motorer och chassi. Rekommenderas för alla fälgtyper.',                                                       category_id:'wheels',   brand:'Frescura',    list_price:345,  unit:'st', stock_qty:90,  badge:null,   active:true, sort_order:3,  image_url:'https://proluxshine.com/wp-content/uploads/2025/11/575e0484-c009-464e-9f7a-418cc1d58b63.png'},
+  {id:'p4',sku:'FRE-GLC-2L', name:'GOMMALUCE – Däckglans',        description:'Superkoncentrerat, vattenbaserat däckglans. Imponerande glans och långvarigt skydd mot väder och smuts. Säkert för alla däcktyper.',                                                                  category_id:'wheels',   brand:'Frescura',    list_price:295,  unit:'st', stock_qty:110, badge:null,   active:true, sort_order:4,  image_url:'https://proluxshine.com/wp-content/uploads/2025/11/Gommaluce.png'},
+  {id:'p5',sku:'FRE-SET-1L', name:'SETA – Hydrokeramiskt Vax',    description:'Superkoncentrerat hydrokeramiskt vax med enastående poleringseffekt. Löser upp vatten omedelbart, ger hydrofobt och långvarigt skydd.',                                                               category_id:'polish',   brand:'Frescura',    list_price:895,  unit:'st', stock_qty:45,  badge:'top',  active:true, sort_order:5,  image_url:'https://proluxshine.com/wp-content/uploads/2025/11/df6ba40f-db61-4143-8776-5a7ef0a21a70.png'},
+  {id:'p6',sku:'FRE-GLL-2L', name:'GOMMALUX LIQUIDO',             description:'Ger långvarig, högblank yta. Bildar skyddsbarriär mot UV och väder, förhindrar smuts och förenklar rengöring.',                                                                                      category_id:'exterior', brand:'Frescura',    list_price:445,  unit:'st', stock_qty:55,  badge:null,   active:true, sort_order:6,  image_url:'https://proluxshine.com/wp-content/uploads/2025/11/IMG_7192-Edited-scaled.png'},
+  {id:'p7',sku:'FRE-MAG-1L', name:'MAGIC – Vinyl & Plast',        description:'Finish Magic Lemon — glansmedel för vinyl, plast och gummi. Ger djup, långvarig glans och skydd mot UV-strålning och torkning.',                                                                      category_id:'interior', brand:'Frescura',    list_price:275,  unit:'st', stock_qty:75,  badge:null,   active:true, sort_order:7,  image_url:'https://proluxshine.com/wp-content/uploads/2025/11/80690ec5-7dbc-4158-a0b7-f7612e6d36c5.png'},
+  {id:'p8',sku:'PLS-VOR-5L', name:'VORTEX PRO – Kallavfettning',  description:'Effektiv lågaromatisk kallavfettning. Löser snabbt upp asfalt, olja och fett. Perfekt för rengöring av bilens underdel där smutsen sitter som hårdast.',                                             category_id:'degreaser',brand:'Prolux Shine',list_price:495,  unit:'st', stock_qty:60,  badge:'new',  active:true, sort_order:8,  image_url:'https://proluxshine.com/wp-content/uploads/2024/02/IMG_8356-scaled.png'},
+  {id:'p9',sku:'PLS-FPG-160',name:'FOAM PAD – Medium/Hård 160mm', description:'Professionell polertrissa för medium till hårt arbete. Passar för one-step-polering och borttagning av djupare repor. Kompatibel med alla standard polermaskinsfästen.',                             category_id:'polish',   brand:'Prolux Shine',list_price:145,  unit:'st', stock_qty:120, badge:null,   active:true, sort_order:9,  image_url:'https://proluxshine.com/wp-content/uploads/2024/06/IMG_3023-removebg-preview.png'},
+  {id:'p10',sku:'VIR-AKT-5L',name:'VIRTUS AKTIVT SKUM 5L',        description:'pH-neutralt aktivt skum för handtvätt och skumkanon. Hög skumkraft, säker för alla lackytor och vax-kompatibel formel.',                                                                            category_id:'wash',     brand:'Virtus',      list_price:395,  unit:'st', stock_qty:100, badge:null,   active:true, sort_order:10, image_url:null},
+  {id:'p11',sku:'VIR-FAL-1L',name:'VIRTUS FÄLGRENGÖRING 1L',      description:'Syrafri järnlösare med färgskiftande indikator. IP-Safe formula — säker för alla fälgtyper inklusive nylackerade och polerade.',                                                                      category_id:'wheels',   brand:'Virtus',      list_price:285,  unit:'st', stock_qty:85,  badge:null,   active:true, sort_order:11, image_url:null},
+  {id:'p12',sku:'VIR-ONE-500',name:'VIRTUS ONE STEP COMPOUND',     description:'All-in-one polish för snabb och effektiv lackförbättring. Tar bort repor, virvelmärken och oxidering i ett steg. Fungerar utmärkt med maskin eller hand.',                                           category_id:'polish',   brand:'Virtus',      list_price:545,  unit:'st', stock_qty:50,  badge:null,   active:true, sort_order:12, image_url:null},
+];
+const STATIC_CATS = [
+  {id:'wash',     name:'Schampo & Förtvätt', sort_order:1},
+  {id:'wheels',   name:'Fälg & Däck',        sort_order:2},
+  {id:'polish',   name:'Polering & Lackskydd',sort_order:3},
+  {id:'exterior', name:'Exteriör',            sort_order:4},
+  {id:'interior', name:'Interiör',            sort_order:5},
+  {id:'degreaser',name:'Avfettning',          sort_order:6},
+];
+
+let prods=[...STATIC_PRODS],cats=[...STATIC_CATS];
+let cart=JSON.parse(localStorage.getItem('pls_c')||'[]');
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',()=>{
+  // Statisk data är redan laddad — visa login direkt
+  const lf=document.getElementById('lfill');
+  lf.style.width='100%';
+  setTimeout(()=>{
+    document.getElementById('loader')?.classList.add('out');
+    document.getElementById('login').style.display='flex';
+  },600);
+  // Försök hämta från Supabase i bakgrunden
+  loadProds();
+  syncBadge();renderCart();
+});
+
+// ── AUTH ──
+function swAuth(tab,el){
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ap').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const apEl=document.getElementById('ap-'+tab);if(apEl)apEl.classList.add('active');
+}
+
+async function doLogin(){
+  const em=document.getElementById('l-em').value.trim();
+  const pw=document.getElementById('l-pw').value;
+  const pl=document.getElementById('l-pl').value;
+  if(pw!=='prolux2024'||!em){document.getElementById('lerr').style.display='block';return;}
+  document.getElementById('lerr').style.display='none';
+  user={email:em,pl};
+  (document.getElementById('t-em')||{textContent:''}).textContent=em;
+  const pb=document.getElementById('t-pl');
+  pb.textContent=pl;pb.className='pl-pill';
+  document.getElementById('f-email').value=em;
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  // Hämta kundens prislista från Supabase (admin kan ha ändrat den)
+  try{
+    const{data:custData}=await sb.from('customers')
+      .select('price_list_id,company,contact_name')
+      .eq('email',user.email).maybeSingle();
+    if(custData?.price_list_id){
+      user.pl=custData.price_list_id;
+      user.company=custData.company||'';
+    }
+  }catch(e){/* Behåller vald prislista */}
+  buildFilters();updatePLInfo();
+  nav('dashboard');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display==='flex')doLogin();});
+
+async function doRegister(){
+  const co=document.getElementById('r-co').value.trim();
+  const fn=document.getElementById('r-fn').value.trim();
+  const ln=document.getElementById('r-ln').value.trim();
+  const em=document.getElementById('r-em').value.trim();
+  const pw=document.getElementById('r-pw').value;
+  const err=document.getElementById('rerr');
+  if(!co||!fn||!ln||!em||pw.length<6){err.style.display='block';return;}
+  err.style.display='none';
+  const{error}=await sb.auth.signUp({email:em,password:pw,options:{data:{company:co,full_name:fn+' '+ln}}});
+  if(error){err.style.display='block';err.textContent=error.message;return;}
+  await sb.from('customers').upsert({email:em,company:co,contact_name:fn+' '+ln,price_list_id:'Standard',status:'prospect'},{onConflict:'email'});
+  toast('Konto skapat! ProLuxShine aktiverar det inom kort.');
+  swAuth('login',document.querySelector('.auth-tab'));
+}
+
+function doLogout(){
+  cart=[];saveCart();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login').style.display='flex';
+  document.getElementById('l-pw').value='';
+}
+
+// ── MOBILE ──
+function toggleMob(){document.getElementById('sidebar')?.classList.toggle('mob-open');document.getElementById('mob-ov')?.classList.toggle('show');}
+function closeMob(){document.getElementById('sidebar')?.classList.remove('mob-open');document.getElementById('mob-ov')?.classList.remove('show');}
+
+// ── NAV ──
+function nav(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.sbi').forEach(x=>x.classList.remove('active'));
+  const vEl=document.getElementById('view-'+v);if(vEl)vEl.classList.add('active');
+  const s=document.getElementById('sbi-'+v);if(s)s.classList.add('active');
+  const labs={dashboard:'Dashboard',catalog:'Produkter',orders:'Mina ordrar',checkout:'Kassa',confirm:'Orderbekräftelse'};
+  (document.getElementById('tbc')||{textContent:''}).textContent=labs[v]||'';
+  document.getElementById('cart-panel')?.classList.remove('open');
+  closeMob();
+  if(v==='dashboard'){
+    (async()=>{try{const{data:o}=await sb.from('orders').select('*,order_items(*)').order('created_at',{ascending:false});if(o)orders=o;}catch(e){}renderDash();})();
+  }
+  if(v==='catalog'){renderProds();loadProds(true);}
+  if(v==='orders'){
+    (async()=>{try{const{data:o}=await sb.from('orders').select('*,order_items(*)').order('created_at',{ascending:false});if(o)orders=o;}catch(e){}renderOrders();})();
+  }
+  if(v==='checkout')renderCheckout();
+}
+
+// ── PRICING ──
+function pr(lp){return Math.round(lp*(1-DISC[user.pl]));}
+function fmt(n){return Number(n||0).toLocaleString('sv-SE');}
+
+function updatePLInfo(){
+  const d=Math.round(DISC[user.pl]*100);
+  g('pl-pill-txt').textContent=d?`Prislista ${user.pl} — ${d}% rabatt`:`Standard — listapriser`;
+  g('dash-sub').textContent=`Inloggad: ${user.email} · Prislista ${user.pl}`;
+}
+
+// ── CATALOG ──
+function buildFilters(){
+  const f=g('cat-filters');
+  f.innerHTML=`<div class="chip active" onclick="fCat(this,'all')">Alla</div>`
+    +cats.map(c=>`<div class="chip" onclick="fCat(this,'${c.id}')">${c.name}</div>`).join('');
+}
+
+function fCat(el,cat){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  aiIds=null;
+  document.getElementById('ai-q').value='';
+  document.getElementById('ai-status')?.classList.remove('show');
+  renderProds(cat);
+}
+
+let curCat='all';
+
+async function loadProds(refresh=false){
+  try{
+    const[{data:p},{data:c}]=await Promise.all([
+      sb.from('products').select('*').eq('active',true).order('sort_order'),
+      sb.from('categories').select('*').order('sort_order')
+    ]);
+    if(p&&p.length){
+      prods=p;cats=c||[];
+      buildFilters();
+      if(refresh) renderProds(); // Uppdatera katalogen live
+    }
+  }catch(e){/* Behåller statisk data som fallback */}
+}
+
+function renderProds(cat){
+  if(cat!==undefined)curCat=cat;
+  const grid=g('pgrid');
+  let list=prods;
+  if(aiIds!==null){list=prods.filter(p=>aiIds.includes(p.id));}
+  else if(curCat!=='all'){list=prods.filter(p=>p.category_id===curCat);}
+  if(!list.length){grid.innerHTML=`<div style="grid-column:1/-1;padding:80px;text-align:center"><div class="empty-gem"></div><p class="empty" style="padding:0;color:var(--txt3);letter-spacing:.08em">Inga produkter hittades</p></div>`;return;}
+  const catMap=cats.reduce((a,c)=>({...a,[c.id]:c.name}),{});
+  const disc=DISC[user.pl]>0;
+  grid.innerHTML=list.map(p=>{
+    const p2=pr(p.list_price);
+    const bg=BG[p.category_id]||'rgba(200,160,48,.04)';
+    const ico=ICON[p.category_id]||'📦';
+    return `<div class="pcard" onclick="openPM('${p.id}')">
+      <div class="pimg" style="background:${p.image_url?'var(--s2)':bg}">${p.image_url?`<img src="${p.image_url}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:''}<div class="pimg-bg" style="background:${bg};position:absolute;inset:0;display:${p.image_url?'none':'block'}"></div><div class="pico" style="display:${p.image_url?'none':'block'}">${ico}</div>
+        ${p.badge==='top'?'<div class="pbadge b-top">Bästsäljare</div>':''}
+        ${p.badge==='new'?'<div class="pbadge b-new">Nyhet</div>':''}
+      </div>
+      <div class="pbody">
+        <div class="pcat">${catMap[p.category_id]||'Produkt'}</div>
+        <div class="pname">${p.name}</div>
+        <div class="pdesc">${p.description||''}</div>
+        <div class="pfoot">
+          <div><div class="pprice-lbl">Ditt pris / ${p.unit}</div>
+            <div class="pprice">${fmt(p2)} <span>kr${disc?`<span class="porig">${fmt(p.list_price)} kr</span>`:''}</span></div>
+          </div>
+          <button class="addbtn" onclick="event.stopPropagation();addToCart('${p.id}','${p.name.replace(/'/g,"\\'")}',${p.list_price},'${p.unit}','${p.sku}','${ico}')">
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── AI SEARCH ──
+async function aiSearch(){
+  const q=document.getElementById('ai-q').value.trim();
+  if(!q)return;
+  const btn=document.getElementById('ai-btn');
+  const st=document.getElementById('ai-status');
+  btn.disabled=true;st.classList.add('show');
+  g('ai-status-txt').textContent='Söker…';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  const list=prods.map(p=>`${p.id}|${p.name}|${p.description||''}|${p.category_id}|${p.brand}`).join('\n');
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,
+        system:'Returnera ENBART en JSON-array med produkt-IDs som matchar söktermen, sorterade efter relevans. Format: {"ids":["id1","id2"]}',
+        messages:[{role:'user',content:`Sökterm: "${q}"\n\nProdukter:\n${list}`}]})});
+    const d=await r.json();
+    const t=(d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
+    aiIds=JSON.parse(t).ids||[];
+    g('ai-status-txt').textContent=`AI hittade ${aiIds.length} produkt${aiIds.length!==1?'er':''} för "${q}"`;
+  }catch{
+    aiIds=null;curCat='all';
+    g('ai-status-txt').textContent=`Visar alla produkter`;
+  }
+  btn.disabled=false;
+  renderProds();
+}
+
+// ── PRODUCT MODAL ──
+function openPM(id){
+  // Guard: only run when catalog view is active
+  if(!document.getElementById('pm-ov')) return;
+  pmProd=prods.find(p=>p.id===id);if(!pmProd)return;
+  pmQty=1;
+  const disc=DISC[user.pl]>0;
+  const p2=pr(pmProd.list_price);
+  const ico=ICON[pmProd.category_id]||'📦';
+  const bg=BG[pmProd.category_id]||'rgba(200,160,48,.04)';
+  const catMap=cats.reduce((a,c)=>({...a,[c.id]:c.name}),{});
+  const stk=pmProd.stock_qty||0;
+  const stkTxt=stk===0?'Slutsålt':stk<10?`${stk} kvar`:stk<30?`${stk} i lager`:'På lager';
+  const stkColor=stk===0?'var(--red)':stk<10?'var(--amber)':'var(--green)';
+  (document.getElementById('pm-top') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).innerHTML = pmProd.image_url
+    ? `<img src="${pmProd.image_url}" alt="${pmProd.name}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`
+    : `<div style="position:absolute;inset:0;background:${bg}"></div><div class="pm-ico">${ico}</div>`;
+  (document.getElementById('pm-brand') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).textContent=pmProd.brand;
+  (document.getElementById('pm-name') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).textContent=pmProd.name;
+  (document.getElementById('pm-desc') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).textContent=pmProd.description||'';
+  (document.getElementById('pm-meta') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).innerHTML=`
+    <div class="pm-mi"><div class="pm-ml">Kategori</div><div class="pm-mv">${catMap[pmProd.category_id]||'—'}</div></div>
+    <div class="pm-mi"><div class="pm-ml">Enhet</div><div class="pm-mv">${pmProd.unit}</div></div>
+    <div class="pm-mi"><div class="pm-ml">Lager</div><div class="pm-mv" style="color:${stkColor}">${stkTxt}</div></div>
+    ${pmProd.badge?`<div class="pm-mi"><div class="pm-ml">Badge</div><div class="pm-mv" style="color:var(--g1)">${pmProd.badge==='top'?'Bästsäljare':'Nyhet'}</div></div>`:''}`;
+  (document.getElementById('pm-pr') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).textContent=fmt(p2)+' kr';
+  (document.getElementById('pm-orig') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).textContent=disc?fmt(pmProd.list_price)+' kr':'';
+  (document.getElementById('pm-qty') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).textContent=pmQty;
+  renderRelated(pmProd);
+  trackProductView(pmProd.id);
+  (document.getElementById('pm-ov') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}})?.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closePM(){(document.getElementById('pm-ov') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}})?.classList.remove('open');document.body.style.overflow='';}
+function pmQ(d){pmQty=Math.max(1,pmQty+d);(document.getElementById('pm-qty') || {textContent:'',innerHTML:'',style:{},classList:{add:()=>{},remove:()=>{}},classList:{add:()=>{},remove:()=>{}},dataset:{}}).textContent=pmQty;}
+function addFromPM(){
+  if(!pmProd)return;
+  const ico=ICON[pmProd.category_id]||'📦';
+  const ex=cart.find(c=>c.id===pmProd.id);
+  if(ex)ex.qty+=pmQty;
+  else cart.push({id:pmProd.id,name:pmProd.name,lp:pmProd.list_price,unit:pmProd.unit,sku:pmProd.sku,ico,up:pr(pmProd.list_price),qty:pmQty});
+  saveCart();renderCart();syncBadge();
+  toast(`${pmProd.name} × ${pmQty} tillagd`);
+  closePM();
+  document.getElementById('cart-panel')?.classList.add('open');
+}
+
+// ── CART ──
+function addToCart(id,name,lp,unit,sku,ico){
+  const ex=cart.find(c=>c.id===id);
+  if(ex)ex.qty++;
+  else cart.push({id,name,lp,unit,sku,ico,up:pr(lp),qty:1});
+  saveCart();renderCart();syncBadge();
+  toast(name+' tillagd');
+  document.getElementById('cart-panel')?.classList.add('open');
+}
+
+function renderCart(){
+  const el=g('cp-items');
+  if(!cart.length){
+    el.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:14px"><div style="width:44px;height:44px;background:var(--s4);clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);opacity:.3"></div><p style="font-size:11px;color:var(--txt3);letter-spacing:.1em">Varukorgen är tom</p></div>`;
+  }else{
+    el.innerHTML=cart.map(it=>`
+      <div class="ci">
+        <div class="ci-thumb">${it.ico}</div>
+        <div class="ci-body">
+          <div class="ci-name">${it.name}</div>
+          <div class="ci-price">${fmt(it.up)} kr / ${it.unit}</div>
+          <div class="ci-ctrl">
+            <button class="qb" onclick="cQ('${it.id}',-1)">−</button>
+            <span class="qv">${it.qty}</span>
+            <button class="qb" onclick="cQ('${it.id}',1)">+</button>
+            <span class="ci-sub">${fmt(it.up*it.qty)} kr</span>
+            <button class="ci-del" onclick="delItem('${it.id}')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+  const subRaw=cart.reduce((a,c)=>a+c.up*c.qty,0);
+  const disc=calcDiscount(subRaw);
+  const sub=subRaw-disc;
+  const vat=Math.round(sub*.25);
+  renderCartSuggestions();
+  document.getElementById('c-sub').textContent=fmt(sub)+' kr';
+  document.getElementById('c-vat').textContent=fmt(vat)+' kr';
+  document.getElementById('c-tot').textContent=fmt(sub+vat)+' kr';
+}
+
+function cQ(id,d){const it=cart.find(c=>c.id===id);if(it)it.qty=Math.max(1,it.qty+d);saveCart();renderCart();syncBadge();}
+function delItem(id){cart=cart.filter(c=>c.id!==id);saveCart();renderCart();syncBadge();}
+function toggleCart(){document.getElementById('cart-panel')?.classList.toggle('open');}
+function syncBadge(){
+  const t=cart.reduce((a,c)=>a+c.qty,0);
+  const b=document.getElementById('cbadge');b.textContent=t;b.classList.toggle('show',t>0);
+  const fb=document.getElementById('fab-badge');fb.textContent=t;fb.classList.toggle('show',t>0);
+}
+function saveCart(){localStorage.setItem('pls_c',JSON.stringify(cart));}
+
+// ── CHECKOUT ──
+function goCheckout(){if(!cart.length){toast('Varukorgen är tom');return;}document.getElementById('cart-panel')?.classList.remove('open');nav('checkout');}
+
+// ── KAMPANJKODER ─────────────────────────────────────────────
+let activeCampaign = null;
+
+async function applyCampaign() {
+  const code = (document.getElementById('camp-code')||{value:''}).value.trim().toUpperCase();
+  const okEl  = document.getElementById('camp-ok');
+  const errEl = document.getElementById('camp-err');
+  if(okEl)  okEl.style.display  = 'none';
+  if(errEl) errEl.style.display = 'none';
+  if(!code) return;
+
+  const { data } = await sb.from('campaigns')
+    .select('*').eq('code', code).eq('active', true).maybeSingle();
+
+  if(!data) {
+    if(errEl){ errEl.textContent='Ogiltig eller utgången kod'; errEl.style.display='block'; }
+    activeCampaign = null; renderCheckout(); return;
+  }
+
+  const today = new Date().toISOString().slice(0,10);
+  if((data.valid_to && data.valid_to < today) || (data.valid_from > today)) {
+    if(errEl){ errEl.textContent='Koden är inte giltig just nu'; errEl.style.display='block'; }
+    activeCampaign = null; renderCheckout(); return;
+  }
+
+  activeCampaign = data;
+  const discText = data.discount_type==='percent'
+    ? `${data.discount_value}% rabatt`
+    : `${fmt(data.discount_value)} kr rabatt`;
+  if(okEl){ okEl.textContent=`✓ ${data.name} — ${discText} tillämpad`; okEl.style.display='block'; }
+  renderCheckout();
+}
+
+function calcDiscount(subtotal) {
+  if(!activeCampaign) return 0;
+  if(subtotal < (activeCampaign.min_order_amount||0)) return 0;
+  if(activeCampaign.discount_type==='percent')
+    return Math.round(subtotal * activeCampaign.discount_value / 100);
+  return Math.min(activeCampaign.discount_value, subtotal);
+}
+
+function renderCheckout(){
+  const sub=cart.reduce((a,c)=>a+c.up*c.qty,0);
+  const disc=calcDiscount(sub);
+  const final=sub-disc;
+  g('co-items').innerHTML=cart.map(it=>`
+    <div class="co-item">
+      <div><div class="co-in">${it.name}</div><div class="co-is">${it.qty} × ${fmt(it.up)} kr / ${it.unit}</div></div>
+      <div class="co-ip">${fmt(it.qty*it.up)} kr</div>
+    </div>`).join('');
+  const discRow=g('co-disc-row');
+  if(disc>0){discRow.style.display='flex';g('co-disc-val').textContent='-'+fmt(disc)+' kr';}
+  else{discRow.style.display='none';}
+  g('co-tot').textContent=fmt(final)+' kr';
+}
+
+async function placeOrder(){
+  const fn=document.getElementById('f-fn').value.trim();
+  const ln=document.getElementById('f-ln').value.trim();
+  const em=document.getElementById('f-email').value.trim();
+  const city=document.getElementById('f-city').value.trim();
+  if(!fn||!ln||!em||!city){toast('Fyll i obligatoriska fält *');return;}
+  const subRaw=cart.reduce((a,c)=>a+c.up*c.qty,0);
+  const disc=calcDiscount(subRaw);
+  const sub=subRaw-disc;
+  const vat=Math.round(sub*.25);
+  const{data:cust}=await sb.from('customers').select('id').eq('email',user.email).limit(1).single();
+  const vid=`VIS-${new Date().getFullYear()}-${Math.floor(Math.random()*9000)+1000}`;
+  const tid=`TRP-${Math.floor(Math.random()*90000)+10000}`;
+  const{data:order,error}=await sb.from('orders').insert({
+    customer_id:cust?.id||null,status:'pending',price_list_id:user.pl,
+    delivery_name:`${fn} ${ln}`,delivery_address:document.getElementById('f-adr').value,
+    delivery_city:city,delivery_zip:document.getElementById('f-zip').value,
+    customer_ref:document.getElementById('f-ref').value,
+    subtotal:sub,vat_amount:vat,total:sub+vat,
+    email_sent_at:new Date().toISOString(),visma_invoice_id:vid,transport_order_id:tid
+  }).select().single();
+  if(error){toast('Fel: '+error.message);return;}
+  await sb.from('order_items').insert(cart.map(c=>({order_id:order.id,product_id:c.id,product_name:c.name,product_sku:c.sku,qty:c.qty,unit_price:c.up,list_price:c.lp,total_price:c.up*c.qty})));
+  await sb.from('integration_log').insert([
+    {order_id:order.id,type:'email',status:'success',payload:{to:em},response:{id:'eml_'+order.id.slice(0,8)}},
+    {order_id:order.id,type:'visma',status:'success',payload:{amount:sub+vat},response:{invoice_id:vid}},
+    {order_id:order.id,type:'transport',status:'success',payload:{city},response:{tracking:tid}},
+  ]);
+  g('conf-nr').textContent=`Order #${order.order_nr}`;
+  g('visma-txt').textContent=`Faktura ${vid} skapad`;
+  g('trp-txt').textContent=`Transportorder ${tid}`;
+  g('conf-det').innerHTML=`
+    <div class="cdr"><span>Mottagare</span><strong>${fn} ${ln}</strong></div>
+    <div class="cdr"><span>E-post</span><strong>${em}</strong></div>
+    <div class="cdr"><span>Stad</span><strong>${city}</strong></div>
+    <div class="cdr"><span>Belopp</span><strong>${fmt(sub)} kr exkl. moms</strong></div>
+    <div class="cdr"><span>Betalningsvillkor</span><strong>30 dagar netto</strong></div>`;
+  cart=[];saveCart();renderCart();syncBadge();
+  nav('confirm');
+}
+
+// ── DASHBOARD ──
+async function renderDash(){
+  const{data:cust}=await sb.from('customers').select('id').eq('email',user.email).limit(1).single();
+  let orders=[];
+  if(cust){const{data:o}=await sb.from('orders').select('*').eq('customer_id',cust.id).order('created_at',{ascending:false});orders=o||[];}
+  const spent=orders.reduce((a,o)=>a+Number(o.subtotal||0),0);
+  const pend=orders.filter(o=>['pending','confirmed','packed'].includes(o.status)).length;
+  const disc=Math.round(DISC[user.pl]*100);
+  g('kpi-row').innerHTML=`
+    <div class="kpi"><div class="kpi-l">Totalt ordrar</div><div class="kpi-v">${orders.length}</div><div class="kpi-s">totalt</div></div>
+    <div class="kpi"><div class="kpi-l">Totalt handlat</div><div class="kpi-v">${fmt(spent)}</div><div class="kpi-s">kr exkl. moms</div></div>
+    <div class="kpi"><div class="kpi-l">Under behandling</div><div class="kpi-v" ${pend?'style="background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent"':''}>${pend}</div><div class="kpi-s">under behandling</div></div>
+    <div class="kpi"><div class="kpi-l">Din rabatt</div><div class="kpi-v" style="background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${disc||0}%</div><div class="kpi-s">prislista ${user.pl}</div></div>`;
+  const tbody=g('dash-orders');
+  if(!orders.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--txt3);font-size:12px;letter-spacing:.08em">Inga ordrar ännu. Gå till katalogen för att beställa.</td></tr>`;return;}
+  // Rekommendationer baserat på orderhistorik
+  if(orders.length){
+    const orderedCats=[...new Set(orders.flatMap(o=>{
+      const sku=o.order_items?.[0]?.product_sku;
+      const p=prods.find(x=>x.sku===sku||x.id===o.order_items?.[0]?.product_id);
+      return p?[p.category_id]:[];
+    }))];
+    const boughtIds=orders.flatMap(o=>(o.order_items||[]).map(i=>i.product_id)).filter(Boolean);
+    loadPersonalRecommendations();
+  } else {
+    loadPersonalRecommendations();
+  }
+  tbody.innerHTML=orders.slice(0,6).map(o=>`
+    <tr onclick="nav('orders')" style="cursor:pointer">
+      <td><span class="onr">#${o.order_nr}</span></td>
+      <td>${new Date(o.created_at).toLocaleDateString('sv-SE')}</td>
+      <td>${fmt(o.subtotal)} kr</td>
+      <td><span class="ostatus ${SC[o.status]||'s-draft'}">${SL[o.status]||o.status}</span></td>
+    </tr>`).join('');
+}
+
+
+// ── ORDERS ──
+async function renderOrders(){
+  const{data:cust}=await sb.from('customers').select('id').eq('email',user.email).limit(1).single();
+  if(!cust){g('otbody').innerHTML=`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--txt3);font-size:12px">Inga ordrar hittades</td></tr>`;return;}
+  const{data:orders}=await sb.from('orders').select('*,order_items(product_name,qty,product_id)').eq('customer_id',cust.id).order('created_at',{ascending:false});
+  if(!orders?.length){g('otbody').innerHTML=`<tr><td colspan="6" style="text-align:center;padding:60px;color:var(--txt3);font-size:12px">Inga ordrar ännu</td></tr>`;return;}
+  g('otbody').innerHTML=orders.map(o=>{
+    const items=(o.order_items||[]).map(i=>i.product_name).join(', ');
+    return `<tr>
+      <td><span class="onr">#${o.order_nr}</span></td>
+      <td>${new Date(o.created_at).toLocaleDateString('sv-SE')}</td>
+      <td style="font-size:11px;color:var(--txt3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${items}</td>
+      <td>${fmt(o.subtotal)} kr</td>
+      <td><span class="ostatus ${SC[o.status]||'s-draft'}">${SL[o.status]||o.status}</span></td>
+      <td style="display:flex;gap:6px">
+        <button class="reo-btn" onclick="openTracking('${o.id}','${o.order_nr}','${o.status}')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:11px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Spåra
+        </button>
+        <button class="reo-btn" onclick="quickReorder('${o.id}')"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.34"/></svg>Beställ igen</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function quickReorder(orderId){
+  const{data:items}=await sb.from('order_items').select('*').eq('order_id',orderId);
+  if(!items?.length){toast('Inga produkter hittades');return;}
+  let added=0;
+  for(const it of items){
+    const p=prods.find(x=>x.id===it.product_id||x.sku===it.product_sku);
+    if(!p)continue;
+    const ex=cart.find(c=>c.id===p.id);
+    const ico=ICON[p.category_id]||'📦';
+    if(ex)ex.qty+=it.qty;
+    else cart.push({id:p.id,name:p.name,lp:p.list_price,unit:p.unit,sku:p.sku,ico,up:pr(p.list_price),qty:it.qty});
+    added++;
+  }
+  saveCart();renderCart();syncBadge();
+  toast(`${added} produkt${added!==1?'er':''} lagda i varukorg`);
+  document.getElementById('cart-panel')?.classList.add('open');
+}
+
+// ── TOAST ──
+function toast(msg){const t=document.getElementById('toast');document.getElementById('toast-txt').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+</script>
+</body>
+</html>
