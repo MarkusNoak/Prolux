@@ -78,10 +78,14 @@ export default function CrmCustomersPage() {
   const [noteType, setNoteType]       = useState<'note'|'call'|'email'|'meeting'>('note')
   const [toast, setToast]             = useState('')
   const [reminders, setReminders]     = useState<Reminder[]>([])
-  const [allReminders, setAllReminders] = useState<Reminder[]>([]) // all customers' reminders for badge counts
+  const [allReminders, setAllReminders] = useState<Reminder[]>([])
   const [reminderText, setReminderText] = useState('')
   const [reminderDate, setReminderDate] = useState('')
   const [reminderPriority, setReminderPriority] = useState<ReminderPriority>('normal')
+  // New customer modal
+  const [showNewCustomer, setShowNewCustomer] = useState(false)
+  const [newCustomerForm, setNewCustomerForm] = useState({ company: '', contact_name: '', email: '', phone: '', city: '', org_nr: '', price_list_id: 'Standard' as string })
+  const [savingCustomer, setSavingCustomer] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -161,6 +165,25 @@ export default function CrmCustomersPage() {
     setReminders(rs => rs.filter(r => r.id !== id))
   }
 
+  async function saveNewCustomer() {
+    if (!newCustomerForm.company.trim() || !newCustomerForm.email.trim()) return
+    setSavingCustomer(true)
+    const { data, error } = await supabase.from('customers').insert({
+      ...newCustomerForm,
+      status: 'active',
+    }).select().single()
+    if (!error && data) {
+      setCustomers(cs => [...cs, data].sort((a, b) => a.company.localeCompare(b.company)))
+      setShowNewCustomer(false)
+      setNewCustomerForm({ company: '', contact_name: '', email: '', phone: '', city: '', org_nr: '', price_list_id: 'Standard' })
+      selectCustomer(data)
+      showToast('Kund skapad!')
+    } else {
+      showToast('Fel: ' + (error?.message || 'Kunde inte spara'))
+    }
+    setSavingCustomer(false)
+  }
+
   function sendOffer() {
     if (!selected) return
     const sub = `Offert från ProLuxShine — ${selected.company}`
@@ -211,7 +234,7 @@ export default function CrmCustomersPage() {
         <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Kunder</span>
-            <button style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'var(--gold)', border: 'none', borderRadius: 6, color: '#111', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={() => setShowNewCustomer(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', background: 'var(--gold)', border: 'none', borderRadius: 6, color: '#111', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
               <Plus size={12} /> Ny kund
             </button>
           </div>
@@ -651,6 +674,60 @@ export default function CrmCustomersPage() {
         <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', padding: '12px 20px', fontSize: 13, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 4px 20px rgba(0,0,0,.4)' }}>
           <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)' }} />
           {toast}
+        </div>
+      )}
+
+      {/* ── NEW CUSTOMER MODAL ─────────────────────────────── */}
+      {showNewCustomer && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, padding: 32, width: '100%', maxWidth: 520 }}>
+            <div style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 500, color: 'var(--text)', marginBottom: 24 }}>Ny kund</div>
+
+            {[
+              { label: 'Företagsnamn *', key: 'company', placeholder: 'AB Bilservice', type: 'text' },
+              { label: 'Kontaktperson *', key: 'contact_name', placeholder: 'Erik Lindgren', type: 'text' },
+              { label: 'E-post *', key: 'email', placeholder: 'erik@foretag.se', type: 'email' },
+              { label: 'Telefon', key: 'phone', placeholder: '08-123 45 67', type: 'tel' },
+              { label: 'Stad', key: 'city', placeholder: 'Stockholm', type: 'text' },
+              { label: 'Org.nr', key: 'org_nr', placeholder: '556123-4567', type: 'text' },
+            ].map(({ label, key, placeholder, type }) => (
+              <div key={key} style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</label>
+                <input
+                  type={type}
+                  value={(newCustomerForm as any)[key]}
+                  onChange={e => setNewCustomerForm(f => ({ ...f, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  style={{ width: '100%', padding: '9px 13px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, fontFamily: 'var(--font-sans)', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+            ))}
+
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>Prislista</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {['A', 'B', 'C', 'Standard'].map(pl => (
+                  <button key={pl} onClick={() => setNewCustomerForm(f => ({ ...f, price_list_id: pl }))}
+                    style={{ flex: 1, padding: '8px 4px', background: newCustomerForm.price_list_id === pl ? 'rgba(232,184,75,.1)' : 'var(--bg3)', border: `1px solid ${newCustomerForm.price_list_id === pl ? 'var(--gold)' : 'var(--border)'}`, borderRadius: 8, color: newCustomerForm.price_list_id === pl ? 'var(--gold)' : 'var(--text3)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                    {pl}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6 }}>
+                {newCustomerForm.price_list_id === 'A' ? 'Platinum — 40% rabatt' : newCustomerForm.price_list_id === 'B' ? 'Gold — 30% rabatt' : newCustomerForm.price_list_id === 'C' ? 'Silver — 20% rabatt' : 'Utan rabatt (listavis)'}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowNewCustomer(false)} style={{ flex: 1, padding: 11, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text2)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                Avbryt
+              </button>
+              <button onClick={saveNewCustomer} disabled={savingCustomer || !newCustomerForm.company || !newCustomerForm.email}
+                style={{ flex: 2, padding: 11, background: 'var(--gold)', color: '#111', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-sans)', opacity: (savingCustomer || !newCustomerForm.company || !newCustomerForm.email) ? 0.6 : 1 }}>
+                {savingCustomer ? 'Sparar…' : 'Skapa kund'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
