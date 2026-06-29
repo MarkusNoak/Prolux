@@ -98,7 +98,7 @@ export default function CrmPipelinePage() {
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text3)' }}>Laddar pipeline...</div>
 
   return (
-    <div style={{ padding: 24, height: 'calc(100vh - 58px)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ padding: '16px 14px', height: 'calc(100vh - 58px)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexShrink: 0 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', margin: 0 }}>Pipeline</h1>
@@ -112,7 +112,7 @@ export default function CrmPipelinePage() {
       </div>
 
       {/* Kanban board */}
-      <div style={{ display: 'flex', gap: 14, flex: 1, overflow: 'auto', paddingBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 14, flex: 1, overflow: 'auto', paddingBottom: 16, scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}>
         {DEAL_STAGES.map(stage => {
           const color = STAGE_COLORS[stage]
           const columnDeals = stageDeals(stage)
@@ -120,7 +120,7 @@ export default function CrmPipelinePage() {
             <div key={stage}
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); if (dragging) moveToStage(dragging, stage) }}
-              style={{ flex: '0 0 240px', display: 'flex', flexDirection: 'column', background: 'var(--bg3)', borderRadius: 12, border: '1px solid var(--line)', overflow: 'hidden' }}
+              style={{ flex: '0 0 min(240px, 85vw)', scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', background: 'var(--bg3)', borderRadius: 12, border: '1px solid var(--line)', overflow: 'hidden' }}
             >
               <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)', background: `${color}10` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

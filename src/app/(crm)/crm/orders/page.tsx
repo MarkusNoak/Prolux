@@ -22,6 +22,15 @@ export default function CrmOrdersPage() {
   const [toast, setToast] = useState('')
   const [discount, setDiscount] = useState('')
   const [discountEnabled, setDiscountEnabled] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [showMobileCart, setShowMobileCart] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
   const [delivery, setDelivery] = useState('Direkt')
   const [placing, setPlacing] = useState(false)
 
@@ -124,8 +133,8 @@ export default function CrmOrdersPage() {
           <Plus size={15} /> Ny order
         </button>
       </div>
-      <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <div style={{ background: 'var(--bg3)', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 480 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               {['Order', 'Datum', 'Kund', 'Summa inkl. moms', 'Status'].map(h => (
@@ -293,11 +302,12 @@ export default function CrmOrdersPage() {
   )
 
   // ── NEW ORDER VIEW ─────────────────────────────────────────
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0)
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 58px)', overflow: 'hidden' }}>
 
       {/* LEFT: customer + products */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '16px 14px' : '24px 20px', paddingBottom: isMobile && cart.length > 0 ? 90 : undefined }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Skapa ny order</h1>
           <button onClick={() => setView('history')} style={{ background: 'none', border: 'none', color: 'var(--text3)', fontSize: 12, cursor: 'pointer' }}>
@@ -394,8 +404,59 @@ export default function CrmOrdersPage() {
         </div>
       </div>
 
-      {/* RIGHT: cart sidebar */}
-      <div style={{ width: 320, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg2)', flexShrink: 0 }}>
+      {/* Mobile: floating cart button */}
+      {isMobile && cart.length > 0 && !showMobileCart && (
+        <button onClick={() => setShowMobileCart(true)} style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', background: 'var(--gold)', border: 'none', borderRadius: 30, color: '#111', fontSize: 14, fontWeight: 700, padding: '14px 28px', cursor: 'pointer', zIndex: 500, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 4px 20px rgba(232,184,75,.4)' }}>
+          <ShoppingCart size={18} />
+          Varukorg ({cartCount}) · {fmt(subtotal)} kr
+        </button>
+      )}
+
+      {/* Mobile: cart overlay */}
+      {isMobile && showMobileCart && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.6)', zIndex: 400 }} onClick={() => setShowMobileCart(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--bg2)', borderRadius: '16px 16px 0 0', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Varukorg</span>
+              <button onClick={() => setShowMobileCart(false)} style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 20 }}>×</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1, padding: '12px 16px' }}>
+              {cart.map(i => {
+                const hasDiscount = i.unitPrice < i.product.list_price
+                return (
+                  <div key={i.product.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--line2)' }}>
+                    <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{i.product.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)' }}>{i.qty} × {fmt(i.unitPrice)} kr{hasDiscount ? ` (ord. ${fmt(i.product.list_price)})` : ''}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button onClick={() => updateQty(i.product.id, -1)} style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--bg4)', border: '1px solid var(--line)', color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Minus size={12} /></button>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', minWidth: 20, textAlign: 'center' }}>{i.qty}</span>
+                      <button onClick={() => updateQty(i.product.id, 1)} style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--bg4)', border: '1px solid var(--line)', color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={12} /></button>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginLeft: 12, minWidth: 60, textAlign: 'right' }}>{fmt(i.qty * i.unitPrice)} kr</div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ padding: '14px 20px', borderTop: '1px solid var(--line)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text2)', marginBottom: 6 }}>
+                <span>Moms (25%)</span><span>{fmt(Math.round(subtotal * 0.25))} kr</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>
+                <span>Totalt inkl. moms</span><span style={{ color: 'var(--gold)' }}>{fmt(subtotal + Math.round(subtotal * 0.25))} kr</span>
+              </div>
+              <button onClick={() => { setView('confirm'); setShowMobileCart(false) }} disabled={!selectedCustomer}
+                style={{ width: '100%', padding: 14, background: selectedCustomer ? 'var(--gold)' : 'var(--bg4)', border: 'none', borderRadius: 10, color: selectedCustomer ? '#111' : 'var(--text3)', fontSize: 15, fontWeight: 700, cursor: selectedCustomer ? 'pointer' : 'not-allowed' }}>
+                {selectedCustomer ? 'Gå till kassan →' : 'Välj kund först'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RIGHT: cart sidebar (desktop only) */}
+      <div style={{ width: 320, borderLeft: '1px solid var(--line)', display: isMobile ? 'none' : 'flex', flexDirection: 'column', background: 'var(--bg2)', flexShrink: 0 }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Varukorg</span>
           {selectedCustomer && <span style={{ fontSize: 12, color: 'var(--text2)' }}>{selectedCustomer.company}</span>}

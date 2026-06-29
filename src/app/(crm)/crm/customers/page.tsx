@@ -74,6 +74,15 @@ export default function CrmCustomersPage() {
   const [loading, setLoading]         = useState(true)
   const [search, setSearch]           = useState('')
   const [tab, setTab]                 = useState<Tab>('overview')
+  const [mobileShowDetail, setMobileShowDetail] = useState(false)
+  const [isMobile, setIsMobile]       = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
   const [noteText, setNoteText]       = useState('')
   const [noteType, setNoteType]       = useState<'note'|'call'|'email'|'meeting'>('note')
   const [toast, setToast]             = useState('')
@@ -116,6 +125,7 @@ export default function CrmCustomersPage() {
   async function selectCustomer(c: Customer) {
     setSelected(c)
     setTab('overview')
+    if (window.innerWidth < 768) setMobileShowDetail(true)
 
     // Use prefetch cache if available — instant load
     const cached = prefetchCache.current.get(c.id)
@@ -252,7 +262,7 @@ export default function CrmCustomersPage() {
     <div style={{ display: 'flex', height: 'calc(100vh - 58px)' }}>
 
       {/* ── LEFT: Customer list ──────────────────────────── */}
-      <div style={{ width: 300, flexShrink: 0, borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg2)' }}>
+      <div style={{ width: isMobile ? '100%' : 300, flexShrink: 0, borderRight: isMobile ? 'none' : '1px solid var(--line)', display: isMobile && mobileShowDetail ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg2)' }}>
         <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Kunder</span>
@@ -302,10 +312,15 @@ export default function CrmCustomersPage() {
 
       {/* ── RIGHT: Detail panel ──────────────────────────── */}
       {selected ? (
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', display: isMobile && !mobileShowDetail ? 'none' : 'flex', flexDirection: 'column', minWidth: 0 }}>
 
           {/* Header */}
-          <div style={{ padding: '20px 28px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg2)', flexShrink: 0 }}>
+          <div style={{ padding: isMobile ? '14px 16px 12px' : '20px 28px 16px', borderBottom: '1px solid var(--line)', background: 'var(--bg2)', flexShrink: 0 }}>
+            {isMobile && (
+              <button onClick={() => setMobileShowDetail(false)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: 'var(--text2)', fontSize: 13, cursor: 'pointer', marginBottom: 12, padding: 0 }}>
+                ← Tillbaka till kunder
+              </button>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -320,13 +335,15 @@ export default function CrmCustomersPage() {
                   <a href={`mailto:${selected.email}`} style={{ color: 'var(--text2)', textDecoration: 'none' }}>{selected.email}</a>
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 <a href={`mailto:${selected.email}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', background: 'rgba(74,143,212,.1)', border: '1px solid rgba(74,143,212,.2)', borderRadius: 7, color: 'var(--blue)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
                   <Mail size={13} /> Mail
                 </a>
-                <button onClick={sendOffer} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.2)', borderRadius: 7, color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  <FileText size={13} /> Skicka offert
-                </button>
+                {!isMobile && (
+                  <button onClick={sendOffer} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.2)', borderRadius: 7, color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    <FileText size={13} /> Skicka offert
+                  </button>
+                )}
                 <Link href="/crm/orders" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
                   <Plus size={13} /> Ny order
                 </Link>
