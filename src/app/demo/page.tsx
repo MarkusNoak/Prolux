@@ -2,8 +2,9 @@
 // Demo page – no auth required, uses mock data to showcase the CRM UI
 import { useState } from 'react'
 import { Plus, Minus, Search, ShoppingCart, Package, ArrowLeft, ChevronDown, Tag, Truck,
-         LayoutDashboard, GitBranch, Users, FileText, LogOut, Menu, X, Diamond,
+         LayoutDashboard, GitBranch, Users, FileText, LogOut, Menu, X,
          Clock, ChevronRight, Eye, TrendingUp, Target, ShoppingBag } from 'lucide-react'
+import Image from 'next/image'
 import { fmt, custPrice } from '@/lib/utils'
 import type { Customer, Product, CartItem, PriceList } from '@/types'
 
@@ -53,11 +54,8 @@ function CrmShell({ screen, setScreen, children }: { screen: Screen, setScreen: 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <header style={{ height: 58, background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', paddingInline: 20, gap: 12, position: 'sticky', top: 0, zIndex: 100 }}>
-        <button onClick={() => setScreen('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: 0 }}>
-          <div style={{ width: 30, height: 30, background: 'var(--gold)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Diamond size={16} color="#111" fill="#111" />
-          </div>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 15, fontWeight: 700, color: 'var(--gold)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>ProLux Shine</span>
+        <button onClick={() => setScreen('dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: 0, display: 'flex', alignItems: 'center' }}>
+          <Image src="/logo.svg" alt="Prolux Shine" width={130} height={38} priority style={{ display: 'block' }} />
         </button>
         <nav style={{ display: 'none', gap: 4, flex: 1, justifyContent: 'center' }} className="desktop-nav-demo">
           {NAV.map(({ key, label, icon: Icon }) => {

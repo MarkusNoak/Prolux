@@ -3,7 +3,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
-import { LayoutDashboard, GitBranch, Users, ShoppingCart, LogOut, Menu, X, Diamond } from 'lucide-react'
+import { LayoutDashboard, GitBranch, Users, ShoppingCart, LogOut, Menu, X } from 'lucide-react'
+import Image from 'next/image'
 
 const NAV = [
   { href: '/crm/dashboard', label: 'Översikt',  icon: LayoutDashboard },
@@ -43,22 +44,8 @@ export default function CrmShell({ children }: { children: React.ReactNode }) {
       }}>
 
         {/* Logo */}
-        <Link href="/crm/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', flexShrink: 0, marginRight: 8 }}>
-          <div style={{
-            width: 28, height: 28,
-            background: 'var(--gold)',
-            borderRadius: 7,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Diamond size={14} color="#111" fill="#111" />
-          </div>
-          <span style={{
-            fontFamily: 'var(--font-serif)',
-            fontSize: 16,
-            fontWeight: 500,
-            color: 'var(--gold)',
-            letterSpacing: '0.01em',
-          }}>Prolux <em>Shine</em></span>
+        <Link href="/crm/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 8 }}>
+          <Image src="/logo.svg" alt="Prolux Shine" width={130} height={38} priority style={{ display: 'block' }} />
         </Link>
 
         {/* Desktop nav */}
