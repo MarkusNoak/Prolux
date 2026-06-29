@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Customer, Order, OrderItem, Activity, PRICE_LIST_LABEL } from '@/types'
 import { fmt, formatDate, custPrice } from '@/lib/utils'
@@ -87,26 +87,49 @@ export default function CrmCustomersPage() {
   const [newCustomerForm, setNewCustomerForm] = useState({ company: '', contact_name: '', email: '', phone: '', city: '', org_nr: '', price_list_id: 'Standard' as string })
   const [savingCustomer, setSavingCustomer] = useState(false)
 
+  // Prefetch cache: customer id → data
+  const prefetchCache = useRef<Map<string, { orders: any[]; activities: any[]; reminders: any[] }>>(new Map())
+
   useEffect(() => {
     Promise.all([
-      supabase.from('customers').select('*').order('company'),
+      supabase.from('customers').select('id,company,contact_name,email,phone,city,org_nr,price_list_id,status,notes,last_order_at,created_at').order('company'),
       supabase.from('products').select('id,name').eq('active', true),
       supabase.from('reminders').select('id,customer_id,due_date,status').eq('status', 'upcoming'),
     ]).then(([{ data: c }, { data: p }, { data: r }]) => {
-      if (c) setCustomers(c)
+      if (c) setCustomers(c as Customer[])
       if (p) setAllProductNames(p.map((x: any) => x.name))
       if (r) setAllReminders(r as any[])
       setLoading(false)
     })
   }, [])
 
+  async function prefetchCustomer(c: Customer) {
+    if (prefetchCache.current.has(c.id)) return
+    const [{ data: o }, { data: a }, { data: r }] = await Promise.all([
+      supabase.from('orders').select('id,order_nr,status,total,subtotal,vat_amount,created_at,order_items(id,product_name,product_sku,qty,unit_price,list_price,total_price)').eq('customer_id', c.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('activities').select('id,type,title,body,created_by,created_at').eq('customer_id', c.id).order('created_at', { ascending: false }).limit(30),
+      supabase.from('reminders').select('*').eq('customer_id', c.id).order('due_date', { ascending: true }),
+    ])
+    prefetchCache.current.set(c.id, { orders: o || [], activities: a || [], reminders: r || [] })
+  }
+
   async function selectCustomer(c: Customer) {
     setSelected(c)
     setTab('overview')
 
+    // Use prefetch cache if available — instant load
+    const cached = prefetchCache.current.get(c.id)
+    if (cached) {
+      setOrders(cached.orders)
+      setOrderItems(cached.orders.flatMap((o: any) => o.order_items || []))
+      setActivities(cached.activities)
+      setReminders(cached.reminders)
+      return
+    }
+
     const [{ data: o }, { data: a }, { data: r }] = await Promise.all([
-      supabase.from('orders').select('*,order_items(*)').eq('customer_id', c.id).order('created_at', { ascending: false }).limit(20),
-      supabase.from('activities').select('*').eq('customer_id', c.id).order('created_at', { ascending: false }).limit(30),
+      supabase.from('orders').select('id,order_nr,status,total,subtotal,vat_amount,created_at,order_items(id,product_name,product_sku,qty,unit_price,list_price,total_price)').eq('customer_id', c.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('activities').select('id,type,title,body,created_by,created_at').eq('customer_id', c.id).order('created_at', { ascending: false }).limit(30),
       supabase.from('reminders').select('*').eq('customer_id', c.id).order('due_date', { ascending: true }),
     ])
     if (o) {
@@ -246,13 +269,20 @@ export default function CrmCustomersPage() {
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Laddar...</div>
+            <div style={{ padding: '8px 0' }}>
+              {[1,2,3,4,5].map(i => (
+                <div key={i} style={{ padding: '13px 14px', borderBottom: '1px solid var(--border2)' }}>
+                  <div style={{ height: 13, width: `${55 + i * 7}%`, background: 'var(--bg3)', borderRadius: 4, marginBottom: 8, animation: 'pulse 1.5s ease infinite' }} />
+                  <div style={{ height: 11, width: '40%', background: 'var(--bg3)', borderRadius: 4, opacity: 0.6, animation: 'pulse 1.5s ease infinite' }} />
+                </div>
+              ))}
+            </div>
           ) : filtered.map(c => {
             const isActive = selected?.id === c.id
             // Count overdue reminders for badge
             const overdueCount = allReminders.filter(r => r.customer_id === c.id && r.due_date < today).length
             return (
-              <div key={c.id} onClick={() => selectCustomer(c)}
+              <div key={c.id} onClick={() => selectCustomer(c)} onMouseEnter={() => prefetchCustomer(c)}
                 style={{ padding: '13px 14px', borderBottom: '1px solid var(--border2)', cursor: 'pointer', background: isActive ? 'rgba(232,184,75,.07)' : 'transparent', borderLeft: `3px solid ${isActive ? 'var(--gold)' : 'transparent'}`, transition: 'all .12s' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontWeight: 600, fontSize: 13, color: isActive ? 'var(--gold)' : 'var(--text)', marginBottom: 2 }}>{c.company}</div>

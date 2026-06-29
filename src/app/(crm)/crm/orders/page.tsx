@@ -27,9 +27,9 @@ export default function CrmOrdersPage() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('orders').select('*,customers(*)').order('created_at', { ascending: false }).limit(50),
-      supabase.from('customers').select('*').eq('status', 'active').order('company'),
-      supabase.from('products').select('*').eq('active', true).order('sort_order')
+      supabase.from('orders').select('id,order_nr,status,total,created_at,customers(id,company)').order('created_at', { ascending: false }).limit(50),
+      supabase.from('customers').select('id,company,contact_name,price_list_id,city').eq('status', 'active').order('company'),
+      supabase.from('products').select('id,sku,name,brand,unit,list_price,stock_qty,active').eq('active', true).order('sort_order')
     ]).then(([o, c, p]) => {
       if (o.data) setOrders(o.data)
       if (c.data) setCustomers(c.data)
