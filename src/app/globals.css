@@ -21,36 +21,131 @@
 }
 
 :root {
-  --bg: #0F1115;
-  --bg2: #161920;
-  --bg3: #1E2128;
-  --bg4: #252830;
-  --border: rgba(255,255,255,.07);
+  --bg:    #0F1115;
+  --bg2:   #161920;
+  --bg3:   #1E2128;
+  --bg4:   #252830;
+  --bg5:   #2E3140;
+  --line:  rgba(255,255,255,.07);
+  --line2: rgba(255,255,255,.04);
+  /* legacy aliases */
+  --border:  rgba(255,255,255,.07);
   --border2: rgba(255,255,255,.04);
-  --text: #F0EDE8;
+  --text:  #F0EDE8;
   --text2: #9BA0AB;
   --text3: #5C6270;
-  --gold: #E8B84B;
+  --gold:    #E8B84B;
+  --gold2:   #F5CC6A;
   --gold-bg: rgba(232,184,75,.1);
-  --gold-b: rgba(232,184,75,.25);
-  --green: #4CAF7D;
-  --red: #E05252;
-  --blue: #4A8FD4;
-  --amber: #D48A3A;
+  --gold-b:  rgba(232,184,75,.25);
+  --green:   #4CAF7D;
+  --red:     #E05252;
+  --blue:    #4A8FD4;
+  --amber:   #D48A3A;
+  --nav-h:   58px;
+  --f:  'Inter', system-ui, sans-serif;
+  --fs: 'Playfair Display', Georgia, serif;
+  --font-sans:  'Inter', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-mono:  'Roboto Mono', monospace;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
-body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
+/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--bg5); border-radius: 2px; }
 
+/* Focus */
+:focus-visible { outline: 2px solid var(--gold-b); outline-offset: 2px; }
+
+/* Typography helpers */
 .font-serif { font-family: var(--font-serif); }
-.font-mono { font-family: var(--font-mono); }
+.font-mono  { font-family: var(--font-mono); }
 
+/* ── Shared component tokens ─────────────────────────────── */
+
+/* Cards */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line2);
+}
+.card-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+/* Buttons */
+.btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-sans);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all .18s;
+  text-decoration: none;
+}
+.btn-gold   { background: var(--gold); color: #111; }
+.btn-gold:hover { background: var(--gold2); }
+.btn-ghost  { background: transparent; border: 1px solid var(--line); color: var(--text2); }
+.btn-ghost:hover { border-color: rgba(255,255,255,.18); color: var(--text); background: var(--bg3); }
+.btn-sm     { padding: 6px 12px; font-size: 12px; }
+
+/* Price-list chips */
+.chip { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 5px; }
+.pl-A { background: rgba(232,184,75,.15); color: var(--gold); border: 1px solid var(--gold-b); }
+.pl-B { background: rgba(74,143,212,.15); color: #6AAFF0; border: 1px solid rgba(74,143,212,.25); }
+.pl-C { background: rgba(76,175,125,.12); color: #5EC49A; border: 1px solid rgba(76,175,125,.2); }
+.pl-Standard { background: rgba(255,255,255,.06); color: var(--text3); border: 1px solid var(--line); }
+
+/* Status badges */
+.badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 10px; }
+.badge-green  { background: rgba(76,175,125,.12); color: var(--green); }
+.badge-gold   { background: rgba(232,184,75,.1);  color: var(--gold); }
+.badge-blue   { background: rgba(74,143,212,.12); color: var(--blue); }
+.badge-muted  { background: rgba(255,255,255,.05); color: var(--text3); }
+.badge-red    { background: rgba(224,82,82,.12); color: var(--red); }
+
+/* Animations */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  50%       { opacity: .35; }
 }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Table defaults */
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; }
+
+/* Input reset */
+input, select, textarea, button { font-family: inherit; }

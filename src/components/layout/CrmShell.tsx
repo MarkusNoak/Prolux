@@ -1,24 +1,22 @@
 'use client'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { LayoutDashboard, GitBranch, Users, ShoppingCart, LogOut, Menu, X, Diamond } from 'lucide-react'
 
-const supabase = createClient()
-
 const NAV = [
-  { href: '/crm/dashboard', label: 'Översikt', icon: LayoutDashboard },
-  { href: '/crm/pipeline', label: 'Pipeline', icon: GitBranch },
-  { href: '/crm/customers', label: 'Kunder', icon: Users },
-  { href: '/crm/orders', label: 'Ordrar', icon: ShoppingCart },
+  { href: '/crm/dashboard', label: 'Översikt',  icon: LayoutDashboard },
+  { href: '/crm/pipeline',  label: 'Pipeline',  icon: GitBranch },
+  { href: '/crm/customers', label: 'Kunder',    icon: Users },
+  { href: '/crm/orders',    label: 'Ordrar',    icon: ShoppingCart },
 ]
 
 export default function CrmShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const supabase = createClient()
 
   async function logout() {
     await supabase.auth.signOut()
@@ -27,88 +25,99 @@ export default function CrmShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      {/* Top navbar */}
+
+      {/* ── Top navbar ────────────────────────────────────── */}
       <header style={{
-        height: 58,
-        background: 'var(--bg2)',
-        borderBottom: '1px solid var(--border)',
+        height: 'var(--nav-h)',
+        background: 'rgba(15,17,21,.92)',
+        borderBottom: '1px solid var(--line)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         display: 'flex',
         alignItems: 'center',
-        paddingInline: 20,
-        gap: 12,
+        paddingInline: 24,
+        gap: 8,
         position: 'sticky',
         top: 0,
-        zIndex: 100
+        zIndex: 200,
       }}>
+
         {/* Logo */}
-        <Link href="/crm/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
+        <Link href="/crm/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', flexShrink: 0, marginRight: 8 }}>
           <div style={{
-            width: 30,
-            height: 30,
+            width: 28, height: 28,
             background: 'var(--gold)',
-            borderRadius: 6,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            borderRadius: 7,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Diamond size={16} color="#111" fill="#111" />
+            <Diamond size={14} color="#111" fill="#111" />
           </div>
           <span style={{
             fontFamily: 'var(--font-serif)',
-            fontSize: 15,
-            fontWeight: 700,
+            fontSize: 16,
+            fontWeight: 500,
             color: 'var(--gold)',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-          }}>ProLux Shine</span>
+            letterSpacing: '0.01em',
+          }}>Prolux <em>Shine</em></span>
         </Link>
 
         {/* Desktop nav */}
-        <nav style={{ display: 'flex', gap: 4, flex: 1, justifyContent: 'center' }} className="desktop-nav">
+        <nav className="desktop-nav" style={{ display: 'none', gap: 2, flex: 1, justifyContent: 'center' }}>
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href)
             return (
               <Link key={href} href={href} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7,
+                display: 'flex', alignItems: 'center', gap: 7,
                 padding: '7px 14px',
                 borderRadius: 8,
-                background: active ? 'rgba(232,184,75,.1)' : 'transparent',
-                color: active ? 'var(--gold)' : 'var(--text2)',
+                background: active ? 'var(--bg3)' : 'transparent',
+                color: active ? 'var(--text)' : 'var(--text2)',
                 fontSize: 13,
                 fontWeight: active ? 600 : 400,
                 textDecoration: 'none',
-                transition: 'all .15s'
+                transition: 'all .15s',
+                border: 'none',
               }}>
-                <Icon size={15} />
+                <Icon size={15} style={{ opacity: active ? 1 : 0.55, color: active ? 'var(--gold)' : 'currentColor' }} />
                 {label}
               </Link>
             )
           })}
         </nav>
 
-        {/* Desktop logout */}
-        <button onClick={logout} className="desktop-logout" style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '7px 14px',
-          background: 'transparent',
-          border: '1px solid var(--border)',
-          borderRadius: 8,
-          color: 'var(--text3)',
-          fontSize: 12,
-          cursor: 'pointer',
-          flexShrink: 0,
-        }}>
-          <LogOut size={14} /> Logga ut
-        </button>
+        {/* Right side */}
+        <div className="desktop-right" style={{ display: 'none', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          <div style={{
+            width: 32, height: 32,
+            borderRadius: '50%',
+            background: 'var(--bg4)',
+            border: '1px solid var(--line)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'var(--text2)',
+          }} title="Bashar">B</div>
+          <button onClick={logout} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '6px 12px',
+            background: 'transparent',
+            border: '1px solid var(--line)',
+            borderRadius: 8,
+            color: 'var(--text3)',
+            fontSize: 12,
+            cursor: 'pointer',
+            transition: 'all .15s',
+          }}>
+            <LogOut size={13} /> Logga ut
+          </button>
+        </div>
 
         {/* Mobile hamburger */}
         <button
           onClick={() => setMenuOpen(o => !o)}
           className="mobile-menu-btn"
+          aria-label="Menu"
           style={{
             marginLeft: 'auto',
             padding: 8,
@@ -116,60 +125,49 @@ export default function CrmShell({ children }: { children: React.ReactNode }) {
             border: 'none',
             color: 'var(--text)',
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          aria-label="Menu"
-        >
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+          {menuOpen ? <X size={21} /> : <Menu size={21} />}
         </button>
       </header>
 
-      {/* Mobile dropdown menu */}
+      {/* ── Mobile dropdown ───────────────────────────────── */}
       {menuOpen && (
-        <div className="mobile-menu" style={{
+        <div style={{
           position: 'fixed',
-          top: 58,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'var(--bg2)',
-          zIndex: 99,
-          padding: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
+          top: 'var(--nav-h)',
+          left: 0, right: 0, bottom: 0,
+          background: 'rgba(15,17,21,.97)',
+          backdropFilter: 'blur(20px)',
+          zIndex: 199,
+          padding: '16px 16px 32px',
+          display: 'flex', flexDirection: 'column', gap: 6,
+          animation: 'fadeIn .15s ease',
         }}>
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href)
             return (
               <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '14px 16px',
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '15px 18px',
                 borderRadius: 10,
-                background: active ? 'rgba(232,184,75,.1)' : 'var(--bg3)',
+                background: active ? 'rgba(232,184,75,.08)' : 'var(--bg2)',
                 color: active ? 'var(--gold)' : 'var(--text)',
-                fontSize: 15,
-                fontWeight: active ? 600 : 400,
+                fontSize: 15, fontWeight: active ? 600 : 400,
                 textDecoration: 'none',
-                border: active ? '1px solid rgba(232,184,75,.2)' : '1px solid var(--border)',
+                border: `1px solid ${active ? 'var(--gold-b)' : 'var(--line)'}`,
               }}>
-                <Icon size={18} />
+                <Icon size={18} style={{ color: active ? 'var(--gold)' : 'var(--text3)' }} />
                 {label}
               </Link>
             )
           })}
           <div style={{ flex: 1 }} />
           <button onClick={logout} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '14px 16px',
-            background: 'var(--bg3)',
-            border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '15px 18px',
+            background: 'var(--bg2)',
+            border: '1px solid var(--line)',
             borderRadius: 10,
             color: 'var(--text2)',
             fontSize: 15,
@@ -185,13 +183,17 @@ export default function CrmShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <style>{`
-        .desktop-nav { display: none !important; }
-        .desktop-logout { display: none !important; }
+        .desktop-nav   { display: none !important; }
+        .desktop-right { display: none !important; }
         .mobile-menu-btn { display: flex !important; }
         @media (min-width: 768px) {
-          .desktop-nav { display: flex !important; }
-          .desktop-logout { display: flex !important; }
+          .desktop-nav   { display: flex !important; }
+          .desktop-right { display: flex !important; }
           .mobile-menu-btn { display: none !important; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
