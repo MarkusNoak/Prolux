@@ -24,6 +24,8 @@ const inputStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
 }
 
+const PRODUCT_ADMIN_EMAIL = 'bashar@proluxshine.se'
+
 export default function AdminProducts() {
   const [products, setProducts]     = useState<any[]>([])
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
@@ -35,8 +37,15 @@ export default function AdminProducts() {
   const [saving, setSaving]         = useState(false)
   const [toast, setToast]           = useState('')
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [canEdit, setCanEdit]       = useState(false)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(); checkUser() }, [])
+
+  async function checkUser() {
+    const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    setCanEdit(user?.email === PRODUCT_ADMIN_EMAIL)
+  }
 
   async function load() {
     const sb = createClient()
@@ -130,9 +139,11 @@ export default function AdminProducts() {
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: 40, fontWeight: 500, color: 'var(--text)', lineHeight: 1.1 }}>Produktkatalog</div>
           <p style={{ color: 'var(--text3)', fontSize: 13, marginTop: 6 }}>{products.filter(p => p.active).length} aktiva · {products.length} totalt</p>
         </div>
-        <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 20px', background: 'var(--gold)', border: 'none', borderRadius: 8, color: '#111', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-          <Plus size={16} /> Ny produkt
-        </button>
+        {canEdit && (
+          <button onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 20px', background: 'var(--gold)', border: 'none', borderRadius: 8, color: '#111', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            <Plus size={16} /> Ny produkt
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -202,12 +213,14 @@ export default function AdminProducts() {
                   </td>
                   <td style={{ padding: '13px 0', borderBottom: '1px solid var(--line2)' }}>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                      <button onClick={() => openEdit(p)} style={{ width: 30, height: 30, border: '1px solid var(--line)', borderRadius: 6, background: 'transparent', color: 'var(--text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                        <Pencil size={13} />
-                      </button>
-                      <button onClick={() => setConfirmDelete(p.id)} style={{ width: 30, height: 30, border: '1px solid rgba(224,82,82,.2)', borderRadius: 6, background: 'transparent', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                        <Trash2 size={13} />
-                      </button>
+                      {canEdit && (<>
+                        <button onClick={() => openEdit(p)} style={{ width: 30, height: 30, border: '1px solid var(--line)', borderRadius: 6, background: 'transparent', color: 'var(--text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={() => setConfirmDelete(p.id)} style={{ width: 30, height: 30, border: '1px solid rgba(224,82,82,.2)', borderRadius: 6, background: 'transparent', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </>)}
                     </div>
                   </td>
                 </tr>
