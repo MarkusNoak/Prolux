@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Deal, Customer, DEAL_STAGES, DealStage } from '@/types'
 import { fmt, formatDate } from '@/lib/utils'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, User, ChevronDown } from 'lucide-react'
 
 const supabase = createClient()
 
@@ -12,18 +12,27 @@ const STAGE_COLORS: Record<DealStage, string> = {
   Förhandling: '#9B6EE8', Vunnen: '#4CAF7D', Förlorad: '#E05252'
 }
 
+const SALESPEOPLE = ['Bashar', 'Stefan', 'Anna', 'Erik']
+
 export default function CrmPipelinePage() {
   const [deals, setDeals] = useState<(Deal & { customers?: Customer })[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [dragging, setDragging] = useState<string | null>(null)
-  const [form, setForm] = useState({ title: '', customer_id: '', value: '', stage: 'Prospekt' as DealStage, expected_close: '', notes: '' })
+  const [form, setForm] = useState({
+    title: '', customer_id: '', value: '', stage: 'Prospekt' as DealStage,
+    expected_close: '', notes: '', assigned_to: 'Bashar'
+  })
+  // Inline new customer
+  const [showNewCust, setShowNewCust] = useState(false)
+  const [newCust, setNewCust] = useState({ company: '', contact_name: '', email: '', price_list_id: 'Standard' })
+  const [savingCust, setSavingCust] = useState(false)
   const [toast, setToast] = useState('')
 
   useEffect(() => {
     Promise.all([
-      supabase.from('deals').select('*,customers(*)').order('created_at', { ascending: false }),
+      supabase.from('deals').select('*,customers(id,company)').order('created_at', { ascending: false }),
       supabase.from('customers').select('id,company').eq('status', 'active').order('company')
     ]).then(([d, c]) => {
       if (d.data) setDeals(d.data)
@@ -34,6 +43,23 @@ export default function CrmPipelinePage() {
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
+  async function createCustomerInline() {
+    if (!newCust.company.trim() || !newCust.email.trim()) return showToast('Företag och e-post krävs')
+    setSavingCust(true)
+    const { data, error } = await supabase.from('customers').insert({
+      ...newCust, status: 'active'
+    }).select('id,company').single()
+    if (error) { showToast('Fel: ' + error.message); setSavingCust(false); return }
+    if (data) {
+      setCustomers(cs => [...cs, data as Customer].sort((a, b) => a.company.localeCompare(b.company)))
+      setForm(f => ({ ...f, customer_id: data.id }))
+      setNewCust({ company: '', contact_name: '', email: '', price_list_id: 'Standard' })
+      setShowNewCust(false)
+      showToast(`${data.company} skapad!`)
+    }
+    setSavingCust(false)
+  }
+
   async function saveDeal() {
     if (!form.title.trim()) return showToast('Titel krävs')
     const { data, error } = await supabase.from('deals').insert({
@@ -43,13 +69,15 @@ export default function CrmPipelinePage() {
       stage: form.stage,
       expected_close: form.expected_close || null,
       notes: form.notes || null,
-    }).select('*,customers(*)').single()
+      assigned_to: form.assigned_to || null,
+    }).select('*,customers(id,company)').single()
     if (error) { showToast('Fel: ' + error.message); return }
     if (data) {
       setDeals(ds => [data, ...ds])
       showToast('Deal skapad!')
       setShowModal(false)
-      setForm({ title: '', customer_id: '', value: '', stage: 'Prospekt', expected_close: '', notes: '' })
+      setForm({ title: '', customer_id: '', value: '', stage: 'Prospekt', expected_close: '', notes: '', assigned_to: 'Bashar' })
+      setShowNewCust(false)
     }
   }
 
@@ -73,8 +101,10 @@ export default function CrmPipelinePage() {
     <div style={{ padding: 24, height: 'calc(100vh - 58px)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexShrink: 0 }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Pipeline</h1>
-          <p style={{ color: 'var(--text2)', fontSize: 13, margin: '4px 0 0' }}>{deals.filter(d => d.stage !== 'Vunnen' && d.stage !== 'Förlorad').length} aktiva deals · {fmt(deals.filter(d => d.stage !== 'Vunnen' && d.stage !== 'Förlorad').reduce((s,d) => s+d.value,0))} kr i pipeline</p>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 26, fontWeight: 400, color: 'var(--text)', margin: 0 }}>Pipeline</h1>
+          <p style={{ color: 'var(--text2)', fontSize: 13, margin: '4px 0 0' }}>
+            {deals.filter(d => d.stage !== 'Vunnen' && d.stage !== 'Förlorad').length} aktiva deals · {fmt(deals.filter(d => d.stage !== 'Vunnen' && d.stage !== 'Förlorad').reduce((s,d) => s+d.value,0))} kr i pipeline
+          </p>
         </div>
         <button onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', background: 'var(--gold)', border: 'none', borderRadius: 8, color: '#111', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
           <Plus size={16} /> Ny deal
@@ -90,35 +120,42 @@ export default function CrmPipelinePage() {
             <div key={stage}
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); if (dragging) moveToStage(dragging, stage) }}
-              style={{ flex: '0 0 240px', display: 'flex', flexDirection: 'column', background: 'var(--bg3)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}
+              style={{ flex: '0 0 240px', display: 'flex', flexDirection: 'column', background: 'var(--bg3)', borderRadius: 12, border: '1px solid var(--line)', overflow: 'hidden' }}
             >
-              {/* Column header */}
-              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', background: `${color}10` }}>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--line)', background: `${color}10` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 12, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stage}</span>
                   <span style={{ fontSize: 11, background: `${color}20`, color, borderRadius: 10, padding: '2px 8px', fontWeight: 700 }}>{columnDeals.length}</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>{fmt(stageTotal(stage))} kr</div>
               </div>
-              {/* Cards */}
               <div style={{ flex: 1, overflowY: 'auto', padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {columnDeals.map(d => (
                   <div key={d.id}
                     draggable
                     onDragStart={() => setDragging(d.id)}
                     onDragEnd={() => setDragging(null)}
-                    style={{ background: 'var(--bg4)', border: `1px solid ${dragging === d.id ? color : 'var(--border)'}`, borderRadius: 10, padding: 14, cursor: 'grab', transition: 'all .15s' }}
+                    style={{ background: 'var(--bg4)', border: `1px solid ${dragging === d.id ? color : 'var(--line)'}`, borderRadius: 10, padding: 14, cursor: 'grab', transition: 'all .15s' }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{d.title}</span>
                       <button onClick={() => deleteDeal(d.id)} style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 2, flexShrink: 0 }}><X size={12} /></button>
                     </div>
-                    {d.customers && <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>{d.customers.company}</div>}
+                    {(d as any).customers && <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 3 }}>{(d as any).customers.company}</div>}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>{fmt(d.value)} kr</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', fontFamily: 'var(--font-serif)' }}>{fmt(d.value)} kr</span>
                       {(d as any).expected_close && <span style={{ fontSize: 10, color: 'var(--text3)' }}>{formatDate((d as any).expected_close)}</span>}
                     </div>
-                    {(d as any).notes && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8, lineHeight: 1.4 }}>{(d as any).notes}</div>}
+                    {/* Säljare */}
+                    {(d as any).assigned_to && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--line2)' }}>
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--bg5)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>
+                          {(d as any).assigned_to[0]}
+                        </div>
+                        <span style={{ fontSize: 11, color: 'var(--text3)' }}>{(d as any).assigned_to}</span>
+                      </div>
+                    )}
+                    {(d as any).notes && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, borderTop: '1px solid var(--line2)', paddingTop: 8, lineHeight: 1.4 }}>{(d as any).notes}</div>}
                     {/* Move buttons */}
                     <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
                       {DEAL_STAGES.filter(s => s !== stage).slice(0, 3).map(s => (
@@ -133,52 +170,123 @@ export default function CrmPipelinePage() {
         })}
       </div>
 
+      {/* ── NY DEAL MODAL ──────────────────────────────────────── */}
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, width: 480 }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Ny deal</h2>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 20 }}>×</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--line)', borderRadius: 16, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--bg2)', zIndex: 1 }}>
+              <h2 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 400, color: 'var(--text)' }}>Ny deal</h2>
+              <button onClick={() => { setShowModal(false); setShowNewCust(false) }} style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
             </div>
+
             <div style={{ padding: 24, display: 'grid', gap: 14 }}>
-              {[
-                { label: 'Titel', key: 'title', placeholder: 'Produktpaket Virtus 2025' },
-                { label: 'Värde (kr)', key: 'value', placeholder: '25000' },
-                { label: 'Stängningsdatum', key: 'expected_close', type: 'date' },
-              ].map(({ label, key, placeholder, type }) => (
-                <div key={key}>
-                  <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</label>
-                  <input type={type || 'text'} placeholder={placeholder} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
-                </div>
-              ))}
+              {/* Titel */}
               <div>
-                <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Kund</label>
-                <select value={form.customer_id} onChange={e => setForm(f => ({ ...f, customer_id: e.target.value }))} style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none' }}>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Titel *</label>
+                <input placeholder="Produktpaket Virtus 2025" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Värde */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Värde (kr)</label>
+                <input type="number" placeholder="25000" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Kund + Skapa ny */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                  <label style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Kund</label>
+                  <button onClick={() => setShowNewCust(v => !v)} style={{ fontSize: 11, color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Plus size={11} /> Skapa ny kund
+                  </button>
+                </div>
+                <select value={form.customer_id} onChange={e => setForm(f => ({ ...f, customer_id: e.target.value }))}
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none' }}>
                   <option value="">Välj kund...</option>
                   {customers.map(c => <option key={c.id} value={c.id}>{c.company}</option>)}
                 </select>
+
+                {/* Inline ny kund */}
+                {showNewCust && (
+                  <div style={{ marginTop: 10, padding: 14, background: 'var(--bg3)', border: '1px solid var(--line)', borderRadius: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>Ny kund</div>
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {[
+                        { label: 'Företag *', key: 'company', placeholder: 'AB Bilservice' },
+                        { label: 'Kontaktperson', key: 'contact_name', placeholder: 'Erik Lindgren' },
+                        { label: 'E-post *', key: 'email', placeholder: 'erik@foretag.se' },
+                      ].map(({ label, key, placeholder }) => (
+                        <div key={key}>
+                          <label style={{ display: 'block', fontSize: 10, color: 'var(--text3)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</label>
+                          <input placeholder={placeholder} value={(newCust as any)[key]} onChange={e => setNewCust(f => ({ ...f, [key]: e.target.value }))}
+                            style={{ width: '100%', padding: '7px 10px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 6, color: 'var(--text)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                        </div>
+                      ))}
+                      <div>
+                        <label style={{ display: 'block', fontSize: 10, color: 'var(--text3)', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Prislista</label>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {['A','B','C','Standard'].map(pl => (
+                            <button key={pl} onClick={() => setNewCust(f => ({ ...f, price_list_id: pl }))}
+                              style={{ flex: 1, padding: '6px 4px', background: newCust.price_list_id === pl ? 'rgba(232,184,75,.1)' : 'var(--bg4)', border: `1px solid ${newCust.price_list_id === pl ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 6, color: newCust.price_list_id === pl ? 'var(--gold)' : 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                              {pl}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <button onClick={createCustomerInline} disabled={savingCust}
+                        style={{ padding: '8px 0', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: savingCust ? 0.6 : 1 }}>
+                        {savingCust ? 'Sparar...' : 'Spara kund & välj'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Stage */}
               <div>
                 <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Stage</label>
-                <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value as DealStage }))} style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none' }}>
+                <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value as DealStage }))}
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none' }}>
                   {DEAL_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+
+              {/* Säljare */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Säljare</label>
+                <select value={form.assigned_to} onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none' }}>
+                  {SALESPEOPLE.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              {/* Stängningsdatum */}
+              <div>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Stängningsdatum</label>
+                <input type="date" value={form.expected_close} onChange={e => setForm(f => ({ ...f, expected_close: e.target.value }))}
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Anteckning */}
               <div>
                 <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Anteckning</label>
-                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} placeholder="Skriv en anteckning..." style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} placeholder="Skriv en anteckning..."
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
               </div>
             </div>
-            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowModal(false)} style={{ padding: '9px 18px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text2)', fontSize: 13, cursor: 'pointer' }}>Avbryt</button>
-              <button onClick={saveDeal} style={{ padding: '9px 18px', background: 'var(--gold)', border: 'none', borderRadius: 6, color: '#111', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Skapa deal</button>
+
+            <div style={{ padding: '14px 24px', borderTop: '1px solid var(--line)', display: 'flex', gap: 10, justifyContent: 'flex-end', position: 'sticky', bottom: 0, background: 'var(--bg2)' }}>
+              <button onClick={() => { setShowModal(false); setShowNewCust(false) }} style={{ padding: '9px 18px', background: 'transparent', border: '1px solid var(--line)', borderRadius: 6, color: 'var(--text2)', fontSize: 13, cursor: 'pointer' }}>Avbryt</button>
+              <button onClick={saveDeal} style={{ padding: '9px 22px', background: 'var(--gold)', border: 'none', borderRadius: 6, color: '#111', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Skapa deal</button>
             </div>
           </div>
         </div>
       )}
 
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', padding: '12px 20px', fontSize: 13, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg3)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', padding: '12px 20px', fontSize: 13, zIndex: 9999, display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 4px 24px rgba(0,0,0,.4)' }}>
           <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)' }} />
           {toast}
         </div>
