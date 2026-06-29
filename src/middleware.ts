@@ -23,17 +23,28 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
+  const role: string | undefined = user?.user_metadata?.role
 
-  // Protect portal, admin and crm routes
+  // Redirect logged-in users away from login
+  if (path === '/login' && user) {
+    if (role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    if (role === 'crm')   return NextResponse.redirect(new URL('/crm/dashboard', request.url))
+    return NextResponse.redirect(new URL('/portal/dashboard', request.url))
+  }
+
+  // Protect all app routes
   const protectedPaths = ['/portal', '/admin', '/crm']
   const isProtected = protectedPaths.some(p => path.startsWith(p))
-
   if (isProtected && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (path === '/login' && user) {
-    return NextResponse.redirect(new URL('/portal/dashboard', request.url))
+  // Role-based access control
+  if (user && path.startsWith('/admin') && role !== 'admin') {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+  if (user && path.startsWith('/crm') && role !== 'admin' && role !== 'crm') {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return supabaseResponse

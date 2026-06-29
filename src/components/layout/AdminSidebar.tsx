@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/admin/products', label: 'Produkter', icon: Tag },
   { href: '/admin/campaigns', label: 'Kampanjer', icon: Megaphone },
   { href: '/admin/automations', label: 'Automationer', icon: Zap },
+  { href: '/admin/staff', label: 'Medarbetare', icon: UserCog },
 ]
 
 export function AdminSidebar({ email }: { email?: string }) {
