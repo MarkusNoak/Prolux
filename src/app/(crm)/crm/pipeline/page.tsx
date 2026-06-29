@@ -18,7 +18,7 @@ export default function CrmPipelinePage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [dragging, setDragging] = useState<string | null>(null)
-  const [form, setForm] = useState({ title: '', customer_id: '', value: '', stage: 'Prospekt' as DealStage, close_date: '', note: '' })
+  const [form, setForm] = useState({ title: '', customer_id: '', value: '', stage: 'Prospekt' as DealStage, expected_close: '', notes: '' })
   const [toast, setToast] = useState('')
 
   useEffect(() => {
@@ -35,17 +35,22 @@ export default function CrmPipelinePage() {
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
   async function saveDeal() {
+    if (!form.title.trim()) return showToast('Titel krävs')
     const { data, error } = await supabase.from('deals').insert({
-      title: form.title, customer_id: form.customer_id,
-      value: parseFloat(form.value) || 0, stage: form.stage,
-      close_date: form.close_date || null, note: form.note || null
+      title: form.title.trim(),
+      customer_id: form.customer_id || null,
+      value: parseFloat(form.value) || 0,
+      stage: form.stage,
+      expected_close: form.expected_close || null,
+      notes: form.notes || null,
     }).select('*,customers(*)').single()
-    if (!error && data) {
+    if (error) { showToast('Fel: ' + error.message); return }
+    if (data) {
       setDeals(ds => [data, ...ds])
       showToast('Deal skapad!')
+      setShowModal(false)
+      setForm({ title: '', customer_id: '', value: '', stage: 'Prospekt', expected_close: '', notes: '' })
     }
-    setShowModal(false)
-    setForm({ title: '', customer_id: '', value: '', stage: 'Prospekt', close_date: '', note: '' })
   }
 
   async function moveToStage(dealId: string, stage: DealStage) {
@@ -111,9 +116,9 @@ export default function CrmPipelinePage() {
                     {d.customers && <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>{d.customers.company}</div>}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>{fmt(d.value)} kr</span>
-                      {d.close_date && <span style={{ fontSize: 10, color: 'var(--text3)' }}>{formatDate(d.close_date)}</span>}
+                      {(d as any).expected_close && <span style={{ fontSize: 10, color: 'var(--text3)' }}>{formatDate((d as any).expected_close)}</span>}
                     </div>
-                    {d.note && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8, lineHeight: 1.4 }}>{d.note}</div>}
+                    {(d as any).notes && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8, lineHeight: 1.4 }}>{(d as any).notes}</div>}
                     {/* Move buttons */}
                     <div style={{ display: 'flex', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
                       {DEAL_STAGES.filter(s => s !== stage).slice(0, 3).map(s => (
@@ -139,7 +144,7 @@ export default function CrmPipelinePage() {
               {[
                 { label: 'Titel', key: 'title', placeholder: 'Produktpaket Virtus 2025' },
                 { label: 'Värde (kr)', key: 'value', placeholder: '25000' },
-                { label: 'Stängningsdatum', key: 'close_date', type: 'date' },
+                { label: 'Stängningsdatum', key: 'expected_close', type: 'date' },
               ].map(({ label, key, placeholder, type }) => (
                 <div key={key}>
                   <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</label>
@@ -161,7 +166,7 @@ export default function CrmPipelinePage() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, color: 'var(--text3)', marginBottom: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Anteckning</label>
-                <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={3} placeholder="Skriv en anteckning..." style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} placeholder="Skriv en anteckning..." style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
               </div>
             </div>
             <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
