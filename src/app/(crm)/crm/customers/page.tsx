@@ -43,10 +43,12 @@ type ReminderPriority = 'low' | 'normal' | 'high'
 
 interface Reminder {
   id: string
-  text: string
-  date: string
+  customer_id: string
+  title: string
+  due_date: string
   priority: ReminderPriority
-  done: boolean
+  status: 'upcoming' | 'done'
+  created_at: string
 }
 
 const PRIORITY_COLOR: Record<ReminderPriority, string> = {
@@ -75,8 +77,8 @@ export default function CrmCustomersPage() {
   const [noteText, setNoteText]       = useState('')
   const [noteType, setNoteType]       = useState<'note'|'call'|'email'|'meeting'>('note')
   const [toast, setToast]             = useState('')
-  // Reminders stored in localStorage (no DB table needed yet)
   const [reminders, setReminders]     = useState<Reminder[]>([])
+  const [allReminders, setAllReminders] = useState<Reminder[]>([]) // all customers' reminders for badge counts
   const [reminderText, setReminderText] = useState('')
   const [reminderDate, setReminderDate] = useState('')
   const [reminderPriority, setReminderPriority] = useState<ReminderPriority>('normal')
@@ -85,9 +87,11 @@ export default function CrmCustomersPage() {
     Promise.all([
       supabase.from('customers').select('*').order('company'),
       supabase.from('products').select('id,name').eq('active', true),
-    ]).then(([{ data: c }, { data: p }]) => {
+      supabase.from('reminders').select('id,customer_id,due_date,status').eq('status', 'upcoming'),
+    ]).then(([{ data: c }, { data: p }, { data: r }]) => {
       if (c) setCustomers(c)
       if (p) setAllProductNames(p.map((x: any) => x.name))
+      if (r) setAllReminders(r as any[])
       setLoading(false)
     })
   }, [])
@@ -95,13 +99,11 @@ export default function CrmCustomersPage() {
   async function selectCustomer(c: Customer) {
     setSelected(c)
     setTab('overview')
-    // Load reminders from localStorage
-    const stored = localStorage.getItem(`reminders-${c.id}`)
-    setReminders(stored ? JSON.parse(stored) : [])
 
-    const [{ data: o }, { data: a }] = await Promise.all([
+    const [{ data: o }, { data: a }, { data: r }] = await Promise.all([
       supabase.from('orders').select('*,order_items(*)').eq('customer_id', c.id).order('created_at', { ascending: false }).limit(20),
       supabase.from('activities').select('*').eq('customer_id', c.id).order('created_at', { ascending: false }).limit(30),
+      supabase.from('reminders').select('*').eq('customer_id', c.id).order('due_date', { ascending: true }),
     ])
     if (o) {
       setOrders(o)
@@ -109,6 +111,7 @@ export default function CrmCustomersPage() {
       setOrderItems(items)
     }
     if (a) setActivities(a)
+    if (r) setReminders(r)
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000) }
@@ -127,29 +130,35 @@ export default function CrmCustomersPage() {
     }
   }
 
-  function addReminder() {
+  async function addReminder() {
     if (!selected || !reminderText.trim() || !reminderDate) return
-    const r: Reminder = { id: Date.now().toString(), text: reminderText, date: reminderDate, priority: reminderPriority, done: false }
-    const updated = [r, ...reminders]
-    setReminders(updated)
-    localStorage.setItem(`reminders-${selected.id}`, JSON.stringify(updated))
-    setReminderText('')
-    setReminderDate('')
-    showToast('Påminnelse skapad')
+    const { data, error } = await supabase.from('reminders').insert({
+      customer_id: selected.id,
+      title: reminderText,
+      due_date: reminderDate,
+      priority: reminderPriority,
+      status: 'upcoming',
+      created_by: 'Bashar',
+    }).select().single()
+    if (!error && data) {
+      setReminders(rs => [data, ...rs].sort((a, b) => a.due_date.localeCompare(b.due_date)))
+      setReminderText('')
+      setReminderDate('')
+      showToast('Påminnelse skapad')
+    }
   }
 
-  function toggleReminder(id: string) {
-    if (!selected) return
-    const updated = reminders.map(r => r.id === id ? { ...r, done: !r.done } : r)
-    setReminders(updated)
-    localStorage.setItem(`reminders-${selected.id}`, JSON.stringify(updated))
+  async function toggleReminder(id: string) {
+    const r = reminders.find(x => x.id === id)
+    if (!r) return
+    const newStatus = r.status === 'done' ? 'upcoming' : 'done'
+    await supabase.from('reminders').update({ status: newStatus }).eq('id', id)
+    setReminders(rs => rs.map(x => x.id === id ? { ...x, status: newStatus } : x))
   }
 
-  function deleteReminder(id: string) {
-    if (!selected) return
-    const updated = reminders.filter(r => r.id !== id)
-    setReminders(updated)
-    localStorage.setItem(`reminders-${selected.id}`, JSON.stringify(updated))
+  async function deleteReminder(id: string) {
+    await supabase.from('reminders').delete().eq('id', id)
+    setReminders(rs => rs.filter(r => r.id !== id))
   }
 
   function sendOffer() {
@@ -177,8 +186,9 @@ export default function CrmCustomersPage() {
   const lastOrdered = topProducts.slice(0, 3).map(p => p.name)
   const recommendations = getRecommendations(lastOrdered, allProductNames)
 
-  const overdueReminders = reminders.filter(r => !r.done && r.date < new Date().toISOString().slice(0, 10))
-  const upcomingReminders = reminders.filter(r => !r.done && r.date >= new Date().toISOString().slice(0, 10))
+  const today = new Date().toISOString().slice(0, 10)
+  const overdueReminders = reminders.filter(r => r.status !== 'done' && r.due_date < today)
+  const upcomingReminders = reminders.filter(r => r.status !== 'done' && r.due_date >= today)
 
   const filtered = customers.filter(c =>
     !search || c.company.toLowerCase().includes(search.toLowerCase()) ||
@@ -217,9 +227,7 @@ export default function CrmCustomersPage() {
           ) : filtered.map(c => {
             const isActive = selected?.id === c.id
             // Count overdue reminders for badge
-            const stored = typeof window !== 'undefined' ? localStorage.getItem(`reminders-${c.id}`) : null
-            const cReminders: Reminder[] = stored ? JSON.parse(stored) : []
-            const overdueCount = cReminders.filter(r => !r.done && r.date < new Date().toISOString().slice(0, 10)).length
+            const overdueCount = allReminders.filter(r => r.customer_id === c.id && r.due_date < today).length
             return (
               <div key={c.id} onClick={() => selectCustomer(c)}
                 style={{ padding: '13px 14px', borderBottom: '1px solid var(--border2)', cursor: 'pointer', background: isActive ? 'rgba(232,184,75,.07)' : 'transparent', borderLeft: `3px solid ${isActive ? 'var(--gold)' : 'transparent'}`, transition: 'all .12s' }}>
@@ -295,7 +303,7 @@ export default function CrmCustomersPage() {
                 { key: 'overview', label: 'Översikt' },
                 { key: 'orders', label: `Ordrar (${orders.length})` },
                 { key: 'stats', label: 'Statistik & rekommendationer' },
-                { key: 'notes', label: `Anteckningar${reminders.filter(r=>!r.done).length > 0 ? ` · ${reminders.filter(r=>!r.done).length} påm.` : ''}` },
+                { key: 'notes', label: `Anteckningar${reminders.filter(r=>r.status!=='done').length > 0 ? ` · ${reminders.filter(r=>r.status!=='done').length} påm.` : ''}` },
               ] as const).map(({ key, label }) => (
                 <button key={key} onClick={() => setTab(key as Tab)}
                   style={{ padding: '8px 16px', background: 'none', border: 'none', borderBottom: tab === key ? '2px solid var(--gold)' : '2px solid transparent', color: tab === key ? 'var(--gold)' : 'var(--text2)', fontSize: 12, fontWeight: tab === key ? 700 : 400, cursor: 'pointer', marginBottom: -2, whiteSpace: 'nowrap' }}>
@@ -330,8 +338,8 @@ export default function CrmCustomersPage() {
                   </div>
                   {overdueReminders.map(r => (
                     <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(224,82,82,.1)' }}>
-                      <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{r.text}</span>
-                      <span style={{ fontSize: 11, color: 'var(--red)' }}>{r.date}</span>
+                      <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{r.title}</span>
+                      <span style={{ fontSize: 11, color: 'var(--red)' }}>{r.due_date}</span>
                       <button onClick={() => toggleReminder(r.id)} style={{ background: 'var(--red)', border: 'none', borderRadius: 5, color: '#fff', fontSize: 11, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}>Klar</button>
                     </div>
                   ))}
@@ -581,8 +589,8 @@ export default function CrmCustomersPage() {
                     {overdueReminders.map(r => (
                       <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'rgba(224,82,82,.06)', border: '1px solid rgba(224,82,82,.2)', borderRadius: 8, marginBottom: 6 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, marginBottom: 3 }}>{r.text}</div>
-                          <div style={{ fontSize: 11, color: 'var(--red)' }}>Försenad: {r.date}</div>
+                          <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, marginBottom: 3 }}>{r.title}</div>
+                          <div style={{ fontSize: 11, color: 'var(--red)' }}>Försenad: {r.due_date}</div>
                         </div>
                         <button onClick={() => toggleReminder(r.id)} style={{ padding: '4px 8px', background: 'var(--green)', border: 'none', borderRadius: 5, color: '#fff', fontSize: 10, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>✓</button>
                         <button onClick={() => deleteReminder(r.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', flexShrink: 0, padding: 2 }}><X size={13} /></button>
@@ -599,9 +607,9 @@ export default function CrmCustomersPage() {
                       <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'var(--bg3)', border: `1px solid ${PRIORITY_COLOR[r.priority]}28`, borderRadius: 8, marginBottom: 6 }}>
                         <div style={{ width: 3, height: '100%', minHeight: 36, background: PRIORITY_COLOR[r.priority], borderRadius: 2, flexShrink: 0 }} />
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, marginBottom: 3 }}>{r.text}</div>
+                          <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, marginBottom: 3 }}>{r.title}</div>
                           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                            <span style={{ fontSize: 11, color: 'var(--text3)' }}><Calendar size={10} style={{ verticalAlign: 'middle', marginRight: 3 }} />{r.date}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text3)' }}><Calendar size={10} style={{ verticalAlign: 'middle', marginRight: 3 }} />{r.due_date}</span>
                             <span style={{ fontSize: 10, color: PRIORITY_COLOR[r.priority], fontWeight: 700 }}>{PRIORITY_LABEL[r.priority]}</span>
                           </div>
                         </div>
@@ -613,12 +621,12 @@ export default function CrmCustomersPage() {
                 )}
 
                 {/* Done */}
-                {reminders.filter(r => r.done).length > 0 && (
+                {reminders.filter(r => r.status === 'done').length > 0 && (
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, opacity: 0.6 }}>Avklarade</div>
-                    {reminders.filter(r => r.done).map(r => (
+                    {reminders.filter(r => r.status === 'done').map(r => (
                       <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, marginBottom: 4, opacity: 0.5 }}>
-                        <span style={{ fontSize: 12, color: 'var(--text3)', textDecoration: 'line-through', flex: 1 }}>{r.text}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text3)', textDecoration: 'line-through', flex: 1 }}>{r.title}</span>
                         <button onClick={() => deleteReminder(r.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2 }}><X size={12} /></button>
                       </div>
                     ))}
