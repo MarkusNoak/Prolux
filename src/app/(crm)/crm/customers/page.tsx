@@ -133,11 +133,10 @@ export default function CrmCustomersPage() {
       supabase.from('reminders').select('*').eq('customer_id', c.id).order('due_date', { ascending: true }),
     ])
     if (o) {
-      setOrders(o)
-      const items: OrderItem[] = o.flatMap((order: any) => order.order_items || [])
-      setOrderItems(items)
+      setOrders(o as any)
+      setOrderItems(o.flatMap((order: any) => order.order_items || []))
     }
-    if (a) setActivities(a)
+    if (a) setActivities(a as any)
     if (r) setReminders(r)
   }
 

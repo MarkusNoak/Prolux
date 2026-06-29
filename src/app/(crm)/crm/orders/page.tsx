@@ -31,9 +31,9 @@ export default function CrmOrdersPage() {
       supabase.from('customers').select('id,company,contact_name,price_list_id,city').eq('status', 'active').order('company'),
       supabase.from('products').select('id,sku,name,brand,unit,list_price,stock_qty,active').eq('active', true).order('sort_order')
     ]).then(([o, c, p]) => {
-      if (o.data) setOrders(o.data)
-      if (c.data) setCustomers(c.data)
-      if (p.data) setProducts(p.data)
+      if (o.data) setOrders(o.data as any)
+      if (c.data) setCustomers(c.data as any)
+      if (p.data) setProducts(p.data as any)
       setLoading(false)
     })
   }, [])
