@@ -248,17 +248,25 @@ export default function CrmOrdersPage() {
             </tr>
           </thead>
           <tbody>
-            {cart.map(i => (
-              <tr key={i.product.id} style={{ borderBottom: '1px solid var(--border2)' }}>
-                <td style={{ padding: '11px 20px' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--text)' }}>{i.product.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)' }}>{i.product.brand} · {i.product.unit}</div>
-                </td>
-                <td style={{ padding: '11px 20px', color: 'var(--text2)' }}>{i.qty}</td>
-                <td style={{ padding: '11px 20px', color: 'var(--text2)' }}>{fmt(i.unitPrice)} kr</td>
-                <td style={{ padding: '11px 20px', fontWeight: 700, color: 'var(--text)' }}>{fmt(i.qty * i.unitPrice)} kr</td>
-              </tr>
-            ))}
+            {cart.map(i => {
+              const hasDiscount = i.unitPrice < i.product.list_price
+              return (
+                <tr key={i.product.id} style={{ borderBottom: '1px solid var(--border2)' }}>
+                  <td style={{ padding: '11px 20px' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text)' }}>{i.product.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)' }}>{i.product.brand} · {i.product.unit}</div>
+                  </td>
+                  <td style={{ padding: '11px 20px', color: 'var(--text2)' }}>{i.qty}</td>
+                  <td style={{ padding: '11px 20px' }}>
+                    {hasDiscount && (
+                      <div style={{ fontSize: 11, color: 'var(--text3)', textDecoration: 'line-through' }}>{fmt(i.product.list_price)} kr</div>
+                    )}
+                    <div style={{ color: hasDiscount ? 'var(--green)' : 'var(--text2)', fontWeight: hasDiscount ? 600 : 400 }}>{fmt(i.unitPrice)} kr</div>
+                  </td>
+                  <td style={{ padding: '11px 20px', fontWeight: 700, color: 'var(--text)' }}>{fmt(i.qty * i.unitPrice)} kr</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
         <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -418,17 +426,23 @@ export default function CrmOrdersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {cart.map(i => (
+                  {cart.map(i => {
+                    const hasDiscount = i.unitPrice < i.product.list_price
+                    return (
                     <tr key={i.product.id} style={{ borderBottom: '1px solid var(--border2)' }}>
                       <td style={{ padding: '10px 12px' }}>
                         <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 12, lineHeight: 1.3 }}>{i.product.name}</div>
                         <div style={{ fontSize: 10, color: 'var(--text3)' }}>{i.product.brand} · {i.product.unit}</div>
                       </td>
                       <td style={{ padding: '10px 8px', textAlign: 'center', color: 'var(--text2)' }}>{i.qty}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'right', color: 'var(--text2)' }}>{fmt(i.unitPrice)} kr</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right' }}>
+                        {hasDiscount && <div style={{ fontSize: 10, color: 'var(--text3)', textDecoration: 'line-through' }}>{fmt(i.product.list_price)} kr</div>}
+                        <div style={{ color: hasDiscount ? 'var(--green)' : 'var(--text2)', fontWeight: hasDiscount ? 600 : 400 }}>{fmt(i.unitPrice)} kr</div>
+                      </td>
                       <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--text)' }}>{fmt(i.qty * i.unitPrice)} kr</td>
                     </tr>
-                  ))}
+                  )})}
+
                 </tbody>
               </table>
             </div>
