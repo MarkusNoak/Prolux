@@ -30,7 +30,7 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
 
   async function logout() {
     await supabase.auth.signOut()
-    router.push('/login')
+    window.location.href = '/login'
   }
 
   return (
