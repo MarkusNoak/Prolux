@@ -30,10 +30,11 @@ export default function CrmShell({ children }: { children: React.ReactNode }) {
       {/* ── Top navbar ────────────────────────────────────── */}
       <header style={{
         height: 'var(--nav-h)',
-        background: 'rgba(15,17,21,.92)',
+        background: 'rgba(8,10,14,.88)',
         borderBottom: '1px solid var(--line)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        backdropFilter: 'saturate(180%) blur(24px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(24px)',
+        boxShadow: '0 1px 0 rgba(255,255,255,.03) inset',
         display: 'flex',
         alignItems: 'center',
         paddingInline: 24,
@@ -57,15 +58,15 @@ export default function CrmShell({ children }: { children: React.ReactNode }) {
                 display: 'flex', alignItems: 'center', gap: 7,
                 padding: '7px 14px',
                 borderRadius: 8,
-                background: active ? 'var(--bg3)' : 'transparent',
-                color: active ? 'var(--text)' : 'var(--text2)',
+                background: active ? 'rgba(232,184,75,.09)' : 'transparent',
+                color: active ? 'var(--gold)' : 'var(--text3)',
                 fontSize: 13,
                 fontWeight: active ? 600 : 400,
                 textDecoration: 'none',
                 transition: 'all .15s',
-                border: 'none',
+                border: `1px solid ${active ? 'var(--line-gold)' : 'transparent'}`,
               }}>
-                <Icon size={15} style={{ opacity: active ? 1 : 0.55, color: active ? 'var(--gold)' : 'currentColor' }} />
+                <Icon size={14} style={{ opacity: active ? 1 : 0.6 }} />
                 {label}
               </Link>
             )
@@ -124,8 +125,8 @@ export default function CrmShell({ children }: { children: React.ReactNode }) {
           position: 'fixed',
           top: 'var(--nav-h)',
           left: 0, right: 0, bottom: 0,
-          background: 'rgba(15,17,21,.97)',
-          backdropFilter: 'blur(20px)',
+          background: 'rgba(8,10,14,.97)',
+          backdropFilter: 'blur(24px)',
           zIndex: 199,
           padding: '16px 16px 32px',
           display: 'flex', flexDirection: 'column', gap: 6,

@@ -18,9 +18,10 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError('Fel lösenord eller e-post. Försök igen.'); setLoading(false); return }
     const role = data.user?.user_metadata?.role
-    if (role === 'admin') router.push('/admin/dashboard')
-    else if (role === 'crm') router.push('/crm/dashboard')
-    else router.push('/portal/dashboard')
+    // Full reload so middleware picks up the new session cookie
+    if (role === 'admin') window.location.href = '/admin/dashboard'
+    else if (role === 'crm') window.location.href = '/crm/dashboard'
+    else window.location.href = '/portal/dashboard'
   }
 
   return (
