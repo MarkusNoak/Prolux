@@ -53,16 +53,24 @@ function CrmShell({ screen, setScreen, children }: { screen: Screen, setScreen: 
   const [menuOpen, setMenuOpen] = useState(false)
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      <header style={{ height: 58, background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', paddingInline: 20, gap: 12, position: 'sticky', top: 0, zIndex: 100 }}>
+      <header style={{
+        height: 58, position: 'sticky', top: 0, zIndex: 200,
+        background: 'rgba(8,10,14,.88)',
+        backdropFilter: 'saturate(180%) blur(24px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(24px)',
+        borderBottom: '1px solid rgba(255,255,255,.06)',
+        boxShadow: '0 1px 0 rgba(255,255,255,.03) inset',
+        display: 'flex', alignItems: 'center', paddingInline: 20, gap: 12,
+      }}>
         <button onClick={() => setScreen('dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, padding: 0, display: 'flex', alignItems: 'center' }}>
-          <Image src="/logo.svg" alt="Prolux Shine" width={130} height={38} priority style={{ display: 'block' }} />
+          <Image src="/logo.svg" alt="Prolux Shine" width={118} height={34} priority style={{ display: 'block' }} />
         </button>
-        <nav style={{ display: 'none', gap: 4, flex: 1, justifyContent: 'center' }} className="desktop-nav-demo">
+        <nav style={{ display: 'none', gap: 2, flex: 1, justifyContent: 'center' }} className="desktop-nav-demo">
           {NAV.map(({ key, label, icon: Icon }) => {
             const active = screen === key || (key === 'new-order' && screen === 'confirm')
             return (
-              <button key={key} onClick={() => setScreen(key as Screen)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 8, background: active ? 'rgba(232,184,75,.1)' : 'transparent', color: active ? 'var(--gold)' : 'var(--text2)', fontSize: 13, fontWeight: active ? 600 : 400, border: 'none', cursor: 'pointer' }}>
-                <Icon size={15} /> {label}
+              <button key={key} onClick={() => setScreen(key as Screen)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 13px', borderRadius: 7, background: active ? 'rgba(232,184,75,.09)' : 'transparent', color: active ? 'var(--gold)' : 'var(--text3)', fontSize: 13, fontWeight: active ? 600 : 400, border: `1px solid ${active ? 'rgba(232,184,75,.22)' : 'transparent'}`, cursor: 'pointer', transition: 'all .15s' }}>
+                <Icon size={14} style={{ opacity: active ? 1 : 0.6 }} /> {label}
               </button>
             )
           })}
@@ -72,18 +80,18 @@ function CrmShell({ screen, setScreen, children }: { screen: Screen, setScreen: 
         </button>
       </header>
       {menuOpen && (
-        <div style={{ position: 'fixed', top: 58, left: 0, right: 0, bottom: 0, background: 'var(--bg2)', zIndex: 99, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ position: 'fixed', top: 58, left: 0, right: 0, bottom: 0, background: 'rgba(8,10,14,.97)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', zIndex: 199, padding: '20px 16px 32px', display: 'flex', flexDirection: 'column', gap: 6, animation: 'fadeIn .15s ease' }}>
           {NAV.map(({ key, label, icon: Icon }) => {
             const active = screen === key
             return (
-              <button key={key} onClick={() => { setScreen(key as Screen); setMenuOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 10, background: active ? 'rgba(232,184,75,.1)' : 'var(--bg3)', color: active ? 'var(--gold)' : 'var(--text)', fontSize: 15, fontWeight: active ? 600 : 400, border: active ? '1px solid rgba(232,184,75,.2)' : '1px solid var(--border)', cursor: 'pointer', textAlign: 'left' }}>
-                <Icon size={18} /> {label}
+              <button key={key} onClick={() => { setScreen(key as Screen); setMenuOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 10, background: active ? 'rgba(232,184,75,.08)' : 'rgba(255,255,255,.03)', color: active ? 'var(--gold)' : 'var(--text)', fontSize: 15, fontWeight: active ? 600 : 400, border: `1px solid ${active ? 'rgba(232,184,75,.22)' : 'rgba(255,255,255,.06)'}`, cursor: 'pointer', textAlign: 'left', boxShadow: active ? '0 0 20px rgba(232,184,75,.08)' : 'none' }}>
+                <Icon size={18} style={{ color: active ? 'var(--gold)' : 'var(--text3)', opacity: active ? 1 : 0.7 }} /> {label}
               </button>
             )
           })}
           <div style={{ flex: 1 }} />
-          <div style={{ padding: '12px 16px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>
-            📌 Demo-läge — mock-data
+          <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 10, fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>
+            Demo-läge — mock-data
           </div>
         </div>
       )}
