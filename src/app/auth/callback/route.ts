@@ -1,0 +1,18 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+
+  if (code) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
+    const role = user?.user_metadata?.role
+    if (role === 'admin') return NextResponse.redirect(`${origin}/admin/dashboard`)
+    if (role === 'crm')   return NextResponse.redirect(`${origin}/crm/dashboard`)
+    return NextResponse.redirect(`${origin}/portal/dashboard`)
+  }
+
+  return NextResponse.redirect(`${origin}/login`)
+}
