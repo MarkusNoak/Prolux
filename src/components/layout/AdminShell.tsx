@@ -1,35 +1,184 @@
 'use client'
-import { ReactNode } from 'react'
-import { AdminSidebar } from './AdminSidebar'
-import { usePathname } from 'next/navigation'
+import { ReactNode, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { createClient } from '@/lib/supabase/client'
+import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X } from 'lucide-react'
 
-const PATH_LABELS: Record<string, string> = {
-  '/admin/dashboard': 'Dashboard',
-  '/admin/orders': 'Ordrar',
-  '/admin/customers': 'Kunder',
-  '/admin/products': 'Produkter',
-  '/admin/campaigns': 'Kampanjer',
-  '/admin/automations': 'Automationer',
-}
+const NAV = [
+  { href: '/admin/dashboard',    label: 'Översikt',     icon: LayoutDashboard },
+  { href: '/admin/orders',       label: 'Ordrar',       icon: ShoppingBag },
+  { href: '/admin/customers',    label: 'Kunder',       icon: Users },
+  { href: '/admin/products',     label: 'Produkter',    icon: Tag },
+  { href: '/admin/campaigns',    label: 'Kampanjer',    icon: Megaphone },
+  { href: '/admin/automations',  label: 'Automationer', icon: Zap },
+  { href: '/admin/staff',        label: 'Medarbetare',  icon: UserCog },
+]
 
 export function AdminShell({ children, email }: { children: ReactNode; email: string }) {
   const pathname = usePathname()
-  const label = PATH_LABELS[pathname] || 'Admin'
+  const router   = useRouter()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const supabase = createClient()
+
+  async function logout() {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
-    <>
-      <div style={{position:'fixed',top:0,left:0,right:0,height:'58px',background:'var(--bg2)',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',padding:'0 28px 0 calc(248px + 28px)',zIndex:100,gap:16}}>
-        <div style={{fontFamily:'var(--font-serif)',fontSize:'15px',fontWeight:500,color:'var(--text)',letterSpacing:'.04em'}}>
-          Prolux <span style={{color:'var(--gold)',fontStyle:'italic'}}>Shine</span>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+
+      {/* ── Topbar ───────────────────────────────────────── */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 200,
+        height: 'var(--nav-h)',
+        background: 'rgba(8,10,14,.88)',
+        backdropFilter: 'saturate(180%) blur(24px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(24px)',
+        borderBottom: '1px solid var(--line)',
+        boxShadow: '0 1px 0 rgba(255,255,255,.03) inset',
+        display: 'flex', alignItems: 'center',
+        paddingInline: 20, gap: 12,
+      }}>
+        {/* Logo */}
+        <Link href="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 4 }}>
+          <Image src="/logo.svg" alt="Prolux Shine" width={118} height={34} priority style={{ display: 'block' }} />
+        </Link>
+
+        {/* Desktop nav pills */}
+        <nav className="admin-desktop-nav" style={{ display: 'none', gap: 2, flex: 1 }}>
+          {NAV.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href)
+            return (
+              <Link key={href} href={href} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 13px',
+                borderRadius: 7,
+                background: active ? 'rgba(232,184,75,.09)' : 'transparent',
+                color: active ? 'var(--gold)' : 'var(--text3)',
+                fontSize: 13, fontWeight: active ? 600 : 400,
+                textDecoration: 'none',
+                border: `1px solid ${active ? 'var(--line-gold)' : 'transparent'}`,
+                transition: 'all .15s',
+              }}>
+                <Icon size={14} style={{ opacity: active ? 1 : 0.6 }} />
+                {label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Right side */}
+        <div className="admin-desktop-right" style={{ display: 'none', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '5px 10px 5px 6px',
+            background: 'rgba(255,255,255,.04)',
+            border: '1px solid var(--line)',
+            borderRadius: 20,
+          }}>
+            <div style={{
+              width: 26, height: 26, borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--bg4), var(--bg5))',
+              border: '1px solid var(--line-gold)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 700, color: 'var(--gold)',
+            }}>
+              {email.charAt(0).toUpperCase()}
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--text2)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</span>
+          </div>
+          <button onClick={logout} style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '6px 12px',
+            background: 'transparent',
+            border: '1px solid var(--line)',
+            borderRadius: 8,
+            color: 'var(--text3)',
+            fontSize: 12, cursor: 'pointer',
+            transition: 'all .15s',
+          }} onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line-hi)' }}
+             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line)' }}>
+            <LogOut size={13} /> Logga ut
+          </button>
         </div>
-        <div style={{width:1,height:12,background:'var(--border)'}}/>
-        <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text3)',letterSpacing:'.12em'}}>/ {label.toLowerCase()}</div>
-        <div style={{marginLeft:'auto',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text3)',letterSpacing:'.06em'}}>{email}</div>
-      </div>
-      <AdminSidebar email={email} />
-      <main style={{position:'fixed',top:'58px',left:'248px',right:0,bottom:0,overflowY:'auto',background:'var(--bg)'}}>
+
+        {/* Mobile hamburger */}
+        <button
+          onClick={() => setMenuOpen(o => !o)}
+          className="admin-mobile-btn"
+          aria-label="Meny"
+          style={{ marginLeft: 'auto', padding: 8, background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </header>
+
+      {/* ── Mobile fullscreen menu ───────────────────────── */}
+      {menuOpen && (
+        <div style={{
+          position: 'fixed', top: 'var(--nav-h)', left: 0, right: 0, bottom: 0,
+          background: 'rgba(8,10,14,.97)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          zIndex: 199,
+          padding: '20px 16px 32px',
+          display: 'flex', flexDirection: 'column', gap: 6,
+          animation: 'fadeIn .15s ease',
+        }}>
+          {NAV.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href)
+            return (
+              <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '14px 18px', borderRadius: 10,
+                background: active ? 'rgba(232,184,75,.08)' : 'rgba(255,255,255,.03)',
+                color: active ? 'var(--gold)' : 'var(--text)',
+                fontSize: 15, fontWeight: active ? 600 : 400,
+                textDecoration: 'none',
+                border: `1px solid ${active ? 'var(--line-gold)' : 'var(--line)'}`,
+                boxShadow: active ? '0 0 20px rgba(232,184,75,.08)' : 'none',
+              }}>
+                <Icon size={18} style={{ color: active ? 'var(--gold)' : 'var(--text3)', opacity: active ? 1 : 0.7 }} />
+                {label}
+              </Link>
+            )
+          })}
+          <div style={{ flex: 1 }} />
+          <div style={{ padding: '14px 18px', background: 'rgba(255,255,255,.03)', border: '1px solid var(--line)', borderRadius: 10, marginBottom: 6 }}>
+            <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>{email}</div>
+            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>Administratör</div>
+          </div>
+          <button onClick={logout} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '14px 18px', background: 'rgba(255,255,255,.03)',
+            border: '1px solid var(--line)', borderRadius: 10,
+            color: 'var(--text2)', fontSize: 15, cursor: 'pointer',
+          }}>
+            <LogOut size={18} /> Logga ut
+          </button>
+        </div>
+      )}
+
+      <main style={{ flex: 1 }}>
         {children}
       </main>
-    </>
+
+      <style>{`
+        .admin-desktop-nav   { display: none !important; }
+        .admin-desktop-right { display: none !important; }
+        .admin-mobile-btn    { display: flex !important; }
+        @media (min-width: 900px) {
+          .admin-desktop-nav   { display: flex !important; }
+          .admin-desktop-right { display: flex !important; }
+          .admin-mobile-btn    { display: none !important; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
   )
 }
