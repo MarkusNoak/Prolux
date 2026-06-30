@@ -1,14 +1,13 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('stefan@detailingproffs.se')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
   const supabase = createClient()
 
   async function handleLogin(e: React.FormEvent) {
@@ -18,47 +17,95 @@ export default function LoginPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError('Fel lösenord eller e-post. Försök igen.'); setLoading(false); return }
     const role = data.user?.user_metadata?.role
-    // Full reload so middleware picks up the new session cookie
     if (role === 'admin') window.location.href = '/admin/dashboard'
     else if (role === 'crm') window.location.href = '/crm/dashboard'
     else window.location.href = '/portal/dashboard'
   }
 
+  const inp: React.CSSProperties = {
+    width: '100%', padding: '12px 14px',
+    background: 'rgba(255,255,255,.04)',
+    border: '1px solid rgba(255,255,255,.08)',
+    borderRadius: 8, color: 'var(--text)',
+    fontFamily: 'var(--font-sans)', fontSize: 14, outline: 'none',
+    transition: 'border-color .15s, box-shadow .15s',
+    boxSizing: 'border-box',
+  }
+
   return (
-    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px',background:'var(--bg)'}}>
-      <div style={{width:'100%',maxWidth:'400px'}}>
-        <div style={{fontFamily:'var(--font-serif)',fontSize:'28px',fontWeight:500,color:'var(--text)',marginBottom:'6px'}}>
-          Prolux <span style={{color:'var(--gold)',fontStyle:'italic'}}>Shine</span>
+    <div style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 20, background: 'var(--bg)', position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Ambient glow */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(232,184,75,.06) 0%, transparent 70%)',
+      }} />
+
+      <div style={{ width: '100%', maxWidth: 400, position: 'relative' }}>
+
+        {/* Logo */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 36 }}>
+          <Image src="/logo.svg" alt="Prolux Shine" width={160} height={46} priority style={{ display: 'block' }} />
         </div>
-        <div style={{fontSize:'13px',color:'var(--text3)',marginBottom:'32px'}}>B2B-portal för återförsäljare</div>
-        
-        <form onSubmit={handleLogin}>
-          <div style={{marginBottom:'18px'}}>
-            <label style={{display:'block',fontSize:'11px',fontWeight:600,color:'var(--text2)',marginBottom:'6px',textTransform:'uppercase',letterSpacing:'.06em'}}>E-post</label>
-            <input 
-              type="email" value={email} onChange={e=>setEmail(e.target.value)} required
-              style={{width:'100%',padding:'11px 14px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontFamily:'var(--font-sans)',fontSize:'14px',outline:'none'}}
-              placeholder="namn@foretag.se"
-            />
-          </div>
-          <div style={{marginBottom:'18px'}}>
-            <label style={{display:'block',fontSize:'11px',fontWeight:600,color:'var(--text2)',marginBottom:'6px',textTransform:'uppercase',letterSpacing:'.06em'}}>Lösenord</label>
-            <input 
-              type="password" value={password} onChange={e=>setPassword(e.target.value)} required
-              style={{width:'100%',padding:'11px 14px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontFamily:'var(--font-sans)',fontSize:'14px',outline:'none'}}
-              placeholder="••••••••"
-            />
-          </div>
-          {error && <div style={{fontSize:'12px',color:'var(--red)',marginBottom:'10px'}}>{error}</div>}
-          <button 
-            type="submit" disabled={loading}
-            style={{width:'100%',padding:'13px',background:'var(--gold)',color:'#111',fontFamily:'var(--font-sans)',fontWeight:600,fontSize:'13px',letterSpacing:'.04em',border:'none',borderRadius:'6px',cursor:'pointer',opacity:loading?0.7:1}}
-          >
-            {loading ? 'Loggar in…' : 'Logga in'}
-          </button>
-        </form>
-        <div style={{marginTop:'18px',padding:'12px 14px',background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'6px',fontSize:'12px',color:'var(--text3)',lineHeight:1.6}}>
-          Demo: valfri e-post · lösenord <span style={{color:'var(--text2)',fontWeight:500}}>prolux2024</span>
+
+        {/* Glass card */}
+        <div style={{
+          background: 'rgba(13,16,23,.8)',
+          backdropFilter: 'saturate(180%) blur(24px)',
+          WebkitBackdropFilter: 'saturate(180%) blur(24px)',
+          border: '1px solid rgba(255,255,255,.07)',
+          borderRadius: 16,
+          boxShadow: '0 1px 0 rgba(255,255,255,.05) inset, 0 8px 40px rgba(0,0,0,.5)',
+          padding: '32px 28px',
+        }}>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', marginBottom: 6, letterSpacing: '-.01em' }}>
+            Logga in
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 28 }}>B2B-portal för återförsäljare</p>
+
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '.08em' }}>E-post</label>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value)} required
+                placeholder="namn@foretag.se"
+                style={inp}
+                onFocus={e => { e.currentTarget.style.borderColor = 'rgba(232,184,75,.35)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(232,184,75,.08)' }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,.08)'; e.currentTarget.style.boxShadow = 'none' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '.08em' }}>Lösenord</label>
+              <input
+                type="password" value={password} onChange={e => setPassword(e.target.value)} required
+                placeholder="••••••••"
+                style={inp}
+                onFocus={e => { e.currentTarget.style.borderColor = 'rgba(232,184,75,.35)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(232,184,75,.08)' }}
+                onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,.08)'; e.currentTarget.style.boxShadow = 'none' }}
+              />
+            </div>
+            {error && <div style={{ fontSize: 12, color: 'var(--red)', background: 'rgba(224,82,82,.08)', border: '1px solid rgba(224,82,82,.2)', borderRadius: 6, padding: '8px 12px' }}>{error}</div>}
+            <button
+              type="submit" disabled={loading}
+              style={{
+                width: '100%', padding: '13px',
+                background: loading ? 'rgba(232,184,75,.5)' : 'linear-gradient(135deg, #E8B84B 0%, #F5CC6A 50%, #D4A33C 100%)',
+                color: '#0D0A00', fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: 14,
+                letterSpacing: '.03em', border: 'none', borderRadius: 8, cursor: loading ? 'default' : 'pointer',
+                boxShadow: loading ? 'none' : '0 2px 16px rgba(232,184,75,.3)',
+                transition: 'all .18s',
+              }}
+            >
+              {loading ? 'Loggar in…' : 'Logga in'}
+            </button>
+          </form>
+        </div>
+
+        {/* Demo hint */}
+        <div style={{ marginTop: 16, padding: '12px 16px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 10, fontSize: 12, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6 }}>
+          Demo: valfri e-post · lösenord <span style={{ color: 'var(--text2)', fontWeight: 600 }}>prolux2024</span>
         </div>
       </div>
     </div>
