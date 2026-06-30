@@ -4,16 +4,22 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X, GitBranch, ChevronDown } from 'lucide-react'
 
-const NAV = [
-  { href: '/admin/dashboard',    label: 'Översikt',     icon: LayoutDashboard },
-  { href: '/admin/orders',       label: 'Ordrar',       icon: ShoppingBag },
-  { href: '/admin/customers',    label: 'Kunder',       icon: Users },
-  { href: '/admin/products',     label: 'Produkter',    icon: Tag },
-  { href: '/admin/campaigns',    label: 'Kampanjer',    icon: Megaphone },
-  { href: '/admin/automations',  label: 'Automationer', icon: Zap },
-  { href: '/admin/staff',        label: 'Medarbetare',  icon: UserCog },
+const ADMIN_NAV = [
+  { href: '/admin/dashboard',   label: 'Översikt',     icon: LayoutDashboard },
+  { href: '/admin/orders',      label: 'Ordrar',       icon: ShoppingBag },
+  { href: '/admin/customers',   label: 'Kunder',       icon: Users },
+  { href: '/admin/products',    label: 'Produkter',    icon: Tag },
+  { href: '/admin/campaigns',   label: 'Kampanjer',    icon: Megaphone },
+  { href: '/admin/automations', label: 'Automationer', icon: Zap },
+  { href: '/admin/staff',       label: 'Medarbetare',  icon: UserCog },
+]
+
+const CRM_NAV = [
+  { href: '/crm/pipeline',  label: 'Pipeline',  icon: GitBranch },
+  { href: '/crm/customers', label: 'CRM Kunder', icon: Users },
+  { href: '/crm/orders',    label: 'CRM Ordrar', icon: ShoppingBag },
 ]
 
 export function AdminShell({ children, email }: { children: ReactNode; email: string }) {
@@ -48,14 +54,13 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
         </Link>
 
         {/* Desktop nav pills */}
-        <nav className="admin-desktop-nav" style={{ display: 'none', gap: 2, flex: 1 }}>
-          {NAV.map(({ href, label, icon: Icon }) => {
+        <nav className="admin-desktop-nav" style={{ display: 'none', gap: 2, flex: 1, alignItems: 'center' }}>
+          {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href)
             return (
               <Link key={href} href={href} style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 13px',
-                borderRadius: 7,
+                padding: '6px 13px', borderRadius: 7,
                 background: active ? 'rgba(232,184,75,.09)' : 'transparent',
                 color: active ? 'var(--gold)' : 'var(--text3)',
                 fontSize: 13, fontWeight: active ? 600 : 400,
@@ -64,6 +69,27 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
                 transition: 'all .15s',
               }}>
                 <Icon size={14} style={{ opacity: active ? 1 : 0.6 }} />
+                {label}
+              </Link>
+            )
+          })}
+          {/* Separator */}
+          <div style={{ width: 1, height: 16, background: 'var(--line)', margin: '0 4px' }} />
+          {/* CRM shortcuts */}
+          {CRM_NAV.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href)
+            return (
+              <Link key={href} href={href} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 13px', borderRadius: 7,
+                background: active ? 'rgba(74,143,212,.1)' : 'transparent',
+                color: active ? '#6AAFF0' : 'var(--text3)',
+                fontSize: 13, fontWeight: active ? 600 : 400,
+                textDecoration: 'none',
+                border: `1px solid ${active ? 'rgba(74,143,212,.25)' : 'transparent'}`,
+                transition: 'all .15s',
+              }}>
+                <Icon size={14} style={{ opacity: active ? 1 : 0.5 }} />
                 {label}
               </Link>
             )
@@ -127,7 +153,7 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
           display: 'flex', flexDirection: 'column', gap: 6,
           animation: 'fadeIn .15s ease',
         }}>
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href)
             return (
               <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{
@@ -141,6 +167,25 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
                 boxShadow: active ? '0 0 20px rgba(232,184,75,.08)' : 'none',
               }}>
                 <Icon size={18} style={{ color: active ? 'var(--gold)' : 'var(--text3)', opacity: active ? 1 : 0.7 }} />
+                {label}
+              </Link>
+            )
+          })}
+          {/* CRM section */}
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.1em', padding: '10px 18px 4px' }}>Säljverktyg</div>
+          {CRM_NAV.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href)
+            return (
+              <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '14px 18px', borderRadius: 10,
+                background: active ? 'rgba(74,143,212,.08)' : 'rgba(255,255,255,.03)',
+                color: active ? '#6AAFF0' : 'var(--text)',
+                fontSize: 15, fontWeight: active ? 600 : 400,
+                textDecoration: 'none',
+                border: `1px solid ${active ? 'rgba(74,143,212,.25)' : 'var(--line)'}`,
+              }}>
+                <Icon size={18} style={{ color: active ? '#6AAFF0' : 'var(--text3)', opacity: active ? 1 : 0.7 }} />
                 {label}
               </Link>
             )
