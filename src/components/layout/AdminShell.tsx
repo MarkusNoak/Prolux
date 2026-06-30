@@ -17,9 +17,9 @@ const ADMIN_NAV = [
 ]
 
 const CRM_NAV = [
-  { href: '/crm/pipeline',  label: 'Pipeline',  icon: GitBranch },
-  { href: '/crm/customers', label: 'CRM Kunder', icon: Users },
-  { href: '/crm/orders',    label: 'CRM Ordrar', icon: ShoppingBag },
+  { href: '/admin/crm/pipeline',  label: 'Pipeline',   icon: GitBranch },
+  { href: '/admin/crm/customers', label: 'CRM Kunder', icon: Users },
+  { href: '/admin/crm/orders',    label: 'CRM Ordrar', icon: ShoppingBag },
 ]
 
 export function AdminShell({ children, email }: { children: ReactNode; email: string }) {
