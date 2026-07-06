@@ -468,55 +468,128 @@ export default function CrmCustomersPage() {
                 </div>
               )}
 
-              {/* Quick actions: note + reminder side by side */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {/* Quick note */}
+              {/* Notes + Reminders inline — same layout as the notes tab */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+
+                {/* Activity log */}
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text3)', display: 'inline-block' }} />
-                    Snabbanteckning
+                  <h3 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Anteckningar & aktiviteter</h3>
+                  <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
+                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Skriv anteckning, samtalsnotis, mötesinformation..." rows={4}
+                      style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box', marginBottom: 10 }} />
+                    <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select value={noteType} onChange={e => setNoteType(e.target.value as any)}
+                        style={{ padding: '7px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontSize: 12, outline: 'none' }}>
+                        <option value="note">📝 Anteckning</option>
+                        <option value="call">📞 Samtal</option>
+                        <option value="email">📧 E-post</option>
+                        <option value="meeting">🤝 Möte</option>
+                      </select>
+                      <button onClick={addActivity} style={{ padding: '7px 18px', background: 'var(--gold)', border: 'none', borderRadius: 6, color: '#111', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Spara</button>
+                    </div>
                   </div>
-                  <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <select value={noteType} onChange={e => setNoteType(e.target.value as any)}
-                      style={{ padding: '6px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontSize: 12, outline: 'none', width: '100%' }}>
-                      <option value="note">Anteckning</option>
-                      <option value="call">Samtal</option>
-                      <option value="email">E-post</option>
-                      <option value="meeting">Möte</option>
-                    </select>
-                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Skriv en notering..." rows={2}
-                      style={{ width: '100%', padding: '8px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', fontSize: 12, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
-                    <button onClick={addActivity} disabled={!noteText.trim()}
-                      style={{ padding: '7px 0', background: 'var(--gold)', border: 'none', borderRadius: 6, color: '#111', fontSize: 12, fontWeight: 700, cursor: noteText.trim() ? 'pointer' : 'default', opacity: noteText.trim() ? 1 : 0.5, width: '100%' }}>
-                      Spara anteckning
-                    </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {activities.slice(0, 5).map(a => (
+                      <div key={a.id} style={{ background: 'var(--bg3)', border: `1px solid ${activityColor[a.type]}28`, borderRadius: 10, padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: activityColor[a.type], textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {a.type === 'note' ? '📝' : a.type === 'call' ? '📞' : a.type === 'email' ? '📧' : '🤝'} {a.title}
+                          </span>
+                          <span style={{ fontSize: 10, color: 'var(--text3)', marginLeft: 'auto' }}>{formatDate(a.created_at)}</span>
+                          <button onClick={() => deleteActivity(a.id)} title="Ta bort" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2, flexShrink: 0 }}>
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                        {a.body && <p style={{ margin: 0, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>{a.body}</p>}
+                      </div>
+                    ))}
+                    {activities.length > 5 && (
+                      <button onClick={() => setTab('notes')} style={{ padding: '8px 0', background: 'transparent', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text3)', fontSize: 12, cursor: 'pointer' }}>
+                        Visa alla {activities.length} aktiviteter →
+                      </button>
+                    )}
+                    {activities.length === 0 && <p style={{ color: 'var(--text3)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>Inga aktiviteter</p>}
                   </div>
                 </div>
 
-                {/* Quick reminder */}
+                {/* Reminders */}
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} />
-                    Snabbpåminnelse
-                  </div>
-                  <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <input value={reminderText} onChange={e => setReminderText(e.target.value)} placeholder="Vad ska göras?"
-                      style={{ width: '100%', padding: '7px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
-                    <input type="date" value={reminderDate} onChange={e => setReminderDate(e.target.value)}
-                      style={{ width: '100%', padding: '7px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', fontSize: 12, outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' }} />
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {(['low','normal','high'] as const).map(p => (
-                        <button key={p} onClick={() => setReminderPriority(p)}
-                          style={{ flex: 1, padding: '4px 0', fontSize: 10, fontWeight: reminderPriority === p ? 700 : 400, background: reminderPriority === p ? 'rgba(255,255,255,.08)' : 'transparent', border: `1px solid ${reminderPriority === p ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.06)'}`, borderRadius: 5, color: reminderPriority === p ? 'var(--text)' : 'var(--text3)', cursor: 'pointer' }}>
-                          {p === 'low' ? 'Låg' : p === 'normal' ? 'Normal' : 'Hög'}
-                        </button>
-                      ))}
+                  <h3 style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                    <Bell size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} color="var(--gold)" />
+                    Påminnelser
+                  </h3>
+                  <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 14 }}>
+                    <input value={reminderText} onChange={e => setReminderText(e.target.value)} placeholder="Vad ska du komma ihåg?"
+                      style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Calendar size={13} color="var(--text3)" />
+                        <input type="date" value={reminderDate} onChange={e => setReminderDate(e.target.value)}
+                          style={{ flex: 1, padding: '7px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontSize: 12, outline: 'none', colorScheme: 'dark' }} />
+                      </div>
+                      <select value={reminderPriority} onChange={e => setReminderPriority(e.target.value as ReminderPriority)}
+                        style={{ padding: '7px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 6, color: PRIORITY_COLOR[reminderPriority], fontSize: 12, outline: 'none', fontWeight: 600 }}>
+                        <option value="low">Låg</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">Hög</option>
+                      </select>
                     </div>
-                    <button onClick={addReminder} disabled={!reminderText.trim() || !reminderDate}
-                      style={{ padding: '7px 0', background: 'rgba(74,143,212,.15)', border: '1px solid rgba(74,143,212,.25)', borderRadius: 6, color: '#6AAFF0', fontSize: 12, fontWeight: 700, cursor: (reminderText.trim() && reminderDate) ? 'pointer' : 'default', opacity: (reminderText.trim() && reminderDate) ? 1 : 0.5, width: '100%' }}>
-                      Spara påminnelse
+                    <button onClick={addReminder} style={{ width: '100%', padding: '8px 0', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      + Lägg till påminnelse
                     </button>
                   </div>
+
+                  {overdueReminders.length > 0 && (
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Försenade</div>
+                      {overdueReminders.map(r => (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'rgba(224,82,82,.06)', border: '1px solid rgba(224,82,82,.2)', borderRadius: 8, marginBottom: 6 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, marginBottom: 3 }}>{r.title}</div>
+                            <div style={{ fontSize: 11, color: 'var(--red)' }}>Försenad: {r.due_date}</div>
+                          </div>
+                          <button onClick={() => toggleReminder(r.id)} style={{ padding: '4px 8px', background: 'var(--green)', border: 'none', borderRadius: 5, color: '#fff', fontSize: 10, cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>✓</button>
+                          <button onClick={() => deleteReminder(r.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', flexShrink: 0, padding: 2 }}><X size={13} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {upcomingReminders.length > 0 && (
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Kommande</div>
+                      {upcomingReminders.map(r => (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'var(--bg3)', border: `1px solid ${PRIORITY_COLOR[r.priority]}28`, borderRadius: 8, marginBottom: 6 }}>
+                          <div style={{ width: 3, height: '100%', minHeight: 36, background: PRIORITY_COLOR[r.priority], borderRadius: 2, flexShrink: 0 }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, marginBottom: 3 }}>{r.title}</div>
+                            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                              <span style={{ fontSize: 11, color: 'var(--text3)' }}><Calendar size={10} style={{ verticalAlign: 'middle', marginRight: 3 }} />{r.due_date}</span>
+                              <span style={{ fontSize: 10, color: PRIORITY_COLOR[r.priority], fontWeight: 700 }}>{PRIORITY_LABEL[r.priority]}</span>
+                            </div>
+                          </div>
+                          <button onClick={() => toggleReminder(r.id)} style={{ padding: '4px 8px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 5, color: 'var(--text3)', fontSize: 10, cursor: 'pointer', flexShrink: 0 }}>✓ Klar</button>
+                          <button onClick={() => deleteReminder(r.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', flexShrink: 0, padding: 2 }}><X size={13} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {reminders.filter(r => r.status === 'done').length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, opacity: 0.6 }}>Avklarade</div>
+                      {reminders.filter(r => r.status === 'done').map(r => (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, marginBottom: 4, opacity: 0.5 }}>
+                          <span style={{ fontSize: 12, color: 'var(--text3)', textDecoration: 'line-through', flex: 1 }}>{r.title}</span>
+                          <button onClick={() => deleteReminder(r.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2 }}><X size={12} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {reminders.length === 0 && (
+                    <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '20px 0' }}>Inga påminnelser</div>
+                  )}
                 </div>
               </div>
             </div>
