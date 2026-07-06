@@ -54,13 +54,13 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
         </Link>
 
         {/* Desktop nav pills */}
-        <nav className="admin-desktop-nav" style={{ display: 'none', gap: 2, flex: 1, alignItems: 'center' }}>
+        <nav className="admin-desktop-nav" style={{ display: 'none', gap: 1, alignItems: 'center', flex: 1, overflow: 'hidden' }}>
           {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href)
             return (
               <Link key={href} href={href} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 13px', borderRadius: 7,
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '6px 9px', borderRadius: 7,
                 background: active ? 'rgba(232,184,75,.09)' : 'transparent',
                 color: active ? 'var(--gold)' : 'var(--text3)',
                 fontSize: 13, fontWeight: active ? 600 : 400,
@@ -80,8 +80,8 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
             const active = pathname.startsWith(href)
             return (
               <Link key={href} href={href} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 13px', borderRadius: 7,
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '6px 9px', borderRadius: 7,
                 background: active ? 'rgba(74,143,212,.1)' : 'transparent',
                 color: active ? '#6AAFF0' : 'var(--text3)',
                 fontSize: 13, fontWeight: active ? 600 : 400,
@@ -97,7 +97,7 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
         </nav>
 
         {/* Right side */}
-        <div className="admin-desktop-right" style={{ display: 'none', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+        <div className="admin-desktop-right" style={{ display: 'none', alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '5px 10px 5px 6px',
