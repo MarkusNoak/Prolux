@@ -56,43 +56,51 @@ export default function CrmDashboardPage() {
   const [budgets, setBudgets]             = useState<Record<string, number>>({})
   const [editBudget, setEditBudget]       = useState(false)
   const [budgetInput, setBudgetInput]     = useState<Record<string, string>>({})
-
-  const budgetKey = (sp: string) => `budget_${year}_${month}_${sp}`
-
-  useEffect(() => {
-    const loaded: Record<string, number> = {}
-    for (const sp of SALESPEOPLE) {
-      const v = localStorage.getItem(budgetKey(sp))
-      if (v) loaded[sp] = parseInt(v)
-    }
-    setBudgets(loaded)
-    setBudgetInput(Object.fromEntries(SALESPEOPLE.map(sp => [sp, loaded[sp] ? String(loaded[sp]) : ''])))
-  }, [])
+  const [savingBudget, setSavingBudget]   = useState(false)
+  const [isAdmin, setIsAdmin]             = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       const name = (user?.user_metadata?.full_name || user?.user_metadata?.name || 'Bashar').split(' ')[0]
       setFirstName(name)
+      setIsAdmin(user?.user_metadata?.role === 'admin')
     })
     Promise.all([
       supabase.from('deals').select('id,title,value,created_at,customers(company)').eq('stage', 'Offert').order('created_at', { ascending: false }).limit(4),
       supabase.from('customers').select('id,company,price_list_id').eq('status', 'active').order('created_at', { ascending: false }).limit(5),
       supabase.from('reminders').select('id,customer_id,title,due_date,priority,status,customers(company)').eq('status', 'upcoming').order('due_date'),
-    ]).then(([{ data: d }, { data: c }, { data: r }]) => {
+      supabase.from('sales_budgets').select('salesperson,budget').eq('year', year).eq('month', month),
+    ]).then(([{ data: d }, { data: c }, { data: r }, { data: b }]) => {
       if (d) setDeals(d)
       if (c) setRecentCustomers(c)
       if (r) setReminders(r)
+      if (b) {
+        const loaded: Record<string, number> = {}
+        for (const row of b as any[]) loaded[row.salesperson] = row.budget
+        setBudgets(loaded)
+        setBudgetInput(Object.fromEntries(SALESPEOPLE.map(sp => [sp, loaded[sp] ? String(loaded[sp]) : ''])))
+      }
     })
   }, [])
 
-  function saveBudgets() {
+  async function saveBudgets() {
+    setSavingBudget(true)
+    const rows = SALESPEOPLE
+      .map(sp => ({ salesperson: sp, year, month, budget: parseInt(budgetInput[sp] || '0') || 0 }))
+      .filter(r => r.budget > 0)
+    await supabase.from('sales_budgets').upsert(rows, { onConflict: 'salesperson,year,month' })
+    // Remove zeroed out entries
+    const removed = SALESPEOPLE.filter(sp => !(parseInt(budgetInput[sp] || '0') > 0))
+    for (const sp of removed) {
+      await supabase.from('sales_budgets').delete().eq('salesperson', sp).eq('year', year).eq('month', month)
+    }
     const newBudgets: Record<string, number> = {}
     for (const sp of SALESPEOPLE) {
       const v = parseInt(budgetInput[sp] || '0')
-      if (v > 0) { localStorage.setItem(budgetKey(sp), String(v)); newBudgets[sp] = v }
-      else localStorage.removeItem(budgetKey(sp))
+      if (v > 0) newBudgets[sp] = v
     }
     setBudgets(newBudgets)
+    setSavingBudget(false)
     setEditBudget(false)
   }
 
@@ -174,10 +182,12 @@ export default function CrmDashboardPage() {
             <Target size={15} color="var(--gold)" />
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Månadsbudget — {monthNames[month]} {year}</span>
           </div>
-          <button onClick={() => setEditBudget(e => !e)}
-            style={{ fontSize: 11, padding: '4px 10px', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.2)', borderRadius: 6, color: 'var(--gold)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-            {editBudget ? 'Avbryt' : 'Sätt budget'}
-          </button>
+          {isAdmin && (
+            <button onClick={() => setEditBudget(e => !e)}
+              style={{ fontSize: 11, padding: '4px 10px', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.2)', borderRadius: 6, color: 'var(--gold)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+              {editBudget ? 'Avbryt' : 'Sätt budget'}
+            </button>
+          )}
         </div>
 
         {editBudget ? (
@@ -194,8 +204,9 @@ export default function CrmDashboardPage() {
                 </div>
               ))}
             </div>
-            <button onClick={saveBudgets} style={{ padding: '9px 20px', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-              Spara budget
+            <button onClick={saveBudgets} disabled={savingBudget}
+              style={{ padding: '9px 20px', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 13, fontWeight: 700, cursor: savingBudget ? 'default' : 'pointer', fontFamily: 'var(--font-sans)', opacity: savingBudget ? 0.7 : 1 }}>
+              {savingBudget ? 'Sparar...' : 'Spara budget'}
             </button>
           </div>
         ) : totalBudget > 0 ? (
@@ -263,7 +274,7 @@ export default function CrmDashboardPage() {
           </div>
         ) : (
           <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '12px 0' }}>
-            Ingen budget satt — klicka "Sätt budget" för att lägga in månadsbudget per säljare
+            {isAdmin ? 'Ingen budget satt — klicka "Sätt budget" för att lägga in månadsbudget per säljare' : 'Ingen budget satt för denna månad ännu'}
           </div>
         )}
       </div>
