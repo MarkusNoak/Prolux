@@ -9,6 +9,70 @@ import { Plus, Minus, ShoppingCart, Search, Package, ArrowLeft, ChevronDown, Tag
 const supabase = createClient()
 type View = 'new' | 'confirm' | 'history'
 
+const AFFINITY: Record<string, string[]> = {
+  'rapidet':   ['magic', 'gommalux', 'green power'],
+  'magic':     ['rapidet', 'carnauba', 'keramisk'],
+  'gommalux':  ['rapidet', 'magic'],
+  'carnauba':  ['keramisk', 'magic', 'polish'],
+  'keramisk':  ['carnauba', 'polish', 'magic'],
+  'green':     ['magic', 'rapidet'],
+  'polish':    ['carnauba', 'keramisk'],
+}
+
+function getRecommendations(boughtNames: string[], allProducts: Product[]): Product[] {
+  const recs = new Set<string>()
+  for (const name of boughtNames) {
+    const key = Object.keys(AFFINITY).find(k => name.toLowerCase().includes(k))
+    if (key) {
+      for (const recKey of AFFINITY[key]) {
+        const match = allProducts.find(p =>
+          p.name.toLowerCase().includes(recKey) &&
+          !boughtNames.some(b => b.toLowerCase() === p.name.toLowerCase())
+        )
+        if (match) recs.add(match.id)
+      }
+    }
+  }
+  return allProducts.filter(p => recs.has(p.id)).slice(0, 4)
+}
+
+function ProductRow({ p, selectedCustomer, getQty, addToCart, updateQty, badge }: {
+  p: Product
+  selectedCustomer: Customer | null
+  getQty: (id: string) => number
+  addToCart: (p: Product) => void
+  updateQty: (id: string, delta: number) => void
+  badge?: 'köpt' | 'rec'
+}) {
+  const qty   = getQty(p.id)
+  const price = custPrice(p.list_price, selectedCustomer?.price_list_id || 'Standard')
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderBottom: '1px solid var(--border2)', background: badge === 'köpt' ? 'rgba(232,184,75,.03)' : badge === 'rec' ? 'rgba(74,143,212,.02)' : 'transparent' }}>
+      <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg4)', border: '1px solid var(--border)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {p.image_url ? <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Package size={20} color="var(--text3)" />}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{p.name}</span>
+          {badge === 'köpt' && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(232,184,75,.15)', color: 'var(--gold)', fontWeight: 700 }}>Köpt</span>}
+          {badge === 'rec'  && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(74,143,212,.15)', color: '#6AAFF0', fontWeight: 700 }}>Rekommenderas</span>}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text3)' }}>{p.brand} · {p.unit}</div>
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>{fmt(price)} kr</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <button onClick={() => updateQty(p.id, -1)} style={{ width: 28, height: 28, borderRadius: 6, background: qty > 0 ? 'var(--bg4)' : 'transparent', border: `1px solid ${qty > 0 ? 'var(--border)' : 'transparent'}`, color: 'var(--text)', cursor: qty > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: qty > 0 ? 1 : 0 }}>
+          <Minus size={12} />
+        </button>
+        <span style={{ fontSize: 13, fontWeight: 700, color: qty > 0 ? 'var(--gold)' : 'var(--text3)', minWidth: 20, textAlign: 'center' }}>{qty > 0 ? qty : '+'}</span>
+        <button onClick={() => addToCart(p)} style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--bg4)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Plus size={12} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function CrmOrdersPage() {
   const searchParams = useSearchParams()
   const autoSelectedRef = useRef(false)
@@ -21,6 +85,7 @@ export default function CrmOrdersPage() {
   const [cart, setCart]                   = useState<CartItem[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [lastBought, setLastBought]       = useState<string[]>([])
+  const [recommendations, setRecommendations] = useState<Product[]>([])
   const [customerSearch, setCustomerSearch] = useState('')
   const [productSearch, setProductSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -66,7 +131,7 @@ export default function CrmOrdersPage() {
     loadLastBought(customer)
     const productName = searchParams.get('product')
     if (productName) {
-      const prod = products.find(p => p.name === productName)
+      const prod = products.find(p => p.name.toLowerCase() === productName.toLowerCase())
       if (prod) {
         const unitPrice = custPrice(prod.list_price, customer.price_list_id || 'Standard')
         setCart([{ product: prod, qty: 1, unitPrice }])
@@ -82,10 +147,14 @@ export default function CrmOrdersPage() {
       .order('created_at', { ascending: false })
       .limit(3)
     if (data) {
-      const names = data.flatMap((o: any) => (o.order_items || []).map((i: any) => i.product_name))
-      setLastBought([...new Set(names)].slice(0, 5))
+      const names: string[] = [...new Set(
+        data.flatMap((o: any) => (o.order_items || []).map((i: any) => i.product_name as string))
+      )].slice(0, 5)
+      setLastBought(names)
+      setRecommendations(getRecommendations(names, products))
     } else {
       setLastBought([])
+      setRecommendations([])
     }
   }
 
@@ -159,6 +228,18 @@ export default function CrmOrdersPage() {
     const matchCat = selectedCategory === 'all' || p.category_id === selectedCategory
     return matchSearch && matchCat
   })
+
+  // Products matching lastBought names (case-insensitive)
+  const lastBoughtProducts: Product[] = lastBought
+    .map(name => products.find(p => p.name.toLowerCase() === name.toLowerCase()))
+    .filter((p): p is Product => !!p)
+
+  // IDs to exclude from main list when pinned
+  const pinnedIds = new Set([
+    ...lastBoughtProducts.map(p => p.id),
+    ...recommendations.map(p => p.id),
+  ])
+  const mainProducts = filteredProducts.filter(p => !pinnedIds.has(p.id))
 
   // ── HISTORY VIEW ───────────────────────────────────────────
   if (view === 'history') return (
@@ -351,26 +432,7 @@ export default function CrmOrdersPage() {
           </div>
         </div>
 
-        {/* Last purchased — shown only after customer selected */}
-        {selectedCustomer && lastBought.length > 0 && (
-          <div style={{ background: 'rgba(232,184,75,.05)', border: '1px solid rgba(232,184,75,.15)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 9 }}>
-              <Star size={13} color="var(--gold)" />
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gold)' }}>Senast köpt av {selectedCustomer.company}</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {lastBought.map(name => {
-                const prod = products.find(p => p.name === name)
-                return (
-                  <button key={name} onClick={() => prod && addToCart(prod)}
-                    style={{ fontSize: 12, padding: '5px 11px', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.2)', borderRadius: 6, color: 'var(--text)', cursor: prod ? 'pointer' : 'default', fontFamily: 'var(--font-sans)' }}>
-                    {name} {prod ? <span style={{ color: 'var(--gold)' }}>+</span> : ''}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
+{/* Strip removed — pinned rows now appear at top of product list */}
 
         {/* Category filter */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, overflowX: 'auto' }}>
@@ -403,42 +465,42 @@ export default function CrmOrdersPage() {
         <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
           {loading ? (
             <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>Laddar produkter...</div>
-          ) : filteredProducts.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Inga produkter i denna kategori</div>
-          ) : filteredProducts.map((p, i) => {
-            const pl  = selectedCustomer?.price_list_id || 'Standard'
-            const price = custPrice(p.list_price, pl)
-            const qty = getQty(p.id)
-            const wasBought = lastBought.includes(p.name)
-            return (
-              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', borderBottom: i < filteredProducts.length - 1 ? '1px solid var(--border2)' : 'none', background: wasBought ? 'rgba(232,184,75,.03)' : 'transparent' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg4)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {p.image_url ? <img src={p.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={p.name} /> : <Package size={20} color="var(--text3)" />}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>{p.name}</span>
-                    {wasBought && <span style={{ fontSize: 10, padding: '1px 6px', background: 'rgba(232,184,75,.12)', border: '1px solid rgba(232,184,75,.2)', borderRadius: 4, color: 'var(--gold)', fontWeight: 600 }}>Köpt</span>}
+          ) : (
+            <>
+              {/* ── Senast köpt — pinned ── */}
+              {lastBoughtProducts.length > 0 && (
+                <>
+                  <div style={{ padding: '8px 16px', background: 'rgba(232,184,75,.06)', borderBottom: '1px solid rgba(232,184,75,.12)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Star size={11} color="var(--gold)" />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Senast köpt</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)' }}>{p.brand} · {p.unit}</div>
+                  {lastBoughtProducts.map((p) => <ProductRow key={p.id} p={p} selectedCustomer={selectedCustomer} getQty={getQty} addToCart={addToCart} updateQty={updateQty} badge="köpt" />)}
+                </>
+              )}
+
+              {/* ── Rekommendationer — pinned ── */}
+              {recommendations.length > 0 && (
+                <>
+                  <div style={{ padding: '8px 16px', background: 'rgba(74,143,212,.05)', borderBottom: '1px solid rgba(74,143,212,.12)', borderTop: lastBoughtProducts.length > 0 ? '1px solid var(--border2)' : undefined, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Tag size={11} color="#6AAFF0" />
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#6AAFF0', textTransform: 'uppercase', letterSpacing: '.07em' }}>Rekommenderas</span>
+                  </div>
+                  {recommendations.map((p) => <ProductRow key={p.id} p={p} selectedCustomer={selectedCustomer} getQty={getQty} addToCart={addToCart} updateQty={updateQty} badge="rec" />)}
+                </>
+              )}
+
+              {/* ── All other products ── */}
+              {(lastBoughtProducts.length > 0 || recommendations.length > 0) && mainProducts.length > 0 && (
+                <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,.02)', borderBottom: '1px solid var(--border2)', borderTop: '1px solid var(--border2)' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.07em' }}>Alla produkter</span>
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', minWidth: 70, textAlign: 'right' }}>
-                  {fmt(price)} kr
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                  <button onClick={() => updateQty(p.id, -1)} disabled={qty === 0}
-                    style={{ width: 30, height: 30, borderRadius: 6, background: 'var(--bg4)', border: '1px solid var(--border)', color: qty === 0 ? 'var(--text3)' : 'var(--text)', cursor: qty === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Minus size={13} />
-                  </button>
-                  <span style={{ width: 26, textAlign: 'center', fontSize: 14, fontWeight: 700, color: qty > 0 ? 'var(--gold)' : 'var(--text3)' }}>{qty}</span>
-                  <button onClick={() => addToCart(p)}
-                    style={{ width: 30, height: 30, borderRadius: 6, background: 'var(--gold)', border: 'none', color: '#111', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Plus size={13} />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+              )}
+              {mainProducts.length === 0 && lastBoughtProducts.length === 0 && (
+                <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Inga produkter i denna kategori</div>
+              )}
+              {mainProducts.map((p) => <ProductRow key={p.id} p={p} selectedCustomer={selectedCustomer} getQty={getQty} addToCart={addToCart} updateQty={updateQty} />)}
+            </>
+          )}
         </div>
       </div>
 
