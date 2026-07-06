@@ -468,21 +468,54 @@ export default function CrmCustomersPage() {
                 </div>
               )}
 
-              {/* Quick note */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>Snabbanteckning</div>
-                <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
-                  <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Skriv en anteckning om kunden..." rows={3}
-                    style={{ width: '100%', padding: '9px 12px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box', marginBottom: 10 }} />
-                  <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* Quick actions: note + reminder side by side */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {/* Quick note */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text3)', display: 'inline-block' }} />
+                    Snabbanteckning
+                  </div>
+                  <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <select value={noteType} onChange={e => setNoteType(e.target.value as any)}
-                      style={{ padding: '6px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontSize: 12, outline: 'none' }}>
+                      style={{ padding: '6px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontSize: 12, outline: 'none', width: '100%' }}>
                       <option value="note">Anteckning</option>
                       <option value="call">Samtal</option>
                       <option value="email">E-post</option>
                       <option value="meeting">Möte</option>
                     </select>
-                    <button onClick={addActivity} style={{ padding: '6px 16px', background: 'var(--gold)', border: 'none', borderRadius: 6, color: '#111', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Spara</button>
+                    <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Skriv en notering..." rows={2}
+                      style={{ width: '100%', padding: '8px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', fontSize: 12, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+                    <button onClick={addActivity} disabled={!noteText.trim()}
+                      style={{ padding: '7px 0', background: 'var(--gold)', border: 'none', borderRadius: 6, color: '#111', fontSize: 12, fontWeight: 700, cursor: noteText.trim() ? 'pointer' : 'default', opacity: noteText.trim() ? 1 : 0.5, width: '100%' }}>
+                      Spara anteckning
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick reminder */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} />
+                    Snabbpåminnelse
+                  </div>
+                  <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <input value={reminderText} onChange={e => setReminderText(e.target.value)} placeholder="Vad ska göras?"
+                      style={{ width: '100%', padding: '7px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }} />
+                    <input type="date" value={reminderDate} onChange={e => setReminderDate(e.target.value)}
+                      style={{ width: '100%', padding: '7px 10px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', fontSize: 12, outline: 'none', boxSizing: 'border-box', colorScheme: 'dark' }} />
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {(['low','normal','high'] as const).map(p => (
+                        <button key={p} onClick={() => setReminderPriority(p)}
+                          style={{ flex: 1, padding: '4px 0', fontSize: 10, fontWeight: reminderPriority === p ? 700 : 400, background: reminderPriority === p ? 'rgba(255,255,255,.08)' : 'transparent', border: `1px solid ${reminderPriority === p ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.06)'}`, borderRadius: 5, color: reminderPriority === p ? 'var(--text)' : 'var(--text3)', cursor: 'pointer' }}>
+                          {p === 'low' ? 'Låg' : p === 'normal' ? 'Normal' : 'Hög'}
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={addReminder} disabled={!reminderText.trim() || !reminderDate}
+                      style={{ padding: '7px 0', background: 'rgba(74,143,212,.15)', border: '1px solid rgba(74,143,212,.25)', borderRadius: 6, color: '#6AAFF0', fontSize: 12, fontWeight: 700, cursor: (reminderText.trim() && reminderDate) ? 'pointer' : 'default', opacity: (reminderText.trim() && reminderDate) ? 1 : 0.5, width: '100%' }}>
+                      Spara påminnelse
+                    </button>
                   </div>
                 </div>
               </div>

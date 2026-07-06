@@ -4,13 +4,15 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, GitBranch, Users, ShoppingCart, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, GitBranch, Users, ShoppingCart, LogOut, Menu, X, CalendarDays, StickyNote } from 'lucide-react'
 
 const NAV = [
-  { href: '/crm/dashboard', label: 'Översikt', icon: LayoutDashboard },
-  { href: '/crm/pipeline',  label: 'Pipeline',  icon: GitBranch },
-  { href: '/crm/customers', label: 'Kunder',    icon: Users },
-  { href: '/crm/orders',    label: 'Ordrar',    icon: ShoppingCart },
+  { href: '/crm/dashboard', label: 'Översikt',      icon: LayoutDashboard },
+  { href: '/crm/pipeline',  label: 'Pipeline',       icon: GitBranch },
+  { href: '/crm/customers', label: 'Kunder',         icon: Users },
+  { href: '/crm/orders',    label: 'Ordrar',         icon: ShoppingCart },
+  { href: '/crm/calendar',  label: 'Kalender',       icon: CalendarDays },
+  { href: '/crm/notes',     label: 'Anteckningar',   icon: StickyNote },
 ]
 
 export default function CrmShell({ children }: { children: ReactNode }) {

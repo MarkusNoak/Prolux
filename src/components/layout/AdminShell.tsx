@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X, GitBranch, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X, GitBranch, ChevronDown, CalendarDays, StickyNote } from 'lucide-react'
 
 const ADMIN_NAV = [
   { href: '/admin/dashboard',   label: 'Översikt',     icon: LayoutDashboard },
@@ -17,9 +17,11 @@ const ADMIN_NAV = [
 ]
 
 const CRM_NAV = [
-  { href: '/admin/crm/pipeline',  label: 'Pipeline',   icon: GitBranch },
-  { href: '/admin/crm/customers', label: 'CRM Kunder', icon: Users },
-  { href: '/admin/crm/orders',    label: 'CRM Ordrar', icon: ShoppingBag },
+  { href: '/admin/crm/pipeline',  label: 'Pipeline',      icon: GitBranch },
+  { href: '/admin/crm/customers', label: 'CRM Kunder',    icon: Users },
+  { href: '/admin/crm/orders',    label: 'CRM Ordrar',    icon: ShoppingBag },
+  { href: '/admin/crm/calendar',  label: 'Kalender',      icon: CalendarDays },
+  { href: '/admin/crm/notes',     label: 'Anteckningar',  icon: StickyNote },
 ]
 
 export function AdminShell({ children, email }: { children: ReactNode; email: string }) {

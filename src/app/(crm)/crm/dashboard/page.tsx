@@ -200,37 +200,63 @@ export default function CrmDashboardPage() {
           </div>
         ) : totalBudget > 0 ? (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 20px', marginBottom: 16 }}>
+            {/* My own budget highlighted */}
+            {budgets[firstName] && (
+              <div style={{ background: 'rgba(232,184,75,.07)', border: '1px solid rgba(232,184,75,.18)', borderRadius: 10, padding: '14px 18px', marginBottom: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>Ditt dagsmål idag</span>
+                  <span style={{ fontSize: 12, color: 'var(--text3)' }}>{monthNames[month]} {year}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 24, marginBottom: 10 }}>
+                  {[
+                    { label: 'Månadsbudget', value: `${fmt(budgets[firstName])} kr` },
+                    { label: 'Dagsmål', value: `${fmt(Math.round(budgets[firstName] / workDays))} kr` },
+                    { label: 'Hittillsmål', value: `${fmt(Math.round(budgets[firstName] / workDays) * daysPassed)} kr` },
+                    { label: 'Dagar kvar', value: `${workDays - daysPassed} av ${workDays}` },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ height: 5, background: 'rgba(255,255,255,.06)', borderRadius: 3 }}>
+                  <div style={{ height: '100%', width: `${Math.min((daysPassed / workDays) * 100, 100)}%`, background: 'linear-gradient(90deg, #D4A33C, #F5CC6A)', borderRadius: 3 }} />
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 16px', marginBottom: 14 }}>
               {SALESPEOPLE.filter(sp => budgets[sp]).map(sp => {
                 const spBudget = budgets[sp]
                 const spDaily  = Math.round(spBudget / workDays)
                 const spTarget = spDaily * daysPassed
+                const isMe     = sp === firstName
                 return (
-                  <div key={sp} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 8, padding: '12px 14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>{sp}</span>
-                      <span style={{ fontSize: 12, color: 'var(--text3)' }}>{fmt(spBudget)} kr/mån</span>
+                  <div key={sp} style={{ background: isMe ? 'rgba(232,184,75,.05)' : 'rgba(255,255,255,.03)', border: `1px solid ${isMe ? 'rgba(232,184,75,.15)' : 'rgba(255,255,255,.06)'}`, borderRadius: 8, padding: '10px 13px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: isMe ? 'var(--gold)' : 'var(--text2)' }}>{sp}{isMe ? ' (du)' : ''}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text3)' }}>{fmt(spBudget)} kr/mån</span>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8 }}>
-                      Dagsmål: <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{fmt(spDaily)} kr</span>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 7 }}>
+                      Dagsmål: <span style={{ color: isMe ? 'var(--gold)' : 'var(--text2)', fontWeight: 600 }}>{fmt(spDaily)} kr</span>
                       {' · '}Hittills: <span style={{ color: 'var(--text)' }}>{fmt(spTarget)} kr</span>
                     </div>
-                    <div style={{ height: 4, background: 'rgba(255,255,255,.06)', borderRadius: 2 }}>
-                      <div style={{ height: '100%', width: `${Math.min((daysPassed / workDays) * 100, 100)}%`, background: 'var(--gold)', borderRadius: 2 }} />
+                    <div style={{ height: 3, background: 'rgba(255,255,255,.06)', borderRadius: 2 }}>
+                      <div style={{ height: '100%', width: `${Math.min((daysPassed / workDays) * 100, 100)}%`, background: isMe ? 'var(--gold)' : 'rgba(74,143,212,.6)', borderRadius: 2 }} />
                     </div>
                   </div>
                 )
               })}
             </div>
-            <div style={{ display: 'flex', gap: 24, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+            <div style={{ display: 'flex', gap: 24, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.06)' }}>
               {[
                 { label: 'Total månadsbudget', value: `${fmt(totalBudget)} kr` },
                 { label: 'Dagsmål (teamet)', value: `${fmt(dailyTarget)} kr` },
                 { label: 'Arbetsdagar kvar', value: `${workDays - daysPassed} av ${workDays}` },
               ].map(({ label, value }) => (
                 <div key={label}>
-                  <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 }}>{label}</div>
-                  <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{value}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{value}</div>
                 </div>
               ))}
             </div>
