@@ -349,7 +349,7 @@ export default function CrmCustomersPage() {
                     <FileText size={13} /> Skicka offert
                   </button>
                 )}
-                <Link href="/crm/orders" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+                <Link href={`/crm/orders?customer=${selected.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
                   <Plus size={13} /> Ny order
                 </Link>
               </div>
@@ -426,7 +426,7 @@ export default function CrmCustomersPage() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Senaste köp</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                     {topProducts.slice(0, 4).map(p => (
-                      <span key={p.name} style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(76,175,125,.1)', border: '1px solid rgba(76,175,125,.2)', borderRadius: 6, color: 'var(--green)', fontWeight: 600 }}>{p.name} ×{p.qty}</span>
+                      <Link key={p.name} href={`/crm/orders?customer=${selected.id}&product=${encodeURIComponent(p.name)}`} style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(76,175,125,.1)', border: '1px solid rgba(76,175,125,.2)', borderRadius: 6, color: 'var(--green)', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}>{p.name} ×{p.qty}</Link>
                     ))}
                   </div>
                   {recommendations.length > 0 && (
@@ -436,7 +436,7 @@ export default function CrmCustomersPage() {
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {recommendations.map(rec => (
-                          <span key={rec} style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(232,184,75,.08)', border: '1px solid rgba(232,184,75,.18)', borderRadius: 6, color: 'var(--gold)' }}>{rec}</span>
+                          <Link key={rec} href={`/crm/orders?customer=${selected.id}&product=${encodeURIComponent(rec)}`} style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(232,184,75,.08)', border: '1px solid rgba(232,184,75,.18)', borderRadius: 6, color: 'var(--gold)', textDecoration: 'none', cursor: 'pointer' }}>{rec}</Link>
                         ))}
                       </div>
                     </>

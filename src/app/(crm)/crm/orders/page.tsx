@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Product, Customer, Category, CartItem, Order, OrderStatus, ORDER_STATUS_LABEL } from '@/types'
 import { custPrice, fmt, formatDate } from '@/lib/utils'
@@ -9,6 +10,8 @@ const supabase = createClient()
 type View = 'new' | 'confirm' | 'history'
 
 export default function CrmOrdersPage() {
+  const searchParams = useSearchParams()
+  const autoSelectedRef = useRef(false)
   const [view, setView]                   = useState<View>('new')
   const [orders, setOrders]               = useState<(Order & { customers?: Customer })[]>([])
   const [customers, setCustomers]         = useState<Customer[]>([])
@@ -50,6 +53,26 @@ export default function CrmOrdersPage() {
       setLoading(false)
     })
   }, [])
+
+  useEffect(() => {
+    if (loading || autoSelectedRef.current) return
+    const customerId = searchParams.get('customer')
+    if (!customerId) return
+    const customer = customers.find(c => c.id === customerId)
+    if (!customer) return
+    autoSelectedRef.current = true
+    setSelectedCustomer(customer)
+    setCart([])
+    loadLastBought(customer)
+    const productName = searchParams.get('product')
+    if (productName) {
+      const prod = products.find(p => p.name === productName)
+      if (prod) {
+        const unitPrice = custPrice(prod.list_price, customer.price_list_id || 'Standard')
+        setCart([{ product: prod, qty: 1, unitPrice }])
+      }
+    }
+  }, [loading, customers, products])
 
   async function loadLastBought(customer: Customer) {
     const { data } = await supabase
