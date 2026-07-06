@@ -1,7 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { fmt, formatDate } from '@/lib/utils'
-import { Plus, Users, ShoppingBag, Package, ChevronRight, Eye, FileText, Sparkles, GitBranch } from 'lucide-react'
+import { Plus, Users, ShoppingBag, Package, ChevronRight, FileText, GitBranch, Target, Calendar, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
+
+const supabase = createClient()
 
 const glass: React.CSSProperties = {
   background: 'rgba(13,16,23,.72)',
@@ -12,23 +16,113 @@ const glass: React.CSSProperties = {
   boxShadow: '0 1px 0 rgba(255,255,255,.04) inset, 0 4px 24px rgba(0,0,0,.3)',
 }
 
-export default async function CrmDashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const firstName = (user?.user_metadata?.full_name || user?.user_metadata?.name || 'Bashar').split(' ')[0]
+const SALESPEOPLE = ['Bashar', 'Stefan', 'Anna', 'Erik']
 
-  const [{ data: deals }, { data: recentCustomers }, { data: activities }] = await Promise.all([
-    supabase.from('deals').select('id,title,value,created_at,customers(company)').eq('stage', 'Offert').order('created_at', { ascending: false }).limit(4),
-    supabase.from('customers').select('id,company,price_list_id').eq('status', 'active').order('created_at', { ascending: false }).limit(5),
-    supabase.from('activities').select('id,title,created_at,customers(company)').order('created_at', { ascending: false }).limit(4),
-  ])
+function workingDaysInMonth(year: number, month: number): number {
+  let count = 0
+  const d = new Date(year, month, 1)
+  while (d.getMonth() === month) {
+    const day = d.getDay()
+    if (day !== 0 && day !== 6) count++
+    d.setDate(d.getDate() + 1)
+  }
+  return count
+}
 
+function workingDaysPassed(year: number, month: number): number {
+  const today = new Date()
+  let count = 0
+  const d = new Date(year, month, 1)
+  const end = today.getMonth() === month && today.getFullYear() === year ? today : new Date(year, month + 1, 0)
+  while (d <= end) {
+    const day = d.getDay()
+    if (day !== 0 && day !== 6) count++
+    d.setDate(d.getDate() + 1)
+  }
+  return count
+}
+
+export default function CrmDashboardPage() {
+  const now   = new Date()
+  const year  = now.getFullYear()
+  const month = now.getMonth()
+
+  const [firstName, setFirstName]         = useState('Bashar')
+  const [deals, setDeals]                 = useState<any[]>([])
+  const [recentCustomers, setRecentCustomers] = useState<any[]>([])
+  const [calMonth, setCalMonth]           = useState(month)
+  const [calYear, setCalYear]             = useState(year)
+  const [reminders, setReminders]         = useState<any[]>([])
+  const [budgets, setBudgets]             = useState<Record<string, number>>({})
+  const [editBudget, setEditBudget]       = useState(false)
+  const [budgetInput, setBudgetInput]     = useState<Record<string, string>>({})
+
+  const budgetKey = (sp: string) => `budget_${year}_${month}_${sp}`
+
+  useEffect(() => {
+    const loaded: Record<string, number> = {}
+    for (const sp of SALESPEOPLE) {
+      const v = localStorage.getItem(budgetKey(sp))
+      if (v) loaded[sp] = parseInt(v)
+    }
+    setBudgets(loaded)
+    setBudgetInput(Object.fromEntries(SALESPEOPLE.map(sp => [sp, loaded[sp] ? String(loaded[sp]) : ''])))
+  }, [])
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const name = (user?.user_metadata?.full_name || user?.user_metadata?.name || 'Bashar').split(' ')[0]
+      setFirstName(name)
+    })
+    Promise.all([
+      supabase.from('deals').select('id,title,value,created_at,customers(company)').eq('stage', 'Offert').order('created_at', { ascending: false }).limit(4),
+      supabase.from('customers').select('id,company,price_list_id').eq('status', 'active').order('created_at', { ascending: false }).limit(5),
+      supabase.from('reminders').select('id,customer_id,title,due_date,priority,status,customers(company)').eq('status', 'upcoming').order('due_date'),
+    ]).then(([{ data: d }, { data: c }, { data: r }]) => {
+      if (d) setDeals(d)
+      if (c) setRecentCustomers(c)
+      if (r) setReminders(r)
+    })
+  }, [])
+
+  function saveBudgets() {
+    const newBudgets: Record<string, number> = {}
+    for (const sp of SALESPEOPLE) {
+      const v = parseInt(budgetInput[sp] || '0')
+      if (v > 0) { localStorage.setItem(budgetKey(sp), String(v)); newBudgets[sp] = v }
+      else localStorage.removeItem(budgetKey(sp))
+    }
+    setBudgets(newBudgets)
+    setEditBudget(false)
+  }
+
+  const totalBudget = Object.values(budgets).reduce((a, b) => a + b, 0)
+  const workDays    = workingDaysInMonth(year, month)
+  const daysPassed  = workingDaysPassed(year, month)
+  const dailyTarget = workDays > 0 ? Math.round(totalBudget / workDays) : 0
+
+  // Calendar
+  const daysInCalMonth = new Date(calYear, calMonth + 1, 0).getDate()
+  const firstDayOfWeek = new Date(calYear, calMonth, 1).getDay()
+  const firstMon = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
+  const calCells: (number | null)[] = [...Array(firstMon).fill(null), ...Array.from({ length: daysInCalMonth }, (_, i) => i + 1)]
+  while (calCells.length % 7 !== 0) calCells.push(null)
+
+  const remindersByDate: Record<string, any[]> = {}
+  for (const r of reminders) {
+    const d = r.due_date?.slice(0, 10)
+    if (d) { if (!remindersByDate[d]) remindersByDate[d] = []; remindersByDate[d].push(r) }
+  }
+
+  const todayStr = now.toISOString().slice(0, 10)
+  const PRIORITY_DOT: Record<string, string> = { high: 'var(--red)', normal: 'var(--blue)', low: 'var(--text3)' }
   const PL_COLOR: Record<string, string> = { A: 'var(--gold)', B: '#6AAFF0', C: '#5EC49A', Standard: 'var(--text3)' }
+  const monthNames = ['Januari','Februari','Mars','April','Maj','Juni','Juli','Augusti','September','Oktober','November','December']
 
   return (
-    <div style={{ maxWidth: 780, margin: '0 auto', padding: '32px 20px 80px' }}>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 20px 80px' }}>
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 36, fontWeight: 400, color: 'var(--text)', margin: 0, lineHeight: 1.15 }}>
           Välkommen,{' '}
@@ -37,19 +131,12 @@ export default async function CrmDashboardPage() {
           </span>
         </h1>
         <p style={{ color: 'var(--text3)', fontSize: 13, marginTop: 8 }}>
-          {new Date().toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })}
+          {now.toLocaleDateString('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
       </div>
 
-      {/* ── Primary CTA ── */}
-      <Link href="/crm/orders" style={{
-        width: '100%', padding: '20px 24px',
-        background: 'linear-gradient(135deg, #E8B84B 0%, #F5CC6A 50%, #D4A33C 100%)',
-        borderRadius: 12, cursor: 'pointer', marginBottom: 12,
-        display: 'flex', alignItems: 'center', gap: 16,
-        textDecoration: 'none',
-        boxShadow: '0 2px 20px rgba(232,184,75,.28), 0 1px 0 rgba(255,255,255,.2) inset',
-      }}>
+      {/* Primary CTA */}
+      <Link href="/crm/orders" style={{ width: '100%', padding: '20px 24px', background: 'linear-gradient(135deg, #E8B84B 0%, #F5CC6A 50%, #D4A33C 100%)', borderRadius: 12, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 16, textDecoration: 'none', boxShadow: '0 2px 20px rgba(232,184,75,.28), 0 1px 0 rgba(255,255,255,.2) inset' }}>
         <div style={{ width: 44, height: 44, background: 'rgba(0,0,0,.15)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <Plus size={22} color="#111" strokeWidth={2.5} />
         </div>
@@ -60,21 +147,15 @@ export default async function CrmDashboardPage() {
         <ChevronRight size={20} color="rgba(0,0,0,.35)" style={{ marginLeft: 'auto' }} />
       </Link>
 
-      {/* ── Quick action grid ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 32 }}>
+      {/* Quick grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
         {[
           { label: 'Pipeline',  sub: 'Deals & offerter',    href: '/crm/pipeline',  icon: GitBranch },
           { label: 'Kunder',    sub: 'Kundkort & historik', href: '/crm/customers', icon: Users },
           { label: 'Ordrar',    sub: 'Orderhistorik',       href: '/crm/orders',    icon: ShoppingBag },
           { label: 'Produkter', sub: 'Katalog & priser',    href: '/crm/orders',    icon: Package },
         ].map(({ label, sub, href, icon: Icon }) => (
-          <Link key={label} href={href} style={{
-            ...glass,
-            padding: '16px 18px',
-            textDecoration: 'none',
-            display: 'block',
-            transition: 'border-color .18s, box-shadow .18s, transform .18s',
-          }}>
+          <Link key={label} href={href} style={{ ...glass, padding: '16px 18px', textDecoration: 'none', display: 'block' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <div style={{ width: 30, height: 30, background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.18)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon size={14} color="var(--gold)" />
@@ -86,8 +167,137 @@ export default async function CrmDashboardPage() {
         ))}
       </div>
 
-      {/* ── Bottom two-col ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      {/* Budget Widget */}
+      <div style={{ ...glass, padding: '20px 24px', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Target size={15} color="var(--gold)" />
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Månadsbudget — {monthNames[month]} {year}</span>
+          </div>
+          <button onClick={() => setEditBudget(e => !e)}
+            style={{ fontSize: 11, padding: '4px 10px', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.2)', borderRadius: 6, color: 'var(--gold)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+            {editBudget ? 'Avbryt' : 'Sätt budget'}
+          </button>
+        </div>
+
+        {editBudget ? (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 14 }}>
+              {SALESPEOPLE.map(sp => (
+                <div key={sp}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 5 }}>{sp}</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type="number" placeholder="0" value={budgetInput[sp] || ''} onChange={e => setBudgetInput(b => ({ ...b, [sp]: e.target.value }))}
+                      style={{ width: '100%', padding: '8px 32px 8px 10px', background: 'var(--bg4)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 7, color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                    <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--text3)' }}>kr</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={saveBudgets} style={{ padding: '9px 20px', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+              Spara budget
+            </button>
+          </div>
+        ) : totalBudget > 0 ? (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 20px', marginBottom: 16 }}>
+              {SALESPEOPLE.filter(sp => budgets[sp]).map(sp => {
+                const spBudget = budgets[sp]
+                const spDaily  = Math.round(spBudget / workDays)
+                const spTarget = spDaily * daysPassed
+                return (
+                  <div key={sp} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 8, padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>{sp}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text3)' }}>{fmt(spBudget)} kr/mån</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8 }}>
+                      Dagsmål: <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{fmt(spDaily)} kr</span>
+                      {' · '}Hittills: <span style={{ color: 'var(--text)' }}>{fmt(spTarget)} kr</span>
+                    </div>
+                    <div style={{ height: 4, background: 'rgba(255,255,255,.06)', borderRadius: 2 }}>
+                      <div style={{ height: '100%', width: `${Math.min((daysPassed / workDays) * 100, 100)}%`, background: 'var(--gold)', borderRadius: 2 }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 24, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,.06)' }}>
+              {[
+                { label: 'Total månadsbudget', value: `${fmt(totalBudget)} kr` },
+                { label: 'Dagsmål (teamet)', value: `${fmt(dailyTarget)} kr` },
+                { label: 'Arbetsdagar kvar', value: `${workDays - daysPassed} av ${workDays}` },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '12px 0' }}>
+            Ingen budget satt — klicka "Sätt budget" för att lägga in månadsbudget per säljare
+          </div>
+        )}
+      </div>
+
+      {/* Calendar + Offerter */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
+
+        {/* Calendar */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <Calendar size={12} /> Kalender & påminnelser
+          </div>
+          <div style={{ ...glass, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+              <button onClick={() => { const d = new Date(calYear, calMonth - 1); setCalMonth(d.getMonth()); setCalYear(d.getFullYear()) }}
+                style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 4 }}><ChevronLeft size={14} /></button>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{monthNames[calMonth]} {calYear}</span>
+              <button onClick={() => { const d = new Date(calYear, calMonth + 1); setCalMonth(d.getMonth()); setCalYear(d.getFullYear()) }}
+                style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 4 }}><ChevronRight size={14} /></button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', padding: '6px 8px 0' }}>
+              {['M','T','O','T','F','L','S'].map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'var(--text3)', padding: '2px 0' }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', padding: '2px 8px 10px', gap: 2 }}>
+              {calCells.map((day, idx) => {
+                if (!day) return <div key={idx} />
+                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+                const dayRems = remindersByDate[dateStr] || []
+                const isToday = dateStr === todayStr
+                const isPast  = dateStr < todayStr
+                return (
+                  <div key={idx} title={dayRems.map(r => r.title).join(', ')} style={{ borderRadius: 5, padding: '3px 2px', textAlign: 'center', background: isToday ? 'rgba(232,184,75,.12)' : 'transparent', border: isToday ? '1px solid rgba(232,184,75,.25)' : '1px solid transparent' }}>
+                    <div style={{ fontSize: 11, fontWeight: isToday ? 700 : 400, color: isToday ? 'var(--gold)' : isPast ? 'var(--text3)' : 'var(--text)' }}>{day}</div>
+                    {dayRems.length > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 2, marginTop: 1 }}>
+                        {dayRems.slice(0, 2).map((r, i) => (
+                          <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: PRIORITY_DOT[r.priority] || 'var(--blue)' }} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            {reminders.filter(r => r.due_date >= todayStr).slice(0, 4).map((r) => (
+              <div key={r.id} style={{ padding: '8px 14px', borderTop: '1px solid rgba(255,255,255,.04)', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: PRIORITY_DOT[r.priority], flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)' }}>{r.customers?.company} · {formatDate(r.due_date)}</div>
+                </div>
+              </div>
+            ))}
+            {reminders.filter(r => r.due_date >= todayStr).length === 0 && (
+              <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(255,255,255,.04)', fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>Inga kommande påminnelser</div>
+            )}
+          </div>
+        </div>
 
         {/* Skickade offerter */}
         <div>
@@ -95,20 +305,13 @@ export default async function CrmDashboardPage() {
             <FileText size={12} /> Skickade offerter
           </div>
           <div style={{ ...glass, overflow: 'hidden' }}>
-            {(deals && deals.length > 0 ? deals : [
-              { id: '1', title: 'Bilservice AB',    value: 12400, created_at: '2026-06-10', customers: { company: 'Bilservice AB' } },
-              { id: '2', title: 'Detailing Sthlm',  value: 8750,  created_at: '2026-06-08', customers: { company: 'Detailing Sthlm' } },
-              { id: '3', title: 'AutoGlans Nordic',  value: 22000, created_at: '2026-06-05', customers: { company: 'AutoGlans Nordic' } },
-            ] as any[]).map((d: any, i: number, arr: any[]) => (
-              <Link key={d.id} href="/crm/pipeline" style={{
-                display: 'flex', flexDirection: 'column',
-                padding: '11px 14px',
-                borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.04)' : 'none',
-                textDecoration: 'none',
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 3 }}>
-                  {(d.customers as any)?.company || d.title}
-                </div>
+            {(deals.length > 0 ? deals : [
+              { id: '1', title: 'Bilservice AB', value: 12400, created_at: '2026-06-10', customers: { company: 'Bilservice AB' } },
+              { id: '2', title: 'Detailing Sthlm', value: 8750, created_at: '2026-06-08', customers: { company: 'Detailing Sthlm' } },
+              { id: '3', title: 'AutoGlans Nordic', value: 22000, created_at: '2026-06-05', customers: { company: 'AutoGlans Nordic' } },
+            ]).map((d: any, i: number, arr: any[]) => (
+              <Link key={d.id} href="/crm/pipeline" style={{ display: 'flex', flexDirection: 'column', padding: '11px 14px', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.04)' : 'none', textDecoration: 'none' }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 3 }}>{d.customers?.company || d.title}</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 11, color: 'var(--text3)' }}>{formatDate(d.created_at)}</span>
                   <span style={{ fontFamily: 'var(--font-serif)', fontSize: 14, color: 'var(--gold)' }}>{fmt(d.value)} kr</span>
@@ -121,39 +324,34 @@ export default async function CrmDashboardPage() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Senaste kunder */}
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}>
-            <Eye size={12} /> Senaste kunder
-          </div>
-          <div style={{ ...glass, overflow: 'hidden' }}>
-            {(recentCustomers && recentCustomers.length > 0 ? recentCustomers : [
-              { id: '1', company: 'Bilservice AB',       price_list_id: 'A' },
-              { id: '2', company: 'Clean Cars GBG',      price_list_id: 'B' },
-              { id: '3', company: 'Pro Detailing Malmö', price_list_id: 'C' },
-              { id: '4', company: 'Nordic Auto Care',    price_list_id: 'A' },
-            ] as any[]).map((c: any, i: number, arr: any[]) => (
-              <Link key={c.id} href="/crm/customers" style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '11px 14px',
-                borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.04)' : 'none',
-                textDecoration: 'none',
-              }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>
-                  {c.company[0]}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.company}</div>
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.06)', color: PL_COLOR[c.price_list_id] || 'var(--text3)' }}>
-                  {c.price_list_id}
-                </span>
-              </Link>
-            ))}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,.04)' }}>
-              <Link href="/crm/customers" style={{ display: 'block', textAlign: 'center', padding: '10px', fontSize: 11, color: 'var(--text3)', textDecoration: 'none' }}>Se alla kunder</Link>
-            </div>
+      {/* Senaste kunder */}
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Users size={12} /> Senaste kunder
+        </div>
+        <div style={{ ...glass, overflow: 'hidden' }}>
+          {(recentCustomers.length > 0 ? recentCustomers : [
+            { id: '1', company: 'Bilservice AB', price_list_id: 'A' },
+            { id: '2', company: 'Clean Cars GBG', price_list_id: 'B' },
+            { id: '3', company: 'Pro Detailing Malmö', price_list_id: 'C' },
+            { id: '4', company: 'Nordic Auto Care', price_list_id: 'A' },
+          ]).map((c: any, i: number, arr: any[]) => (
+            <Link key={c.id} href="/crm/customers" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.04)' : 'none', textDecoration: 'none' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'var(--gold)', flexShrink: 0 }}>
+                {c.company[0]}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.company}</div>
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.06)', color: PL_COLOR[c.price_list_id] || 'var(--text3)' }}>
+                {c.price_list_id}
+              </span>
+            </Link>
+          ))}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,.04)' }}>
+            <Link href="/crm/customers" style={{ display: 'block', textAlign: 'center', padding: '10px', fontSize: 11, color: 'var(--text3)', textDecoration: 'none' }}>Se alla kunder</Link>
           </div>
         </div>
       </div>

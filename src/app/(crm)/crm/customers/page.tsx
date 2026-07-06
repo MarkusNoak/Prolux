@@ -4,9 +4,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Customer, Order, OrderItem, Activity, PRICE_LIST_LABEL } from '@/types'
 import { fmt, formatDate, custPrice } from '@/lib/utils'
 import {
-  Plus, Mail, Phone, FileText, MessageSquare, Bell, Calendar,
-  TrendingUp, ShoppingBag, Package, Star, Clock, ChevronRight,
-  Search, BarChart2, X
+  Plus, Mail, FileText, Bell, Calendar,
+  TrendingUp, ShoppingBag, Package, Star, ChevronRight,
+  Search, BarChart2, X, Trash2
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -164,6 +164,11 @@ export default function CrmCustomersPage() {
       setNoteText('')
       showToast('Sparad')
     }
+  }
+
+  async function deleteActivity(id: string) {
+    await supabase.from('activities').delete().eq('id', id)
+    setActivities(as => as.filter(a => a.id !== id))
   }
 
   async function addReminder() {
@@ -415,6 +420,30 @@ export default function CrmCustomersPage() {
                 </div>
               )}
 
+              {/* Last purchases + recommendations */}
+              {topProducts.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Senaste köp</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                    {topProducts.slice(0, 4).map(p => (
+                      <span key={p.name} style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(76,175,125,.1)', border: '1px solid rgba(76,175,125,.2)', borderRadius: 6, color: 'var(--green)', fontWeight: 600 }}>{p.name} ×{p.qty}</span>
+                    ))}
+                  </div>
+                  {recommendations.length > 0 && (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Star size={12} color="var(--gold)" /> Rekommendationer
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {recommendations.map(rec => (
+                          <span key={rec} style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(232,184,75,.08)', border: '1px solid rgba(232,184,75,.18)', borderRadius: 6, color: 'var(--gold)' }}>{rec}</span>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Last 3 orders */}
               {orders.length > 0 && (
                 <div>
@@ -614,6 +643,9 @@ export default function CrmCustomersPage() {
                           {a.type === 'note' ? '📝' : a.type === 'call' ? '📞' : a.type === 'email' ? '📧' : '🤝'} {a.title}
                         </span>
                         <span style={{ fontSize: 10, color: 'var(--text3)', marginLeft: 'auto' }}>{formatDate(a.created_at)}</span>
+                        <button onClick={() => deleteActivity(a.id)} title="Ta bort" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2, flexShrink: 0 }}>
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                       {a.body && <p style={{ margin: 0, fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>{a.body}</p>}
                     </div>
