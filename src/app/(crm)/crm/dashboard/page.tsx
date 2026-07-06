@@ -54,10 +54,14 @@ export default function CrmDashboardPage() {
   const [calYear, setCalYear]             = useState(year)
   const [reminders, setReminders]         = useState<any[]>([])
   const [budgets, setBudgets]             = useState<Record<string, number>>({})
+  const [achieved, setAchieved]           = useState<Record<string, number>>({})
   const [editBudget, setEditBudget]       = useState(false)
   const [budgetInput, setBudgetInput]     = useState<Record<string, string>>({})
   const [savingBudget, setSavingBudget]   = useState(false)
   const [isAdmin, setIsAdmin]             = useState(false)
+
+  const monthStart = `${year}-${String(month + 1).padStart(2,'0')}-01`
+  const monthEnd   = `${year}-${String(month + 1).padStart(2,'0')}-${new Date(year, month + 1, 0).getDate()}`
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -70,7 +74,8 @@ export default function CrmDashboardPage() {
       supabase.from('customers').select('id,company,price_list_id').eq('status', 'active').order('created_at', { ascending: false }).limit(5),
       supabase.from('reminders').select('id,customer_id,title,due_date,priority,status,customers(company)').eq('status', 'upcoming').order('due_date'),
       supabase.from('sales_budgets').select('salesperson,budget').eq('year', year).eq('month', month),
-    ]).then(([{ data: d }, { data: c }, { data: r }, { data: b }]) => {
+      supabase.from('deals').select('assigned_to,value').eq('stage', 'Vunnen').gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
+    ]).then(([{ data: d }, { data: c }, { data: r }, { data: b }, { data: won }]) => {
       if (d) setDeals(d)
       if (c) setRecentCustomers(c)
       if (r) setReminders(r)
@@ -79,6 +84,13 @@ export default function CrmDashboardPage() {
         for (const row of b as any[]) loaded[row.salesperson] = row.budget
         setBudgets(loaded)
         setBudgetInput(Object.fromEntries(SALESPEOPLE.map(sp => [sp, loaded[sp] ? String(loaded[sp]) : ''])))
+      }
+      if (won) {
+        const acc: Record<string, number> = {}
+        for (const deal of won as any[]) {
+          if (deal.assigned_to) acc[deal.assigned_to] = (acc[deal.assigned_to] || 0) + (deal.value || 0)
+        }
+        setAchieved(acc)
       }
     })
   }, [])
@@ -215,45 +227,47 @@ export default function CrmDashboardPage() {
             {budgets[firstName] && (
               <div style={{ background: 'rgba(232,184,75,.07)', border: '1px solid rgba(232,184,75,.18)', borderRadius: 10, padding: '14px 18px', marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>Ditt dagsmål idag</span>
-                  <span style={{ fontSize: 12, color: 'var(--text3)' }}>{monthNames[month]} {year}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>Din budget — {monthNames[month]}</span>
+                  <span style={{ fontSize: 12, color: achieved[firstName] >= budgets[firstName] ? 'var(--green)' : 'var(--text3)' }}>
+                    {achieved[firstName] >= budgets[firstName] ? '✓ Budget uppnådd!' : `${Math.round(((achieved[firstName] || 0) / budgets[firstName]) * 100)}% av målet`}
+                  </span>
                 </div>
-                <div style={{ display: 'flex', gap: 24, marginBottom: 10 }}>
+                <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 12 }}>
                   {[
-                    { label: 'Månadsbudget', value: `${fmt(budgets[firstName])} kr` },
-                    { label: 'Dagsmål', value: `${fmt(Math.round(budgets[firstName] / workDays))} kr` },
-                    { label: 'Hittillsmål', value: `${fmt(Math.round(budgets[firstName] / workDays) * daysPassed)} kr` },
-                    { label: 'Dagar kvar', value: `${workDays - daysPassed} av ${workDays}` },
-                  ].map(({ label, value }) => (
+                    { label: 'Månadsbudget', value: `${fmt(budgets[firstName])} kr`, color: 'var(--text)' },
+                    { label: 'Stängda affärer', value: `${fmt(achieved[firstName] || 0)} kr`, color: (achieved[firstName] || 0) > 0 ? 'var(--green)' : 'var(--text3)' },
+                    { label: 'Kvar', value: `${fmt(Math.max(0, budgets[firstName] - (achieved[firstName] || 0)))} kr`, color: 'var(--text)' },
+                    { label: 'Dagsmål', value: `${fmt(Math.round(budgets[firstName] / workDays))} kr`, color: 'var(--gold)' },
+                  ].map(({ label, value, color }) => (
                     <div key={label}>
                       <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2 }}>{label}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{value}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color }}>{value}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ height: 5, background: 'rgba(255,255,255,.06)', borderRadius: 3 }}>
-                  <div style={{ height: '100%', width: `${Math.min((daysPassed / workDays) * 100, 100)}%`, background: 'linear-gradient(90deg, #D4A33C, #F5CC6A)', borderRadius: 3 }} />
+                <div style={{ height: 6, background: 'rgba(255,255,255,.06)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.min(((achieved[firstName] || 0) / budgets[firstName]) * 100, 100)}%`, background: 'linear-gradient(90deg, #4CAF7D, #5EC49A)', borderRadius: 3, transition: 'width .4s ease' }} />
                 </div>
               </div>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 16px', marginBottom: 14 }}>
               {SALESPEOPLE.filter(sp => budgets[sp]).map(sp => {
-                const spBudget = budgets[sp]
-                const spDaily  = Math.round(spBudget / workDays)
-                const spTarget = spDaily * daysPassed
-                const isMe     = sp === firstName
+                const spBudget   = budgets[sp]
+                const spAchieved = achieved[sp] || 0
+                const spPct      = Math.min((spAchieved / spBudget) * 100, 100)
+                const isMe       = sp === firstName
+                const isGreen    = spAchieved >= spBudget
                 return (
                   <div key={sp} style={{ background: isMe ? 'rgba(232,184,75,.05)' : 'rgba(255,255,255,.03)', border: `1px solid ${isMe ? 'rgba(232,184,75,.15)' : 'rgba(255,255,255,.06)'}`, borderRadius: 8, padding: '10px 13px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: isMe ? 'var(--gold)' : 'var(--text2)' }}>{sp}{isMe ? ' (du)' : ''}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text3)' }}>{fmt(spBudget)} kr/mån</span>
+                      <span style={{ fontSize: 11, color: isGreen ? 'var(--green)' : 'var(--text3)' }}>{fmt(spAchieved)} / {fmt(spBudget)} kr</span>
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 7 }}>
-                      Dagsmål: <span style={{ color: isMe ? 'var(--gold)' : 'var(--text2)', fontWeight: 600 }}>{fmt(spDaily)} kr</span>
-                      {' · '}Hittills: <span style={{ color: 'var(--text)' }}>{fmt(spTarget)} kr</span>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 6 }}>
+                      {Math.round(spPct)}% av budget · dagsmål <span style={{ color: isMe ? 'var(--gold)' : 'var(--text2)', fontWeight: 600 }}>{fmt(Math.round(spBudget / workDays))} kr</span>
                     </div>
                     <div style={{ height: 3, background: 'rgba(255,255,255,.06)', borderRadius: 2 }}>
-                      <div style={{ height: '100%', width: `${Math.min((daysPassed / workDays) * 100, 100)}%`, background: isMe ? 'var(--gold)' : 'rgba(74,143,212,.6)', borderRadius: 2 }} />
+                      <div style={{ height: '100%', width: `${spPct}%`, background: isGreen ? 'var(--green)' : isMe ? 'var(--gold)' : 'rgba(74,143,212,.7)', borderRadius: 2 }} />
                     </div>
                   </div>
                 )
@@ -262,7 +276,7 @@ export default function CrmDashboardPage() {
             <div style={{ display: 'flex', gap: 24, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.06)' }}>
               {[
                 { label: 'Total månadsbudget', value: `${fmt(totalBudget)} kr` },
-                { label: 'Dagsmål (teamet)', value: `${fmt(dailyTarget)} kr` },
+                { label: 'Teamets stängda affärer', value: `${fmt(Object.values(achieved).reduce((a,b) => a+b, 0))} kr` },
                 { label: 'Arbetsdagar kvar', value: `${workDays - daysPassed} av ${workDays}` },
               ].map(({ label, value }) => (
                 <div key={label}>
