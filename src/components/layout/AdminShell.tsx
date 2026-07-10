@@ -4,24 +4,30 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X, GitBranch, ChevronDown, CalendarDays, StickyNote } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X, GitBranch, CalendarDays, StickyNote } from 'lucide-react'
 
+// Desktop topbar — keep short (≤6 items)
 const ADMIN_NAV = [
-  { href: '/admin/dashboard',   label: 'Översikt',     icon: LayoutDashboard },
-  { href: '/admin/orders',      label: 'Ordrar',       icon: ShoppingBag },
-  { href: '/admin/customers',   label: 'Kunder',       icon: Users },
-  { href: '/admin/products',    label: 'Produkter',    icon: Tag },
-  { href: '/admin/campaigns',   label: 'Kampanjer',    icon: Megaphone },
+  { href: '/admin/dashboard',  label: 'Översikt',  icon: LayoutDashboard },
+  { href: '/admin/orders',     label: 'Ordrar',    icon: ShoppingBag },
+  { href: '/admin/customers',  label: 'Kunder',    icon: Users },
+  { href: '/admin/products',   label: 'Produkter', icon: Tag },
+  { href: '/admin/campaigns',  label: 'Kampanjer', icon: Megaphone },
+]
+
+// Mobile menu gets all items
+const ADMIN_NAV_ALL = [
+  ...ADMIN_NAV,
   { href: '/admin/automations', label: 'Automationer', icon: Zap },
   { href: '/admin/staff',       label: 'Medarbetare',  icon: UserCog },
 ]
 
 const CRM_NAV = [
-  { href: '/admin/crm/pipeline',  label: 'Pipeline',      icon: GitBranch },
-  { href: '/admin/crm/customers', label: 'CRM Kunder',    icon: Users },
-  { href: '/admin/crm/orders',    label: 'CRM Ordrar',    icon: ShoppingBag },
-  { href: '/admin/crm/calendar',  label: 'Kalender',      icon: CalendarDays },
-  { href: '/admin/crm/notes',     label: 'Anteckningar',  icon: StickyNote },
+  { href: '/admin/crm/pipeline',  label: 'Pipeline',     icon: GitBranch },
+  { href: '/admin/crm/customers', label: 'CRM Kunder',   icon: Users },
+  { href: '/admin/crm/orders',    label: 'CRM Ordrar',   icon: ShoppingBag },
+  { href: '/admin/crm/calendar',  label: 'Kalender',     icon: CalendarDays },
+  { href: '/admin/crm/notes',     label: 'Anteckningar', icon: StickyNote },
 ]
 
 export function AdminShell({ children, email }: { children: ReactNode; email: string }) {
@@ -77,25 +83,25 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
           })}
           {/* Separator */}
           <div style={{ width: 1, height: 16, background: 'var(--line)', margin: '0 4px' }} />
-          {/* CRM shortcuts */}
-          {CRM_NAV.map(({ href, label, icon: Icon }) => {
-            const active = pathname.startsWith(href)
+          {/* Single CRM pill */}
+          {(() => {
+            const crmActive = pathname.startsWith('/admin/crm')
             return (
-              <Link key={href} href={href} style={{
+              <Link href="/admin/crm/pipeline" style={{
                 display: 'flex', alignItems: 'center', gap: 5,
                 padding: '6px 9px', borderRadius: 7,
-                background: active ? 'rgba(74,143,212,.1)' : 'transparent',
-                color: active ? '#6AAFF0' : 'var(--text3)',
-                fontSize: 13, fontWeight: active ? 600 : 400,
+                background: crmActive ? 'rgba(74,143,212,.1)' : 'transparent',
+                color: crmActive ? '#6AAFF0' : 'var(--text3)',
+                fontSize: 13, fontWeight: crmActive ? 600 : 400,
                 textDecoration: 'none',
-                border: `1px solid ${active ? 'rgba(74,143,212,.25)' : 'transparent'}`,
+                border: `1px solid ${crmActive ? 'rgba(74,143,212,.25)' : 'transparent'}`,
                 transition: 'all .15s',
               }}>
-                <Icon size={14} style={{ opacity: active ? 1 : 0.5 }} />
-                {label}
+                <GitBranch size={14} style={{ opacity: crmActive ? 1 : 0.5 }} />
+                CRM
               </Link>
             )
-          })}
+          })()}
         </nav>
 
         {/* Right side */}
@@ -155,7 +161,7 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
           display: 'flex', flexDirection: 'column', gap: 6,
           animation: 'fadeIn .15s ease',
         }}>
-          {ADMIN_NAV.map(({ href, label, icon: Icon }) => {
+          {ADMIN_NAV_ALL.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href)
             return (
               <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{
