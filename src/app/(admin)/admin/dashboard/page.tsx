@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fmt } from '@/lib/utils'
 import Link from 'next/link'
-import { TrendingUp, ShoppingBag, Clock, Users, AlertTriangle, GitBranch, Target, Trophy, ArrowRight } from 'lucide-react'
+import { TrendingUp, ShoppingBag, Clock, Users, AlertTriangle, GitBranch, Target, Trophy, ArrowRight, Calendar, ChevronLeft, ChevronRight, Activity } from 'lucide-react'
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Utkast', pending: 'Väntande', confirmed: 'Bekräftad',
@@ -35,9 +35,13 @@ export default function AdminDashboard() {
   const [orders, setOrders]       = useState<any[]>([])
   const [products, setProducts]   = useState<any[]>([])
   const [customers, setCustomers] = useState<any[]>([])
-  const [deals, setDeals]         = useState<any[]>([])
-  const [wonDeals, setWonDeals]   = useState<any[]>([])
-  const [budgets, setBudgets]     = useState<Record<string, number>>({})
+  const [deals, setDeals]           = useState<any[]>([])
+  const [wonDeals, setWonDeals]     = useState<any[]>([])
+  const [budgets, setBudgets]       = useState<Record<string, number>>({})
+  const [reminders, setReminders]   = useState<any[]>([])
+  const [activities, setActivities] = useState<any[]>([])
+  const [calMonth, setCalMonth]     = useState(new Date().getMonth())
+  const [calYear, setCalYear]       = useState(new Date().getFullYear())
   const [chartPeriod, setChartPeriod] = useState<'week' | 'month'>('week')
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -57,7 +61,9 @@ export default function AdminDashboard() {
       sb.from('deals').select('id,title,value,stage,assigned_to,updated_at').neq('stage', 'Vunnen').neq('stage', 'Förlorad'),
       sb.from('deals').select('assigned_to,value,updated_at').eq('stage', 'Vunnen').gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
       sb.from('sales_budgets').select('salesperson,budget').eq('year', year).eq('month', month),
-    ]).then(([{ data: o }, { data: p }, { data: c }, { data: d }, { data: w }, { data: b }]) => {
+      sb.from('reminders').select('id,title,due_date,priority,customers(company)').eq('status', 'upcoming').order('due_date').limit(20),
+      sb.from('customer_activities').select('id,activity_type,notes,created_at,customers(company)').order('created_at', { ascending: false }).limit(12),
+    ]).then(([{ data: o }, { data: p }, { data: c }, { data: d }, { data: w }, { data: b }, { data: r }, { data: a }]) => {
       setOrders(o || [])
       setProducts(p || [])
       setCustomers(c || [])
@@ -68,6 +74,8 @@ export default function AdminDashboard() {
         for (const row of b as any[]) map[row.salesperson] = row.budget
         setBudgets(map)
       }
+      if (r) setReminders(r)
+      if (a) setActivities(a)
     })
   }, [])
 
@@ -137,6 +145,24 @@ export default function AdminDashboard() {
       }
     })
   }
+
+  // Calendar
+  const daysInCal   = new Date(calYear, calMonth + 1, 0).getDate()
+  const firstDow    = new Date(calYear, calMonth, 1).getDay()
+  const firstMon    = firstDow === 0 ? 6 : firstDow - 1
+  const calCells: (number | null)[] = [...Array(firstMon).fill(null), ...Array.from({ length: daysInCal }, (_, i) => i + 1)]
+  while (calCells.length % 7 !== 0) calCells.push(null)
+  const todayStr = now.toISOString().slice(0, 10)
+  const remindersByDate: Record<string, any[]> = {}
+  for (const r of reminders) {
+    const d = r.due_date?.slice(0, 10)
+    if (d) { if (!remindersByDate[d]) remindersByDate[d] = []; remindersByDate[d].push(r) }
+  }
+  const PRIORITY_DOT: Record<string, string> = { high: 'var(--red)', normal: 'var(--blue)', low: 'var(--text3)' }
+
+  // Activity feed
+  const ACT_LABEL: Record<string, string> = { call: 'Samtal', email: 'E-post', meeting: 'Möte', note: 'Anteckning', order: 'Order', demo: 'Demo' }
+  const ACT_COLOR: Record<string, string> = { call: 'var(--green)', email: 'var(--blue)', meeting: 'var(--gold)', note: 'var(--text3)', order: '#6AAFF0', demo: 'var(--gold)' }
 
   const revenue         = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (o.subtotal || 0), 0)
   const pendingCount    = orders.filter(o => o.status === 'pending').length
@@ -367,6 +393,96 @@ export default function AdminDashboard() {
               {deals.length > 6 && (
                 <div style={{ paddingTop: 8, fontSize: 11, color: 'var(--text3)' }}>+{deals.length - 6} fler deals</div>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* Calendar */}
+        <div style={{ ...card, padding: '22px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
+            <Calendar size={13} color="var(--gold)" />
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.09em', flex: 1 }}>Kalender & påminnelser</span>
+          </div>
+          <div style={{ border: '1px solid rgba(255,255,255,.05)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,.04)', background: 'rgba(255,255,255,.02)' }}>
+              <button onClick={() => { const d = new Date(calYear, calMonth - 1); setCalMonth(d.getMonth()); setCalYear(d.getFullYear()) }}
+                style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 4, display: 'flex' }}><ChevronLeft size={14} /></button>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{monthNames[calMonth]} {calYear}</span>
+              <button onClick={() => { const d = new Date(calYear, calMonth + 1); setCalMonth(d.getMonth()); setCalYear(d.getFullYear()) }}
+                style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 4, display: 'flex' }}><ChevronRight size={14} /></button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', padding: '6px 8px 0' }}>
+              {['M','T','O','T','F','L','S'].map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'var(--text3)', padding: '2px 0' }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', padding: '2px 8px 8px', gap: 2 }}>
+              {calCells.map((day, idx) => {
+                if (!day) return <div key={idx} />
+                const ds = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+                const dayRems = remindersByDate[ds] || []
+                const isToday = ds === todayStr
+                const isPast  = ds < todayStr
+                return (
+                  <div key={idx} title={dayRems.map(r => r.title).join(', ')} style={{ borderRadius: 5, padding: '3px 2px', textAlign: 'center', background: isToday ? 'rgba(232,184,75,.12)' : 'transparent', border: isToday ? '1px solid rgba(232,184,75,.25)' : '1px solid transparent' }}>
+                    <div style={{ fontSize: 11, fontWeight: isToday ? 700 : 400, color: isToday ? 'var(--gold)' : isPast ? 'var(--text3)' : 'var(--text)' }}>{day}</div>
+                    {dayRems.length > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 2, marginTop: 1 }}>
+                        {dayRems.slice(0, 2).map((r, i) => <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: PRIORITY_DOT[r.priority] || 'var(--blue)' }} />)}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          {/* Upcoming reminders list */}
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {reminders.filter(r => r.due_date >= todayStr).slice(0, 5).map(r => (
+              <div key={r.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: PRIORITY_DOT[r.priority], flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)' }}>{r.customers?.company} · {r.due_date?.slice(0, 10)}</div>
+                </div>
+              </div>
+            ))}
+            {reminders.filter(r => r.due_date >= todayStr).length === 0 && (
+              <div style={{ padding: '14px 0', fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>Inga kommande påminnelser</div>
+            )}
+          </div>
+        </div>
+
+        {/* Activity feed */}
+        <div style={{ ...card, padding: '22px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 18 }}>
+            <Activity size={13} color="var(--gold)" />
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.09em' }}>Senaste aktivitet</span>
+          </div>
+          {activities.length === 0 ? (
+            <div style={{ padding: '32px 0', textAlign: 'center' }}>
+              <Activity size={28} color="rgba(255,255,255,.1)" style={{ margin: '0 auto 10px', display: 'block' }} />
+              <div style={{ fontSize: 13, color: 'var(--text3)' }}>Ingen aktivitet registrerad</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              {/* Timeline line */}
+              <div style={{ position: 'absolute', left: 9, top: 8, bottom: 8, width: 1, background: 'rgba(255,255,255,.06)' }} />
+              {activities.map((a, i) => (
+                <div key={a.id} style={{ display: 'flex', gap: 14, paddingBottom: i < activities.length - 1 ? 14 : 0 }}>
+                  <div style={{ width: 19, height: 19, borderRadius: '50%', background: `${ACT_COLOR[a.activity_type] || 'var(--text3)'}22`, border: `1.5px solid ${ACT_COLOR[a.activity_type] || 'var(--text3)'}`, flexShrink: 0, marginTop: 1 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: ACT_COLOR[a.activity_type] || 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                        {ACT_LABEL[a.activity_type] || a.activity_type}
+                      </span>
+                      <span style={{ fontSize: 10, color: 'var(--text3)' }}>{a.customers?.company}</span>
+                    </div>
+                    {a.notes && <div style={{ fontSize: 12, color: 'var(--text2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.notes}</div>}
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>{new Date(a.created_at).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
