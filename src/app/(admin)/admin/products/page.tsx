@@ -24,8 +24,6 @@ const inputStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)', fontSize: 14, outline: 'none', boxSizing: 'border-box',
 }
 
-const PRODUCT_ADMIN_EMAIL = 'bashar@proluxshine.se'
-
 export default function AdminProducts() {
   const [products, setProducts]     = useState<any[]>([])
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
@@ -44,7 +42,7 @@ export default function AdminProducts() {
   async function checkUser() {
     const sb = createClient()
     const { data: { user } } = await sb.auth.getUser()
-    setCanEdit(user?.email === PRODUCT_ADMIN_EMAIL)
+    setCanEdit(user?.user_metadata?.role === 'admin')
   }
 
   async function load() {
