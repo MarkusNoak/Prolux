@@ -6,20 +6,18 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X, GitBranch, CalendarDays, StickyNote } from 'lucide-react'
 
-// Desktop topbar — keep short (≤6 items)
 const ADMIN_NAV = [
   { href: '/admin/dashboard',  label: 'Översikt',  icon: LayoutDashboard },
   { href: '/admin/orders',     label: 'Ordrar',    icon: ShoppingBag },
   { href: '/admin/customers',  label: 'Kunder',    icon: Users },
   { href: '/admin/products',   label: 'Produkter', icon: Tag },
   { href: '/admin/campaigns',  label: 'Kampanjer', icon: Megaphone },
+  { href: '/admin/staff',      label: 'Team',      icon: UserCog },
 ]
 
-// Mobile menu gets all items
 const ADMIN_NAV_ALL = [
   ...ADMIN_NAV,
   { href: '/admin/automations', label: 'Automationer', icon: Zap },
-  { href: '/admin/staff',       label: 'Medarbetare',  icon: UserCog },
 ]
 
 const CRM_NAV = [
@@ -85,9 +83,9 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
           <div style={{ width: 1, height: 16, background: 'var(--line)', margin: '0 4px' }} />
           {/* Single CRM pill */}
           {(() => {
-            const crmActive = pathname.startsWith('/admin/crm')
+            const crmActive = pathname.startsWith('/crm') || pathname.startsWith('/admin/crm')
             return (
-              <Link href="/admin/crm/pipeline" style={{
+              <Link href="/crm/dashboard" style={{
                 display: 'flex', alignItems: 'center', gap: 5,
                 padding: '6px 9px', borderRadius: 7,
                 background: crmActive ? 'rgba(74,143,212,.1)' : 'transparent',
