@@ -1,12 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 42" fill="none">
-  <!-- Diamond emblem -->
-  <g transform="translate(2, 3)">
-    <path d="M18 0 L34 9 L18 36 L2 9 Z" fill="#E8B84B" opacity="0.2"/>
-    <path d="M18 4 L30 10.5 L18 31 L6 10.5 Z" fill="#E8B84B" opacity="0.4"/>
-    <path d="M18 8 L26 13 L18 26 L10 13 Z" fill="#E8B84B"/>
-    <path d="M18 12 L22 14.5 L18 21 L14 14.5 Z" fill="#0F1115" opacity="0.55"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 42" fill="none">
+  <!-- Diamond mark -->
+  <defs>
+    <linearGradient id="gld" x1="18" y1="2" x2="18" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F5D472"/>
+      <stop offset="55%" stop-color="#E8B84B"/>
+      <stop offset="100%" stop-color="#C8903C"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(2, 1)">
+    <!-- Outer kite -->
+    <path d="M18,2 L34,22 L18,40 L2,22 Z" fill="url(#gld)"/>
+    <!-- White upward triangle -->
+    <path d="M18,7 L6,21 L18,21 Z" fill="white"/>
+    <!-- White lower-left -->
+    <path d="M6,23 L15,38 L15,23 Z" fill="white"/>
+    <!-- White lower-right -->
+    <path d="M30,23 L21,38 L21,23 Z" fill="white"/>
   </g>
   <!-- Main text -->
-  <text x="42" y="17" font-family="'Playfair Display', Georgia, serif" font-size="14" font-weight="700" fill="#F0EDE8" letter-spacing="1.5">PROLUX SHINE</text>
-  <text x="43" y="29" font-family="'Inter', Arial, sans-serif" font-size="6" font-weight="400" fill="#9BA0AB" letter-spacing="1">BILVÅRDSPRODUKTER</text>
+  <text x="46" y="17" font-family="'Playfair Display', Georgia, serif" font-size="14" font-weight="700" fill="#F0EDE8" letter-spacing="1.5">PROLUX SHINE</text>
+  <text x="47" y="29" font-family="'Inter', Arial, sans-serif" font-size="6" font-weight="400" fill="#9BA0AB" letter-spacing="1">BILVÅRDSPRODUKTER</text>
 </svg>
