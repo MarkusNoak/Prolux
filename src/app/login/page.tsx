@@ -46,8 +46,12 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 400, position: 'relative' }}>
 
         {/* Logo */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 36 }}>
-          <Image src="/logo.svg" alt="Prolux Shine" width={160} height={46} priority style={{ display: 'block' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 36 }}>
+          <Image src="/logo-mark.svg" alt="Prolux Shine" width={72} height={100} priority style={{ display: 'block' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, letterSpacing: '.18em', color: 'var(--text)', textTransform: 'uppercase' }}>Prolux</span>
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '.45em', color: 'var(--gold)', textTransform: 'uppercase' }}>Shine</span>
+          </div>
         </div>
 
         {/* Glass card */}

@@ -132,7 +132,11 @@ function InnerShell({ children, email, priceList }: { children: ReactNode; email
         paddingInline: 20, gap: 12,
       }}>
         <Link href="/portal/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 4 }}>
-          <Image src="/logo.svg" alt="Prolux Shine" width={118} height={34} priority style={{ display: 'block' }} />
+          <Image src="/logo-mark.svg" alt="Prolux Shine" width={24} height={33} priority style={{ display: 'block' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, gap: 1 }}>
+              <span style={{ fontFamily: 'var(--font-serif)', fontSize: 15, fontWeight: 400, letterSpacing: '.12em', color: 'var(--text)', textTransform: 'uppercase' }}>Prolux</span>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 7, fontWeight: 700, letterSpacing: '.4em', color: 'var(--gold)', textTransform: 'uppercase' }}>Shine</span>
+            </div>
         </Link>
 
         {/* Desktop nav pills */}
