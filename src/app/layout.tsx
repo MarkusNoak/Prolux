@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ProLuxShine — B2B Portal',
-  description: 'B2B-plattform för ProLuxShine bilvårdsprodukter',
+  title: 'ProLuxShine — Premium Bilvård för Proffs',
+  description: 'Professionella bilvårdsprodukter för detailingföretag, biltvättar och bilverkstäder. Distributör av Virtus & Frescura i Sverige.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
