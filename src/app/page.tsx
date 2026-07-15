@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { PublicShell } from '@/components/layout/PublicShell'
+import { PublicShell, useLoginModal } from '@/components/layout/PublicShell'
 import { fmt } from '@/lib/utils'
 import { ChevronRight, Star, Shield, Truck, Phone, Package } from 'lucide-react'
 
@@ -25,7 +25,8 @@ const USP = [
   { icon: Phone, title: 'Dedikerad support', desc: 'Personlig säljare som känner ditt företag och hjälper dig hitta rätt produkter.' },
 ]
 
-export default function HomePage() {
+function HomeContent() {
+  const openLogin = useLoginModal()
   const [featured, setFeatured] = useState<any[]>([])
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function HomePage() {
   }, [])
 
   return (
-    <PublicShell>
+    <>
       {/* ── HERO ────────────────────────────────────────────── */}
       <section style={{
         minHeight: '100vh',
@@ -84,16 +85,16 @@ export default function HomePage() {
           }}>
             Utforska produkter <ChevronRight size={16} />
           </Link>
-          <Link href="/login" style={{
+          <button onClick={openLogin} style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '14px 32px', borderRadius: 10,
             background: 'transparent',
             border: '1px solid rgba(255,255,255,.14)',
             color: 'var(--text)', fontSize: 15, fontWeight: 500,
-            textDecoration: 'none',
+            cursor: 'pointer',
           }}>
             Logga in som kund
-          </Link>
+          </button>
         </div>
 
         {/* Stats */}
@@ -177,9 +178,9 @@ export default function HomePage() {
                         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--gold)' }}>{fmt(Math.round(p.list_price * 0.6))} kr</div>
                         <div style={{ fontSize: 11, color: 'var(--text3)' }}>exkl. moms · {p.unit}</div>
                       </div>
-                      <Link href="/login" style={{ padding: '10px 18px', borderRadius: 8, background: 'var(--gold)', color: '#111', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+                      <button onClick={openLogin} style={{ padding: '10px 18px', borderRadius: 8, background: 'var(--gold)', color: '#111', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                         Beställ
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -251,15 +252,15 @@ export default function HomePage() {
             Logga in på din kundportal och beställ med dina B2B-priser. Inte kund ännu? Kontakta oss så hjälper vi dig.
           </p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/login" style={{
+            <button onClick={openLogin} style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '15px 36px', borderRadius: 10,
               background: 'var(--gold)', color: '#111', fontSize: 15, fontWeight: 700,
-              textDecoration: 'none',
+              border: 'none', cursor: 'pointer',
               boxShadow: '0 0 40px rgba(232,184,75,.2)',
             }}>
               Logga in på kundportalen
-            </Link>
+            </button>
             <a href="mailto:info@proluxshine.com" style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '15px 36px', borderRadius: 10,
@@ -271,6 +272,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-    </PublicShell>
+    </>
   )
+}
+
+export default function HomePage() {
+  return <PublicShell><HomeContent /></PublicShell>
 }
