@@ -280,6 +280,23 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 400, color: 'var(--text)', margin: '0 0 4px', textAlign: 'center' }}>Logga in</h2>
             <p style={{ fontSize: 13, color: 'var(--text3)', margin: '0 0 24px', textAlign: 'center' }}>B2B-portal för återförsäljare</p>
 
+            {/* Demo accounts */}
+            <div style={{ marginBottom: 20, padding: '12px 14px', background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 10, fontSize: 12, color: 'var(--text3)', lineHeight: 1.8 }}>
+              <div style={{ fontWeight: 600, color: 'var(--text2)', marginBottom: 6 }}>Demo-konton · lösenord: <span style={{ color: 'var(--gold)' }}>prolux2024</span></div>
+              {[
+                { label: 'bashar@proluxshine.se', role: 'Admin', color: '#E8B84B', em: 'bashar@proluxshine.se' },
+                { label: 'stefan@detailingproffs.se', role: 'Säljare', color: '#4A8FD4', em: 'stefan@detailingproffs.se' },
+                { label: 'demo@proluxshine.se', role: 'Kund', color: '#4CAF7D', em: 'demo@proluxshine.se' },
+              ].map(({ label, role, color, em }) => (
+                <div key={em} onClick={() => { setEmail(em); setPassword('prolux2024') }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, cursor: 'pointer', borderRadius: 6, padding: '2px 4px', transition: 'background .15s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,.04)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                  <span style={{ color: 'var(--text2)' }}>{label}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: `${color}18`, color, flexShrink: 0 }}>{role}</span>
+                </div>
+              ))}
+            </div>
+
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>E-post</label>
