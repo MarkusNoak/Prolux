@@ -1,23 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 42" fill="none">
-  <!-- Diamond mark -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 48" fill="none">
   <defs>
-    <linearGradient id="gld" x1="18" y1="2" x2="18" y2="40" gradientUnits="userSpaceOnUse">
+    <linearGradient id="gld" x1="20" y1="3" x2="20" y2="45" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#F5D472"/>
       <stop offset="55%" stop-color="#E8B84B"/>
       <stop offset="100%" stop-color="#C8903C"/>
     </linearGradient>
   </defs>
-  <g transform="translate(2, 1)">
-    <!-- Outer kite -->
-    <path d="M18,2 L34,22 L18,40 L2,22 Z" fill="url(#gld)"/>
-    <!-- White upward triangle -->
-    <path d="M18,7 L6,21 L18,21 Z" fill="white"/>
-    <!-- White lower-left -->
-    <path d="M6,23 L15,38 L15,23 Z" fill="white"/>
-    <!-- White lower-right -->
-    <path d="M30,23 L21,38 L21,23 Z" fill="white"/>
-  </g>
-  <!-- Main text -->
-  <text x="46" y="17" font-family="'Playfair Display', Georgia, serif" font-size="14" font-weight="700" fill="#F0EDE8" letter-spacing="1.5">PROLUX SHINE</text>
-  <text x="47" y="29" font-family="'Inter', Arial, sans-serif" font-size="6" font-weight="400" fill="#9BA0AB" letter-spacing="1">BILVÅRDSPRODUKTER</text>
+  <!-- Outer kite — fits within y:3–45, x:3–37 -->
+  <path d="M20,3 L37,24 L20,45 L3,24 Z" fill="url(#gld)"/>
+  <!-- White upward triangle (upper-left interior) -->
+  <path d="M20,9 L7,23 L20,23 Z" fill="white"/>
+  <!-- White lower-left -->
+  <path d="M7,25 L17,43 L17,25 Z" fill="white"/>
+  <!-- White lower-right -->
+  <path d="M33,25 L23,43 L23,25 Z" fill="white"/>
+  <!-- PROLUX SHINE -->
+  <text x="48" y="21" font-family="'Playfair Display', Georgia, serif" font-size="15" font-weight="700" fill="#F0EDE8" letter-spacing="1.8">PROLUX SHINE</text>
+  <!-- BILVÅRDSPRODUKTER -->
+  <text x="49" y="33" font-family="'Inter', Arial, sans-serif" font-size="6.5" font-weight="400" fill="#9BA0AB" letter-spacing="1.2">BILVÅRDSPRODUKTER</text>
 </svg>

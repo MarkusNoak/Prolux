@@ -1,17 +1,17 @@
-<svg viewBox="0 0 160 222" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 160 228" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="g" x1="80" y1="6" x2="80" y2="216" gradientUnits="userSpaceOnUse">
+    <linearGradient id="g" x1="80" y1="4" x2="80" y2="224" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#F5D472"/>
       <stop offset="55%" stop-color="#E8B84B"/>
       <stop offset="100%" stop-color="#C8903C"/>
     </linearGradient>
   </defs>
-  <!-- Outer kite -->
-  <path d="M80,6 L154,110 L80,216 L6,110 Z" fill="url(#g)"/>
-  <!-- White upward triangle (upper-left of interior) -->
-  <path d="M80,28 L22,108 L80,108 Z" fill="white"/>
+  <!-- Outer kite — 4px inset on all sides -->
+  <path d="M80,4 L156,114 L80,224 L4,114 Z" fill="url(#g)"/>
+  <!-- White upward triangle -->
+  <path d="M80,26 L20,112 L80,112 Z" fill="white"/>
   <!-- White lower-left -->
-  <path d="M22,114 L76,210 L76,114 Z" fill="white"/>
+  <path d="M20,116 L74,218 L74,116 Z" fill="white"/>
   <!-- White lower-right -->
-  <path d="M138,114 L84,210 L84,114 Z" fill="white"/>
+  <path d="M140,116 L86,218 L86,116 Z" fill="white"/>
 </svg>

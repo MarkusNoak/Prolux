@@ -56,7 +56,7 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
       }}>
         {/* Logo */}
         <Link href="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 4 }}>
-          <Image src="/logo.svg" alt="Prolux Shine" width={118} height={34} priority style={{ display: 'block' }} />
+          <Image src="/logo.svg" alt="Prolux Shine" width={131} height={38} priority style={{ display: 'block' }} />
         </Link>
 
         {/* Desktop nav pills */}
