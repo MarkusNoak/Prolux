@@ -3,11 +3,11 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { PublicShell, useLoginModal } from '@/components/layout/PublicShell'
+import { PublicShell, useLoginModal, usePublicCart } from '@/components/layout/PublicShell'
 import { fmt, formatDate } from '@/lib/utils'
 import {
   ArrowRight, ChevronRight, Package, Truck, Shield, Phone,
-  ShoppingBag, ExternalLink, Star, User, Lock, Save, Check
+  ShoppingCart, ShoppingBag, ExternalLink, Star, User, Lock, Save, Check, ClipboardList
 } from 'lucide-react'
 import type { User as SupaUser } from '@supabase/supabase-js'
 
@@ -443,9 +443,182 @@ function HeroSlider({ images, openLogin, loggedIn }: { images: string[]; openLog
 }
 
 /* ════════════════════════════════════════════════════════
+   CUSTOMER PORTAL SECTION — shows below marketing for logged-in users
+════════════════════════════════════════════════════════ */
+function CustomerPortalSection({ customer, authUser, openLogin }: { customer: any; authUser: any; openLogin: () => void }) {
+  const [portalTab, setPortalTab] = useState<'orders'|'account'>('orders')
+  const [orders, setOrders]       = useState<any[]>([])
+  const [ordersLoaded, setOrdersLoaded] = useState(false)
+  const [pwOld, setPwOld]         = useState('')
+  const [pwNew, setPwNew]         = useState('')
+  const [pwMsg, setPwMsg]         = useState('')
+  const [form, setForm]           = useState({ contact_name: customer?.contact_name || '', phone: customer?.phone || '', address: customer?.address || '' })
+  const [saving, setSaving]       = useState(false)
+  const [saved, setSaved]         = useState(false)
+
+  useEffect(() => {
+    if (!customer?.id || ordersLoaded) return
+    const sb = createClient()
+    sb.from('orders').select('id,order_nr,status,subtotal,total,created_at,order_items(product_name,qty)')
+      .eq('customer_id', customer.id).order('created_at', { ascending: false }).limit(20)
+      .then(({ data }) => { if (data) setOrders(data); setOrdersLoaded(true) })
+  }, [customer?.id, ordersLoaded])
+
+  async function saveProfile() {
+    setSaving(true)
+    const sb = createClient()
+    await sb.from('customers').update({ contact_name: form.contact_name, phone: form.phone }).eq('id', customer.id)
+    setSaved(true); setSaving(false)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  async function changePassword() {
+    if (!pwNew || pwNew.length < 6) { setPwMsg('Minst 6 tecken'); return }
+    const sb = createClient()
+    const { error } = await sb.auth.updateUser({ password: pwNew })
+    if (error) setPwMsg('Fel: ' + error.message)
+    else { setPwMsg('Lösenord uppdaterat!'); setPwOld(''); setPwNew('') }
+    setTimeout(() => setPwMsg(''), 4000)
+  }
+
+  const STATUS_LABEL: Record<string, string> = { pending: 'Mottagen', confirmed: 'Bekräftad', packed: 'Packad', shipped: 'Skickad', delivered: 'Levererad', cancelled: 'Avbruten' }
+  const STATUS_COLOR: Record<string, string> = { pending: '#D48A3A', confirmed: '#C9971A', packed: '#C9971A', shipped: '#4A8FD4', delivered: '#4CAF7D', cancelled: '#E05252' }
+  const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
+  const disc = DISCOUNT[customer?.price_list_id] ?? 0
+  const totalSpend = orders.reduce((s, o) => s + (o.subtotal || 0), 0)
+
+  return (
+    <section id="min-portal" style={{ background: '#fff', borderTop: '3px solid #C9971A', padding: '64px 24px 80px' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.15em' }}>Min portal</p>
+            <h2 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 'clamp(24px, 3.5vw, 38px)', fontWeight: 400, color: '#111', lineHeight: 1.1 }}>
+              Välkommen, {customer?.contact_name?.split(' ')[0] || 'kund'}
+            </h2>
+            <p style={{ margin: '6px 0 0', fontSize: 14, color: '#888' }}>{customer?.company}</p>
+          </div>
+          {/* KPIs */}
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Prislista', value: customer?.price_list_id || 'Standard', accent: true },
+              { label: 'Rabatt', value: `${Math.round(disc * 100)}%`, accent: false },
+              { label: 'Ordrar totalt', value: orders.length, accent: false },
+              { label: 'Totalt köpt', value: `${fmt(totalSpend)} kr`, accent: false },
+            ].map(({ label, value, accent }) => (
+              <div key={label} style={{ textAlign: 'center', padding: '12px 20px', background: '#F8F5F0', borderRadius: 10, border: `1px solid ${accent ? 'rgba(201,151,26,.3)' : 'rgba(0,0,0,.07)'}` }}>
+                <div style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: accent ? '#C9971A' : '#111' }}>{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid rgba(0,0,0,.08)', marginBottom: 28 }}>
+          {([['orders', 'Mina ordrar'], ['account', 'Mitt konto']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => setPortalTab(key)}
+              style={{ padding: '10px 24px', background: 'none', border: 'none', borderBottom: `2px solid ${portalTab === key ? '#C9971A' : 'transparent'}`, color: portalTab === key ? '#111' : '#888', fontSize: 14, fontWeight: portalTab === key ? 700 : 400, cursor: 'pointer', marginBottom: -2, transition: 'all .15s' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* ORDERS TAB */}
+        {portalTab === 'orders' && (
+          <div>
+            {!ordersLoaded ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#bbb' }}>Laddar ordrar…</div>
+            ) : orders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#bbb' }}>
+                <ClipboardList size={48} strokeWidth={1} style={{ margin: '0 auto 16px', display: 'block', color: '#ddd' }} />
+                <p style={{ fontSize: 15, color: '#999', margin: 0 }}>Inga ordrar ännu</p>
+                <p style={{ fontSize: 13, color: '#bbb', marginTop: 6 }}>Bläddra bland produkterna ovan och lägg din första order</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {orders.map(o => (
+                  <div key={o.id} style={{ background: '#F9F7F3', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: '#111' }}>Order #{o.order_nr}</div>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: `${STATUS_COLOR[o.status] || '#999'}15`, color: STATUS_COLOR[o.status] || '#999' }}>
+                          {STATUS_LABEL[o.status] || o.status}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ fontSize: 12, color: '#999' }}>{o.created_at?.slice(0, 10)}</div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: '#C9971A' }}>{fmt(o.subtotal)} kr</div>
+                      </div>
+                    </div>
+                    {o.order_items?.length > 0 && (
+                      <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {o.order_items.slice(0, 4).map((item: any, i: number) => (
+                          <span key={i} style={{ fontSize: 11, padding: '3px 8px', background: 'rgba(0,0,0,.05)', borderRadius: 4, color: '#666' }}>
+                            {item.product_name} ×{item.qty}
+                          </span>
+                        ))}
+                        {o.order_items.length > 4 && <span style={{ fontSize: 11, color: '#999', alignSelf: 'center' }}>+{o.order_items.length - 4} till</span>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ACCOUNT TAB */}
+        {portalTab === 'account' && (
+          <div style={{ maxWidth: 540 }}>
+            <div style={{ background: '#F9F7F3', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Kontaktuppgifter</div>
+              {[
+                { label: 'Namn', key: 'contact_name', placeholder: 'Ditt namn', type: 'text' },
+                { label: 'Telefon', key: 'phone', placeholder: '070-123 45 67', type: 'tel' },
+              ].map(({ label, key, placeholder, type }) => (
+                <div key={key} style={{ marginBottom: 14 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</label>
+                  <input type={type} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
+                    style={{ width: '100%', padding: '10px 13px', background: '#fff', border: '1px solid rgba(0,0,0,.1)', borderRadius: 8, fontSize: 14, color: '#111', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>E-post</label>
+                <input value={authUser?.email || ''} disabled style={{ width: '100%', padding: '10px 13px', background: '#f0f0f0', border: '1px solid rgba(0,0,0,.08)', borderRadius: 8, fontSize: 14, color: '#999', boxSizing: 'border-box' }} />
+              </div>
+              <button onClick={saveProfile} disabled={saving}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '11px 22px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                {saved ? <><Check size={14} /> Sparat!</> : saving ? 'Sparar…' : <><Save size={14} /> Spara</>}
+              </button>
+            </div>
+
+            <div style={{ background: '#F9F7F3', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Byt lösenord</div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>Nytt lösenord</label>
+                <input type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="Minst 6 tecken"
+                  style={{ width: '100%', padding: '10px 13px', background: '#fff', border: '1px solid rgba(0,0,0,.1)', borderRadius: 8, fontSize: 14, color: '#111', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              {pwMsg && <div style={{ fontSize: 12, padding: '8px 12px', borderRadius: 6, background: pwMsg.includes('Fel') ? '#fef2f2' : '#f0fdf4', color: pwMsg.includes('Fel') ? '#dc2626' : '#16a34a', marginBottom: 12 }}>{pwMsg}</div>}
+              <button onClick={changePassword}
+                style={{ padding: '11px 22px', borderRadius: 8, background: '#F5F3EE', color: '#111', fontSize: 14, fontWeight: 600, border: '1px solid rgba(0,0,0,.1)', cursor: 'pointer' }}>
+                Uppdatera lösenord
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+/* ════════════════════════════════════════════════════════
    MARKETING HOME — light, no dark sections
 ════════════════════════════════════════════════════════ */
 function MarketingHome({ products, allImages, openLogin, authUser, customer }: { products: any[]; allImages: string[]; openLogin: () => void; authUser?: any; customer?: any }) {
+  const cart = usePublicCart()
+  const priceList = customer?.price_list_id || 'Standard'
   return (
     <>
       {/* ── HERO SLIDER ── */}
@@ -505,9 +678,9 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
                         <div>
                           {authUser && customer ? (
                             <>
-                              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 2 }}>Ditt pris</div>
+                              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 2 }}>Ditt pris ({priceList})</div>
                               <div style={{ fontSize: 20, fontWeight: 800, color: '#C9971A' }}>
-                                {fmt(Math.round(p.list_price * (1 - (DISCOUNT[customer.price_list_id] ?? 0))))} kr
+                                {fmt(Math.round(p.list_price * (1 - (DISCOUNT[priceList] ?? 0))))} kr
                               </div>
                               <div style={{ fontSize: 10, color: '#ccc' }}>exkl. moms · {p.unit}</div>
                             </>
@@ -519,10 +692,16 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
                             </>
                           )}
                         </div>
-                        <button onClick={authUser ? undefined : openLogin}
-                          style={{ padding: '9px 18px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: authUser ? 'default' : 'pointer', opacity: authUser ? 0.5 : 1 }}>
-                          {authUser ? 'Inloggad' : 'Beställ'}
-                        </button>
+                        {authUser && customer ? (
+                          <button onClick={() => cart.addItem(p, priceList)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                            <ShoppingCart size={13} /> Lägg i korg
+                          </button>
+                        ) : (
+                          <button onClick={openLogin} style={{ padding: '9px 18px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                            Beställ
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -588,7 +767,11 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* ── CUSTOMER PORTAL SECTION (logged in only) ── */}
+      {authUser && customer && <CustomerPortalSection customer={customer} authUser={authUser} openLogin={openLogin} />}
+
+      {/* ── CTA (not logged in) ── */}
+      {!authUser && (
       <section id="om-oss" style={{ background: '#F8F5F0', padding: '72px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
         <Reveal>
           <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
@@ -610,6 +793,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
           </div>
         </Reveal>
       </section>
+      )}
 
       <style>{`
         @keyframes fadeUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }

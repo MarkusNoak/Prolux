@@ -76,6 +76,9 @@ export default function CustomerDetailPage() {
   const [orderLines, setOrderLines]       = useState<Record<string, number>>({})
   const [orderSearch, setOrderSearch]     = useState('')
   const [orderSaving, setOrderSaving]     = useState(false)
+  const [editMode, setEditMode]           = useState(false)
+  const [editForm, setEditForm]           = useState<Partial<Customer>>({})
+  const [editSaving, setEditSaving]       = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -174,6 +177,21 @@ export default function CustomerDetailPage() {
       showToast(`Order ${order_nr} skapad — ${fmt(total)} kr`)
     }
     setOrderSaving(false)
+  }
+
+  function startEdit() {
+    if (!customer) return
+    setEditForm({ company: customer.company, contact_name: customer.contact_name, email: customer.email, phone: customer.phone || '', city: customer.city || '', org_nr: customer.org_nr || '', price_list_id: customer.price_list_id, status: customer.status })
+    setEditMode(true)
+  }
+
+  async function saveEdit() {
+    if (!customer) return
+    setEditSaving(true)
+    const { data, error } = await supabase.from('customers').update(editForm).eq('id', customer.id).select().single()
+    if (!error && data) { setCustomer(data as Customer); showToast('Kunduppgifter sparade'); setEditMode(false) }
+    else showToast('Fel: ' + (error?.message || 'Kunde inte spara'))
+    setEditSaving(false)
   }
 
   if (loading) return (
@@ -280,6 +298,9 @@ export default function CustomerDetailPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button onClick={startEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 7, color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              ✏️ Redigera
+            </button>
             <a href={`mailto:${customer.email}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'rgba(74,143,212,.1)', border: '1px solid rgba(74,143,212,.2)', borderRadius: 7, color: 'var(--blue)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
               <Mail size={13} /> Mail
             </a>
@@ -604,6 +625,62 @@ export default function CustomerDetailPage() {
               </div>
             )}
             {reminders.length === 0 && <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '20px 0' }}>Inga påminnelser</div>}
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT CUSTOMER MODAL ─────────────────────────────── */}
+      {editMode && customer && (
+        <div onClick={() => setEditMode(false)} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--line)', borderRadius: 16, padding: '28px 32px', width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 24, fontFamily: 'var(--font-serif)' }}>Redigera kunduppgifter</div>
+
+            {[
+              { label: 'Företagsnamn', key: 'company', type: 'text' },
+              { label: 'Kontaktperson', key: 'contact_name', type: 'text' },
+              { label: 'E-post', key: 'email', type: 'email' },
+              { label: 'Telefon', key: 'phone', type: 'tel' },
+              { label: 'Stad', key: 'city', type: 'text' },
+              { label: 'Org.nr', key: 'org_nr', type: 'text' },
+            ].map(({ label, key, type }) => (
+              <div key={key} style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</label>
+                <input type={type} value={(editForm as any)[key] || ''} onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                  style={{ width: '100%', padding: '9px 13px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            ))}
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>Prislista</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['A', 'B', 'C', 'Standard'] as const).map(pl => (
+                  <button key={pl} onClick={() => setEditForm(f => ({ ...f, price_list_id: pl }))}
+                    style={{ flex: 1, padding: '8px 4px', background: editForm.price_list_id === pl ? 'rgba(232,184,75,.1)' : 'var(--bg3)', border: `1px solid ${editForm.price_list_id === pl ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 8, color: editForm.price_list_id === pl ? 'var(--gold)' : 'var(--text3)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    {pl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>Status</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['active', 'prospect', 'inactive'] as const).map(s => (
+                  <button key={s} onClick={() => setEditForm(f => ({ ...f, status: s }))}
+                    style={{ flex: 1, padding: '8px 4px', background: editForm.status === s ? 'rgba(232,184,75,.1)' : 'var(--bg3)', border: `1px solid ${editForm.status === s ? 'var(--gold)' : 'var(--line)'}`, borderRadius: 8, color: editForm.status === s ? 'var(--gold)' : 'var(--text3)', fontSize: 12, fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}>
+                    {s === 'active' ? 'Aktiv' : s === 'prospect' ? 'Prospekt' : 'Inaktiv'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setEditMode(false)} style={{ flex: 1, padding: 11, background: 'var(--bg3)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text2)', fontSize: 13, cursor: 'pointer' }}>Avbryt</button>
+              <button onClick={saveEdit} disabled={editSaving}
+                style={{ flex: 2, padding: 11, background: 'var(--gold)', color: '#111', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: editSaving ? 0.6 : 1 }}>
+                {editSaving ? 'Sparar…' : 'Spara ändringar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

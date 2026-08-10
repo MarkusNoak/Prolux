@@ -2,7 +2,30 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fmt } from '@/lib/utils'
-import { X } from 'lucide-react'
+import { X, Check } from 'lucide-react'
+
+function TrackingField({ orderId, initial, onSave }: { orderId: string; initial: string; onSave: (val: string) => void }) {
+  const [val, setVal] = useState(initial)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  async function save() {
+    setSaving(true)
+    const sb = createClient()
+    await sb.from('orders').update({ transport_order_id: val }).eq('id', orderId)
+    onSave(val); setSaved(true); setSaving(false)
+    setTimeout(() => setSaved(false), 2000)
+  }
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <input value={val} onChange={e => { setVal(e.target.value); setSaved(false) }} placeholder="ex. 123456789"
+        style={{ flex: 1, padding: '8px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: 13, outline: 'none' }} />
+      <button onClick={save} disabled={saving}
+        style={{ padding: '8px 14px', background: saved ? 'rgba(76,175,125,.15)' : 'var(--bg3)', border: `1px solid ${saved ? 'var(--green)' : 'var(--border)'}`, borderRadius: 6, color: saved ? 'var(--green)' : 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        {saved ? <><Check size={12} /> Sparat</> : saving ? '…' : 'Spara'}
+      </button>
+    </div>
+  )
+}
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Utkast', pending: 'Väntande', confirmed: 'Bekräftad',
@@ -226,15 +249,26 @@ export default function AdminOrders() {
               </div>
 
               {/* Status update */}
-              <div>
+              <div style={{ marginBottom: 16 }}>
                 <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10, display: 'block' }}>Uppdatera status</span>
-                <select
-                  value={selectedOrder.status}
-                  onChange={e => updateStatus(selectedOrder.id, e.target.value)}
-                  style={{ width: '100%', padding: '9px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: 14, outline: 'none' }}
-                >
-                  {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                  {Object.entries(STATUS_LABELS).map(([v, l]) => {
+                    const sc = STATUS_CSS[v] || STATUS_CSS.draft
+                    const active = selectedOrder.status === v
+                    return (
+                      <button key={v} onClick={() => updateStatus(selectedOrder.id, v)}
+                        style={{ padding: '8px 10px', borderRadius: 6, border: `1px solid ${active ? sc.color : 'var(--border)'}`, background: active ? sc.bg : 'var(--bg3)', color: active ? sc.color : 'var(--text3)', fontSize: 12, fontWeight: active ? 700 : 400, cursor: 'pointer', transition: 'all .15s' }}>
+                        {l}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Tracking number */}
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8, display: 'block' }}>Spårningsnummer</span>
+                <TrackingField orderId={selectedOrder.id} initial={selectedOrder.transport_order_id || ''} onSave={(val) => setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, transport_order_id: val } : o))} />
               </div>
             </div>
           </>
