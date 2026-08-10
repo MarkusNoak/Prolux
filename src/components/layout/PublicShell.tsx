@@ -148,7 +148,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     padding: '7px 14px 7px 10px', borderRadius: 8,
                     background: '#111', color: '#fff',
                     fontSize: 13, fontWeight: 600,
-                    border: 'none', cursor: 'pointer', gap: 8,
+                    border: 'none', cursor: 'pointer',
                   }}
                 >
                   <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#E8B84B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#111', flexShrink: 0 }}>
