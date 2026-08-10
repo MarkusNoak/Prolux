@@ -382,7 +382,7 @@ const SLIDES = [
   { bg: '#0A0D1A', label: 'Fälg & Exteriör',      heading: 'Rena fälgar.\nKlara resultat.',        sub: 'Starka rengöringsmedel formulerade för tunga jobb.' },
 ]
 
-function HeroSlider({ images, openLogin }: { images: string[]; openLogin: () => void }) {
+function HeroSlider({ images, openLogin, loggedIn }: { images: string[]; openLogin: () => void; loggedIn?: boolean }) {
   const [current, setCurrent] = useState(0)
   const slides = images.length > 0 ? images : []
   const total  = Math.max(slides.length, SLIDES.length)
@@ -422,9 +422,11 @@ function HeroSlider({ images, openLogin }: { images: string[]; openLogin: () => 
               <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 8, background: '#fff', color: '#111', fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>
                 Se produkter <ArrowRight size={16} />
               </Link>
-              <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', borderRadius: 8, background: 'transparent', border: '2px solid rgba(255,255,255,.55)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-                Logga in
-              </button>
+              {!loggedIn && (
+                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', borderRadius: 8, background: 'transparent', border: '2px solid rgba(255,255,255,.55)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+                  Logga in
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -443,11 +445,11 @@ function HeroSlider({ images, openLogin }: { images: string[]; openLogin: () => 
 /* ════════════════════════════════════════════════════════
    MARKETING HOME — light, no dark sections
 ════════════════════════════════════════════════════════ */
-function MarketingHome({ products, allImages, openLogin }: { products: any[]; allImages: string[]; openLogin: () => void }) {
+function MarketingHome({ products, allImages, openLogin, authUser, customer }: { products: any[]; allImages: string[]; openLogin: () => void; authUser?: any; customer?: any }) {
   return (
     <>
       {/* ── HERO SLIDER ── */}
-      <HeroSlider images={allImages} openLogin={openLogin} />
+      <HeroSlider images={allImages} openLogin={openLogin} loggedIn={!!authUser} />
 
       {/* ── TRUST STRIP ── */}
       <section style={{ background: '#fff', borderBottom: '1px solid rgba(0,0,0,.07)' }}>
@@ -501,12 +503,25 @@ function MarketingHome({ products, allImages, openLogin }: { products: any[]; al
                       <div style={{ fontSize: 14, fontWeight: 600, color: '#111', flex: 1, lineHeight: 1.35, marginBottom: 14 }}>{p.name}</div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                         <div>
-                          <div style={{ fontSize: 11, color: '#bbb', marginBottom: 2 }}>B2B-pris från</div>
-                          <div style={{ fontSize: 20, fontWeight: 800, color: '#C9971A' }}>{fmt(Math.round(p.list_price * 0.6))} kr</div>
-                          <div style={{ fontSize: 10, color: '#ccc' }}>exkl. moms</div>
+                          {authUser && customer ? (
+                            <>
+                              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 2 }}>Ditt pris</div>
+                              <div style={{ fontSize: 20, fontWeight: 800, color: '#C9971A' }}>
+                                {fmt(Math.round(p.list_price * (1 - (DISCOUNT[customer.price_list_id] ?? 0))))} kr
+                              </div>
+                              <div style={{ fontSize: 10, color: '#ccc' }}>exkl. moms · {p.unit}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 2 }}>B2B-pris från</div>
+                              <div style={{ fontSize: 20, fontWeight: 800, color: '#C9971A' }}>{fmt(Math.round(p.list_price * 0.6))} kr</div>
+                              <div style={{ fontSize: 10, color: '#ccc' }}>exkl. moms</div>
+                            </>
+                          )}
                         </div>
-                        <button onClick={openLogin} style={{ padding: '9px 18px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                          Beställ
+                        <button onClick={authUser ? undefined : openLogin}
+                          style={{ padding: '9px 18px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: authUser ? 'default' : 'pointer', opacity: authUser ? 0.5 : 1 }}>
+                          {authUser ? 'Inloggad' : 'Beställ'}
                         </button>
                       </div>
                     </div>
@@ -614,15 +629,26 @@ function HomeContent() {
   const [authChecked, setAuthChecked] = useState(false)
   const [products, setProducts]       = useState<any[]>([])
   const [allImages, setAllImages]     = useState<string[]>([])
+  const [customer, setCustomer]       = useState<any>(null)
 
   useEffect(() => {
     const sb = createClient()
     sb.auth.getSession().then(({ data: { session } }) => {
       setAuthUser(session?.user ?? null)
       setAuthChecked(true)
+      if (session?.user) {
+        sb.from('customers').select('*').eq('auth_user_id', session.user.id).single()
+          .then(({ data }) => { if (data) setCustomer(data) })
+      }
     })
     const { data: { subscription } } = sb.auth.onAuthStateChange((_e, session) => {
       setAuthUser(session?.user ?? null)
+      if (session?.user) {
+        supabase.from('customers').select('*').eq('auth_user_id', session.user.id).single()
+          .then(({ data }) => { if (data) setCustomer(data) })
+      } else {
+        setCustomer(null)
+      }
     })
     supabase.from('products').select('id,name,brand,list_price,image_url,unit').eq('active', true).order('sort_order').limit(8)
       .then(({ data }) => {
@@ -635,8 +661,7 @@ function HomeContent() {
   }, [])
 
   if (!authChecked) return <div style={{ minHeight: '100vh', background: '#fff' }} />
-  if (authUser) return <PortalHome user={authUser} products={products} />
-  return <MarketingHome products={products} allImages={allImages} openLogin={openLogin} />
+  return <MarketingHome products={products} allImages={allImages} openLogin={openLogin} authUser={authUser} customer={customer} />
 }
 
 export default function HomePage() {
