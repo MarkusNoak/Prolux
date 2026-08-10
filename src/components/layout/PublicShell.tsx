@@ -11,9 +11,12 @@ export const LoginModalContext = createContext<() => void>(() => {})
 export function useLoginModal() { return useContext(LoginModalContext) }
 
 const NAV = [
-  { href: '/produkter', label: 'Produkter' },
-  { href: '/#varfoross', label: 'Varför oss' },
-  { href: '/#kontakt', label: 'Kontakt' },
+  { href: '/#virtus-pro-center', label: 'Virtus Pro Center' },
+  { href: '/produkter',          label: 'Produkter' },
+  { href: '/#aterforsaljare',    label: 'Bli återförsäljare' },
+  { href: '/#utbildning',        label: 'Bilvårdsutbildning' },
+  { href: '/#om-oss',            label: 'Om oss' },
+  { href: '/#kontakt',           label: 'Kontakta oss' },
 ]
 
 const S = {
@@ -121,15 +124,15 @@ export function PublicShell({ children }: { children: ReactNode }) {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="pub-desktop-nav" style={{ display: 'none', gap: 2, flex: 1, alignItems: 'center', marginLeft: 20 }}>
+        <nav className="pub-desktop-nav" style={{ display: 'none', gap: 0, flex: 1, alignItems: 'center', marginLeft: 12 }}>
           {NAV.map(({ href, label }) => {
-            const active = href !== '/#varfoross' && href !== '/#kontakt' && pathname.startsWith(href)
+            const active = !href.includes('#') && pathname.startsWith(href)
             return (
               <Link key={href} href={href} style={{
-                padding: '7px 14px', borderRadius: 7,
-                color: active ? '#111' : '#555',
-                fontSize: 14, fontWeight: active ? 600 : 400,
-                textDecoration: 'none', transition: 'color .15s',
+                padding: '7px 11px', borderRadius: 7,
+                color: active ? '#111' : '#444',
+                fontSize: 13, fontWeight: active ? 600 : 400,
+                textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap',
               }}>
                 {label}
               </Link>
@@ -137,7 +140,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="pub-desktop-right" style={{ display: 'none', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+        <div className="pub-desktop-right" style={{ display: 'none', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
           {!authLoading && (
             authUser ? (
               <div style={{ position: 'relative' }}>
@@ -166,7 +169,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     <button onClick={goToPortal} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
                       <Package size={14} color="#C9971A" /> Min portal
                     </button>
-                    <button onClick={() => { router.push('/#portal-shop'); setUserDropOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
+                    <button onClick={() => { router.push('/'); setUserDropOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
                       <ShoppingBag size={14} color="#555" /> Mina ordrar
                     </button>
                     <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#E05252', cursor: 'pointer', borderTop: '1px solid rgba(0,0,0,.06)', textAlign: 'left' }}>
@@ -176,15 +179,26 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 )}
               </div>
             ) : (
-              <button onClick={openLogin} style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '9px 22px', borderRadius: 8,
-                background: '#111', color: '#fff',
-                fontSize: 13, fontWeight: 700,
-                border: 'none', cursor: 'pointer',
-              }}>
-                Logga in
-              </button>
+              <>
+                <button onClick={openLogin} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '9px 20px', borderRadius: 8,
+                  background: '#E8B84B', color: '#0D0900',
+                  fontSize: 13, fontWeight: 700,
+                  border: 'none', cursor: 'pointer',
+                }}>
+                  Skapa konto
+                </button>
+                <button onClick={openLogin} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '9px 20px', borderRadius: 8,
+                  background: 'transparent', color: '#111',
+                  fontSize: 13, fontWeight: 600,
+                  border: '1.5px solid rgba(0,0,0,.15)', cursor: 'pointer',
+                }}>
+                  Logga in
+                </button>
+              </>
             )
           )}
         </div>
