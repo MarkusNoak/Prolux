@@ -7,7 +7,7 @@ import { fmt, formatDate, custPrice } from '@/lib/utils'
 import {
   Plus, Mail, FileText, Bell, Calendar,
   TrendingUp, ShoppingBag, Package, Star,
-  Search, BarChart2, X, Trash2, ChevronLeft, ChevronRight
+  Search, BarChart2, X, Trash2, ChevronLeft, ChevronRight, Minus, Check
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -71,6 +71,11 @@ export default function CustomerDetailPage() {
   const [reminderDate, setReminderDate]   = useState('')
   const [reminderPriority, setReminderPriority] = useState<ReminderPriority>('normal')
   const [toast, setToast]                 = useState('')
+  const [orderModalOpen, setOrderModalOpen] = useState(false)
+  const [allProducts, setAllProducts]     = useState<any[]>([])
+  const [orderLines, setOrderLines]       = useState<Record<string, number>>({})
+  const [orderSearch, setOrderSearch]     = useState('')
+  const [orderSaving, setOrderSaving]     = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -79,13 +84,13 @@ export default function CustomerDetailPage() {
       supabase.from('orders').select('id,order_nr,status,total,subtotal,vat_amount,created_at,delivery_city,order_items(id,product_name,product_sku,qty,unit_price,list_price,total_price)').eq('customer_id', id).order('created_at', { ascending: false }),
       supabase.from('activities').select('id,type,title,body,created_by,created_at').eq('customer_id', id).order('created_at', { ascending: false }),
       supabase.from('reminders').select('*').eq('customer_id', id).order('due_date'),
-      supabase.from('products').select('id,name').eq('active', true),
+      supabase.from('products').select('id,name,brand,list_price,unit').eq('active', true).order('sort_order'),
     ]).then(([{ data: c }, { data: o }, { data: a }, { data: r }, { data: p }]) => {
       if (c) setCustomer(c as Customer)
       if (o) { setOrders(o as any); setOrderItems(o.flatMap((x: any) => x.order_items || [])) }
       if (a) setActivities(a as any)
       if (r) setReminders(r)
-      if (p) setAllProductNames(p.map((x: any) => x.name))
+      if (p) { setAllProductNames(p.map((x: any) => x.name)); setAllProducts(p as any) }
       setLoading(false)
     })
   }, [id])
@@ -137,6 +142,38 @@ export default function CustomerDetailPage() {
     const sub  = `Offert från ProLuxShine — ${customer.company}`
     const body = `Hej ${customer.contact_name},\n\nTack för visat intresse! Jag bifogar en offert anpassad efter er prislista ${customer.price_list_id}.\n\nVänliga hälsningar,\nBashar\nProLuxShine`
     window.open(`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(customer.email)}&su=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`, '_blank')
+  }
+
+  const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
+
+  async function saveOrder() {
+    if (!customer) return
+    const lines = Object.entries(orderLines).filter(([, qty]) => qty > 0)
+    if (lines.length === 0) return
+    setOrderSaving(true)
+    const pl = customer.price_list_id as string
+    const disc = DISCOUNT[pl] ?? 0
+    const items = lines.map(([pid, qty]) => {
+      const prod = allProducts.find(p => p.id === pid)!
+      const unitPrice = Math.round(prod.list_price * (1 - disc))
+      return { product_id: pid, product_name: prod.name, product_sku: prod.id, qty, unit_price: unitPrice, list_price: prod.list_price, total_price: unitPrice * qty }
+    })
+    const subtotal = items.reduce((s, i) => s + i.total_price, 0)
+    const vat = Math.round(subtotal * 0.25)
+    const total = subtotal + vat
+    const order_nr = `CRM-${Date.now().toString().slice(-6)}`
+    const { data: order, error } = await supabase.from('orders').insert({
+      customer_id: customer.id, order_nr, status: 'Bekräftad',
+      subtotal, vat_amount: vat, total, created_by: 'Bashar',
+    }).select().single()
+    if (!error && order) {
+      await supabase.from('order_items').insert(items.map(i => ({ ...i, order_id: order.id })))
+      setOrders(os => [{ ...order, order_items: items } as any, ...os])
+      setOrderLines({})
+      setOrderModalOpen(false)
+      showToast(`Order ${order_nr} skapad — ${fmt(total)} kr`)
+    }
+    setOrderSaving(false)
   }
 
   if (loading) return (
@@ -249,9 +286,9 @@ export default function CustomerDetailPage() {
             <button onClick={sendOffer} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.2)', borderRadius: 7, color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
               <FileText size={13} /> Skicka offert
             </button>
-            <Link href={`/crm/orders?customer=${customer.id}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+            <button onClick={() => setOrderModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'var(--gold)', border: 'none', borderRadius: 7, color: '#111', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               <Plus size={13} /> Ny order
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -567,6 +604,94 @@ export default function CustomerDetailPage() {
               </div>
             )}
             {reminders.length === 0 && <div style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 13, padding: '20px 0' }}>Inga påminnelser</div>}
+          </div>
+        </div>
+      )}
+
+      {/* ── ORDER MODAL ──────────────────────────────────────── */}
+      {orderModalOpen && customer && (
+        <div onClick={() => setOrderModalOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 620, maxHeight: '90vh', background: 'var(--bg2)', border: '1px solid var(--line)', borderRadius: 16, boxShadow: '0 24px 80px rgba(0,0,0,.6)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Ny order — {customer.company}</div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
+                  Prislista {customer.price_list_id} · {Math.round((DISCOUNT[customer.price_list_id] ?? 0) * 100)}% rabatt
+                </div>
+              </div>
+              <button onClick={() => setOrderModalOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 6 }}><X size={18} /></button>
+            </div>
+
+            {/* Search */}
+            <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
+              <div style={{ position: 'relative' }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
+                <input value={orderSearch} onChange={e => setOrderSearch(e.target.value)} placeholder="Sök produkt..."
+                  style={{ width: '100%', padding: '9px 12px 9px 32px', background: 'var(--bg4)', border: '1px solid var(--line)', borderRadius: 8, color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} autoFocus />
+              </div>
+            </div>
+
+            {/* Product list */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+              {allProducts.filter(p => !orderSearch || p.name.toLowerCase().includes(orderSearch.toLowerCase()) || (p.brand || '').toLowerCase().includes(orderSearch.toLowerCase())).map(p => {
+                const disc = DISCOUNT[customer.price_list_id] ?? 0
+                const unitPrice = Math.round(p.list_price * (1 - disc))
+                const qty = orderLines[p.id] || 0
+                return (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 24px', borderBottom: '1px solid rgba(255,255,255,.04)', background: qty > 0 ? 'rgba(232,184,75,.04)' : 'transparent' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>{p.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{p.brand} · {p.unit}</div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0, marginRight: 12 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold)' }}>{fmt(unitPrice)} kr</div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)' }}>exkl. moms</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => setOrderLines(l => ({ ...l, [p.id]: Math.max(0, (l[p.id] || 0) - 1) }))}
+                        style={{ width: 28, height: 28, borderRadius: 6, background: qty > 0 ? 'var(--bg4)' : 'transparent', border: '1px solid var(--line)', color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Minus size={12} />
+                      </button>
+                      <span style={{ width: 28, textAlign: 'center', fontSize: 14, fontWeight: 700, color: qty > 0 ? 'var(--gold)' : 'var(--text3)' }}>{qty}</span>
+                      <button onClick={() => setOrderLines(l => ({ ...l, [p.id]: (l[p.id] || 0) + 1 }))}
+                        style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--bg4)', border: '1px solid var(--line)', color: 'var(--text)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Footer */}
+            {(() => {
+              const lines = Object.entries(orderLines).filter(([, q]) => q > 0)
+              const disc = DISCOUNT[customer.price_list_id] ?? 0
+              const subtotal = lines.reduce((s, [pid, qty]) => {
+                const prod = allProducts.find(p => p.id === pid)
+                return s + (prod ? Math.round(prod.list_price * (1 - disc)) * qty : 0)
+              }, 0)
+              const total = Math.round(subtotal * 1.25)
+              return (
+                <div style={{ padding: '16px 24px', borderTop: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                  <div style={{ flex: 1 }}>
+                    {lines.length > 0 ? (
+                      <>
+                        <div style={{ fontSize: 12, color: 'var(--text3)' }}>{lines.reduce((s, [, q]) => s + q, 0)} artiklar</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--gold)' }}>{fmt(total)} kr <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text3)' }}>inkl. moms</span></div>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: 13, color: 'var(--text3)' }}>Välj produkter ovan</span>
+                    )}
+                  </div>
+                  <button onClick={saveOrder} disabled={lines.length === 0 || orderSaving}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 22px', background: lines.length === 0 ? 'var(--bg4)' : 'var(--gold)', border: 'none', borderRadius: 8, color: lines.length === 0 ? 'var(--text3)' : '#111', fontSize: 13, fontWeight: 700, cursor: lines.length === 0 ? 'default' : 'pointer' }}>
+                    <Check size={14} /> {orderSaving ? 'Sparar…' : 'Skapa order'}
+                  </button>
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}
