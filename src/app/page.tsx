@@ -7,7 +7,7 @@ import { PublicShell, useLoginModal } from '@/components/layout/PublicShell'
 import { fmt, formatDate } from '@/lib/utils'
 import {
   ArrowRight, ChevronRight, Package, Truck, Shield, Phone,
-  ShoppingBag, FileText, TrendingUp, ExternalLink, Star
+  ShoppingBag, ExternalLink, Star, User, Lock, Save, Check
 } from 'lucide-react'
 import type { User as SupaUser } from '@supabase/supabase-js'
 
@@ -47,12 +47,23 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 }
 
 /* ════════════════════════════════════════════════════════
-   LOGGED-IN PORTAL — light, inline on homepage
+   LOGGED-IN PORTAL — tabs: Översikt | Ordrar | Mitt konto
 ════════════════════════════════════════════════════════ */
 function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
-  const [customer, setCustomer] = useState<any>(null)
-  const [orders, setOrders]     = useState<any[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [customer, setCustomer]   = useState<any>(null)
+  const [orders, setOrders]       = useState<any[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [tab, setTab]             = useState<'overview'|'orders'|'account'>('overview')
+  // Account form state
+  const [acctName, setAcctName]   = useState('')
+  const [acctPhone, setAcctPhone] = useState('')
+  const [acctAddr, setAcctAddr]   = useState('')
+  const [acctSaving, setAcctSaving] = useState(false)
+  const [acctSaved, setAcctSaved]   = useState(false)
+  const [pwCurrent, setPwCurrent]   = useState('')
+  const [pwNew, setPwNew]           = useState('')
+  const [pwMsg, setPwMsg]           = useState('')
+  const [pwSaving, setPwSaving]     = useState(false)
 
   const role      = user.user_metadata?.role
   const name      = user.user_metadata?.full_name || user.email?.split('@')[0] || 'kund'
@@ -63,12 +74,16 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
     Promise.all([
       supabase.from('customers').select('*').eq('email', user.email!).maybeSingle(),
       supabase.from('orders')
-        .select('id,order_nr,status,total,created_at,order_items(product_name,qty)')
+        .select('id,order_nr,status,total,created_at,order_items(product_name,qty,unit_price)')
         .eq('customer_id', user.user_metadata?.customer_id ?? '')
-        .order('created_at', { ascending: false })
-        .limit(5),
+        .order('created_at', { ascending: false }),
     ]).then(([{ data: c }, { data: o }]) => {
-      if (c) setCustomer(c)
+      if (c) {
+        setCustomer(c)
+        setAcctName(c.contact_name || '')
+        setAcctPhone(c.phone || '')
+        setAcctAddr(c.address || '')
+      }
       if (o) setOrders(o)
       setLoading(false)
     })
@@ -77,6 +92,32 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
   const totalSpent     = orders.reduce((s, o) => s + (o.total || 0), 0)
   const ordersThisYear = orders.filter(o => new Date(o.created_at).getFullYear() === new Date().getFullYear()).length
   const savings        = totalSpent && disc ? Math.round(totalSpent * disc / (1 - disc)) : 0
+
+  async function saveAccount(e: React.FormEvent) {
+    e.preventDefault()
+    setAcctSaving(true)
+    if (customer?.id) {
+      await supabase.from('customers').update({ contact_name: acctName, phone: acctPhone, address: acctAddr }).eq('id', customer.id)
+    }
+    setAcctSaving(false); setAcctSaved(true)
+    setTimeout(() => setAcctSaved(false), 3000)
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault()
+    setPwSaving(true); setPwMsg('')
+    const { error } = await supabase.auth.updateUser({ password: pwNew })
+    setPwSaving(false)
+    if (error) setPwMsg('Kunde inte byta lösenord: ' + error.message)
+    else { setPwMsg('Lösenordet har bytts!'); setPwCurrent(''); setPwNew('') }
+  }
+
+  const inp: React.CSSProperties = { width: '100%', padding: '11px 14px', background: '#fff', border: '1.5px solid rgba(0,0,0,.12)', borderRadius: 8, color: '#111', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }
+  const TABS = [
+    { id: 'overview', label: 'Översikt' },
+    { id: 'orders',   label: 'Mina ordrar' },
+    { id: 'account',  label: 'Mitt konto' },
+  ] as const
 
   /* Admin/CRM */
   if (role === 'admin' || role === 'crm') {
@@ -97,124 +138,236 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
     )
   }
 
-  /* Customer portal */
   return (
-    <div style={{ paddingTop: 64, background: '#fff', minHeight: '100vh' }}>
+    <div style={{ paddingTop: 64, background: '#F8F5F0', minHeight: '100vh' }}>
 
       {/* Welcome bar */}
-      <div style={{ background: '#F8F5F0', borderBottom: '1px solid rgba(0,0,0,.07)', padding: '28px 24px' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
-          <div>
-            <p style={{ margin: '0 0 2px', fontSize: 13, color: '#999' }}>Välkommen tillbaka</p>
-            <h1 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 400, color: '#111' }}>
-              {customer?.company || name}
-            </h1>
-            {priceList !== 'Standard' && (
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: '#888' }}>
-                Prislista <strong style={{ color: '#C9971A' }}>{priceList}</strong> · {Math.round(disc * 100)}% B2B-rabatt
-              </p>
-            )}
+      <div style={{ background: '#fff', borderBottom: '1px solid rgba(0,0,0,.07)', padding: '24px 24px 0' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginBottom: 20 }}>
+            <div>
+              <p style={{ margin: '0 0 2px', fontSize: 13, color: '#999' }}>Välkommen tillbaka</p>
+              <h1 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 26, fontWeight: 400, color: '#111' }}>
+                {customer?.company || name}
+              </h1>
+              {priceList !== 'Standard' && (
+                <p style={{ margin: '3px 0 0', fontSize: 13, color: '#888' }}>
+                  Prislista <strong style={{ color: '#C9971A' }}>{priceList}</strong> · {Math.round(disc * 100)}% B2B-rabatt
+                </p>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 1, background: 'rgba(0,0,0,.06)', borderRadius: 10, overflow: 'hidden' }}>
+              {[
+                { label: 'Total inköpt', value: totalSpent ? `${fmt(totalSpent)} kr` : '—' },
+                { label: 'Ordrar i år',  value: `${ordersThisYear}` },
+                { label: 'Besparingar',  value: savings ? `${fmt(savings)} kr` : '—' },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ padding: '12px 20px', background: '#fff', textAlign: 'center', minWidth: 110 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#111' }}>{value}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          {/* KPIs */}
-          <div style={{ display: 'flex', gap: 1, background: 'rgba(0,0,0,.06)', borderRadius: 12, overflow: 'hidden' }}>
-            {[
-              { label: 'Total inköpt',  value: totalSpent ? `${fmt(totalSpent)} kr` : '—' },
-              { label: 'Ordrar i år',   value: `${ordersThisYear}` },
-              { label: 'Besparingar',   value: savings ? `${fmt(savings)} kr` : '—' },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ padding: '16px 24px', background: '#fff', textAlign: 'center', minWidth: 120 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#bbb', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>{value}</div>
-              </div>
+
+          {/* Tab bar */}
+          <div style={{ display: 'flex', gap: 0, borderTop: '1px solid rgba(0,0,0,.06)' }}>
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                padding: '14px 22px', background: 'transparent', border: 'none', cursor: 'pointer',
+                fontSize: 14, fontWeight: tab === t.id ? 700 : 400, color: tab === t.id ? '#111' : '#888',
+                borderBottom: tab === t.id ? '2px solid #111' : '2px solid transparent',
+                marginBottom: -1, fontFamily: 'inherit', transition: 'all .15s',
+              }}>
+                {t.label}
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '48px 24px 80px' }}>
+      <div style={{ maxWidth: 1160, margin: '0 auto', padding: '36px 24px 80px' }}>
 
-        {/* Recent orders */}
-        <div style={{ marginBottom: 56 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111' }}>Senaste ordrar</h2>
-            <Link href="/portal/orders" style={{ fontSize: 13, color: '#C9971A', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              Visa alla <ChevronRight size={14} />
-            </Link>
-          </div>
-          {loading ? (
-            <div style={{ height: 80, background: '#F5F3EE', borderRadius: 12, animation: 'pulse 1.5s ease infinite' }} />
-          ) : orders.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-              {orders.map(o => {
-                const statusColor = o.status === 'Levererad' ? '#16A34A' : o.status === 'Bekräftad' ? '#2563EB' : '#888'
-                return (
-                  <div key={o.id} style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 12, padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>#{o.order_nr}</div>
-                      <div style={{ fontSize: 12, color: '#bbb', marginTop: 3 }}>{formatDate(o.created_at)}</div>
-                      {o.order_items?.length > 0 && (
-                        <div style={{ fontSize: 11, color: '#999', marginTop: 3 }}>{o.order_items.length} produkter</div>
-                      )}
+        {/* ── ÖVERSIKT ── */}
+        {tab === 'overview' && (
+          <div>
+            <h2 style={{ margin: '0 0 18px', fontSize: 18, fontWeight: 700, color: '#111' }}>Senaste ordrar</h2>
+            {loading ? (
+              <div style={{ height: 80, background: '#eee', borderRadius: 12, animation: 'pulse 1.5s ease infinite', marginBottom: 40 }} />
+            ) : orders.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12, marginBottom: 40 }}>
+                {orders.slice(0, 4).map(o => {
+                  const sc = o.status === 'Levererad' ? '#16A34A' : o.status === 'Bekräftad' ? '#2563EB' : '#888'
+                  return (
+                    <div key={o.id} style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 12, padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>#{o.order_nr}</div>
+                        <div style={{ fontSize: 12, color: '#bbb', marginTop: 3 }}>{formatDate(o.created_at)}</div>
+                        <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{o.order_items?.length || 0} produkter</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 17, fontWeight: 800, color: '#111' }}>{fmt(o.total)} kr</div>
+                        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: `${sc}15`, color: sc, fontWeight: 700 }}>{o.status}</span>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 17, fontWeight: 800, color: '#111' }}>{fmt(o.total)} kr</div>
-                      <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 4, background: `${statusColor}15`, color: statusColor, fontWeight: 700 }}>{o.status}</span>
+                  )
+                })}
+              </div>
+            ) : (
+              <div style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.06)', borderRadius: 12, padding: '36px', textAlign: 'center', marginBottom: 40 }}>
+                <ShoppingBag size={32} strokeWidth={1} style={{ margin: '0 auto 12px', display: 'block', color: '#ccc' }} />
+                <p style={{ margin: 0, fontSize: 14, color: '#999' }}>Inga ordrar ännu</p>
+              </div>
+            )}
+
+            <h2 style={{ margin: '0 0 18px', fontSize: 18, fontWeight: 700, color: '#111' }}>Dina produkter</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 14 }}>
+              {products.map(p => {
+                const price = Math.round(p.list_price * (1 - disc))
+                return (
+                  <div key={p.id} style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'all .2s' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#C9971A'; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 20px rgba(0,0,0,.08)' }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'rgba(0,0,0,.08)'; el.style.transform = 'none'; el.style.boxShadow = 'none' }}
+                  >
+                    <div style={{ height: 160, background: '#F5F2ED', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      {p.image_url ? <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Package size={40} color="#ccc" strokeWidth={1} />}
+                    </div>
+                    <div style={{ padding: '12px 14px 16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ fontSize: 10, color: '#bbb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 3 }}>{p.brand}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111', flex: 1, lineHeight: 1.3, marginBottom: 10 }}>{p.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 17, fontWeight: 800, color: '#111' }}>{fmt(price)} kr</div>
+                          {disc > 0 && <div style={{ fontSize: 10, color: '#bbb' }}><s>{fmt(p.list_price)}</s> listpris</div>}
+                        </div>
+                        <Link href="/produkter" style={{ padding: '7px 14px', borderRadius: 7, background: '#111', color: '#fff', fontSize: 11, fontWeight: 700, textDecoration: 'none' }}>Beställ</Link>
+                      </div>
                     </div>
                   </div>
                 )
               })}
             </div>
-          ) : (
-            <div style={{ background: '#F8F5F0', border: '1.5px solid rgba(0,0,0,.06)', borderRadius: 12, padding: '36px', textAlign: 'center', color: '#bbb' }}>
-              <ShoppingBag size={32} strokeWidth={1} style={{ margin: '0 auto 12px', display: 'block' }} />
-              <p style={{ margin: '0 0 16px', fontSize: 14, color: '#999' }}>Inga ordrar ännu</p>
-              <button
-                onClick={() => document.getElementById('portal-shop')?.scrollIntoView({ behavior: 'smooth' })}
-                style={{ padding: '9px 22px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-              >
-                Bläddra produkter
-              </button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Products with B2B prices */}
-        <div id="portal-shop">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#111' }}>Dina produkter</h2>
-            <Link href="/portal/catalog" style={{ fontSize: 13, color: '#C9971A', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              Hela sortimentet <ChevronRight size={14} />
-            </Link>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-            {products.map(p => {
-              const price = Math.round(p.list_price * (1 - disc))
-              return (
-                <div key={p.id} style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'all .2s' }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = '#C9971A'; el.style.boxShadow = '0 8px 24px rgba(0,0,0,.08)'; el.style.transform = 'translateY(-2px)' }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor = 'rgba(0,0,0,.08)'; el.style.boxShadow = 'none'; el.style.transform = 'none' }}
-                >
-                  <div style={{ height: 180, background: '#F5F2ED', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    {p.image_url ? <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Package size={44} color="#ccc" strokeWidth={1} />}
-                  </div>
-                  <div style={{ padding: '14px 16px 18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: 10, color: '#bbb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>{p.brand}</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111', flex: 1, lineHeight: 1.3, marginBottom: 12 }}>{p.name}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: '#111' }}>{fmt(price)} <span style={{ fontSize: 11, fontWeight: 400, color: '#bbb' }}>kr</span></div>
-                        {disc > 0 && <div style={{ fontSize: 10, color: '#bbb' }}><s>{fmt(p.list_price)}</s> listpris</div>}
+        {/* ── ORDRAR ── */}
+        {tab === 'orders' && (
+          <div>
+            <h2 style={{ margin: '0 0 18px', fontSize: 18, fontWeight: 700, color: '#111' }}>Alla ordrar</h2>
+            {loading ? (
+              <div style={{ height: 80, background: '#eee', borderRadius: 12, animation: 'pulse 1.5s ease infinite' }} />
+            ) : orders.length === 0 ? (
+              <div style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.06)', borderRadius: 12, padding: '48px', textAlign: 'center' }}>
+                <ShoppingBag size={40} strokeWidth={1} style={{ margin: '0 auto 14px', display: 'block', color: '#ccc' }} />
+                <p style={{ margin: 0, fontSize: 15, color: '#999' }}>Inga ordrar ännu</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {orders.map(o => {
+                  const sc = o.status === 'Levererad' ? '#16A34A' : o.status === 'Bekräftad' ? '#2563EB' : '#888'
+                  return (
+                    <div key={o.id} style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 12, padding: '18px 22px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>#{o.order_nr}</div>
+                            <div style={{ fontSize: 12, color: '#bbb', marginTop: 2 }}>{formatDate(o.created_at)}</div>
+                          </div>
+                          <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 5, background: `${sc}15`, color: sc, fontWeight: 700 }}>{o.status}</span>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: '#111' }}>{fmt(o.total)} kr</div>
+                          <div style={{ fontSize: 11, color: '#bbb' }}>inkl. moms</div>
+                        </div>
                       </div>
-                      <Link href="/portal/catalog" style={{ padding: '8px 16px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                        Beställ
-                      </Link>
+                      {o.order_items?.length > 0 && (
+                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(0,0,0,.06)', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {o.order_items.map((item: any, i: number) => (
+                            <span key={i} style={{ fontSize: 12, color: '#666', background: '#F5F2ED', padding: '3px 10px', borderRadius: 5 }}>
+                              {item.qty}× {item.product_name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </div>
-              )
-            })}
+                  )
+                })}
+              </div>
+            )}
           </div>
-        </div>
+        )}
+
+        {/* ── MITT KONTO ── */}
+        {tab === 'account' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+
+            {/* Profile */}
+            <div style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 16, padding: '28px 28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E8B84B', fontSize: 18, fontWeight: 700, flexShrink: 0 }}>
+                  {name[0]?.toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{customer?.company || name}</div>
+                  <div style={{ fontSize: 12, color: '#999' }}>{user.email}</div>
+                </div>
+              </div>
+
+              <form onSubmit={saveAccount} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>Kontaktperson</label>
+                  <input value={acctName} onChange={e => setAcctName(e.target.value)} placeholder="Ditt namn" style={inp} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>Telefon</label>
+                  <input value={acctPhone} onChange={e => setAcctPhone(e.target.value)} placeholder="070-000 00 00" style={inp} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>Leveransadress</label>
+                  <input value={acctAddr} onChange={e => setAcctAddr(e.target.value)} placeholder="Gatuadress, postort" style={inp} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>E-post</label>
+                  <input value={user.email || ''} disabled style={{ ...inp, background: '#F5F2ED', color: '#999', cursor: 'not-allowed' }} />
+                </div>
+                <button type="submit" disabled={acctSaving} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', borderRadius: 8, background: acctSaved ? '#16A34A' : '#111', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'background .2s' }}>
+                  {acctSaved ? <><Check size={15} /> Sparat!</> : acctSaving ? 'Sparar…' : <><Save size={15} /> Spara uppgifter</>}
+                </button>
+              </form>
+            </div>
+
+            {/* Password */}
+            <div style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 16, padding: '28px 28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                <Lock size={18} color="#C9971A" />
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111' }}>Byt lösenord</h3>
+              </div>
+              <form onSubmit={changePassword} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>Nytt lösenord</label>
+                  <input type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} required minLength={6} placeholder="Minst 6 tecken" style={inp} />
+                </div>
+                {pwMsg && (
+                  <div style={{ fontSize: 13, padding: '10px 14px', borderRadius: 8, background: pwMsg.includes('bytts') ? '#F0FFF4' : '#FFF5F5', color: pwMsg.includes('bytts') ? '#16A34A' : '#DC2626', border: `1px solid ${pwMsg.includes('bytts') ? '#BBF7D0' : '#FECACA'}` }}>
+                    {pwMsg}
+                  </div>
+                )}
+                <button type="submit" disabled={pwSaving} style={{ padding: '12px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                  {pwSaving ? 'Sparar…' : 'Byt lösenord'}
+                </button>
+              </form>
+
+              {/* Price list info */}
+              <div style={{ marginTop: 28, padding: '16px 18px', background: '#F8F5F0', borderRadius: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 6 }}>Din prislista</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>{priceList}</div>
+                <div style={{ fontSize: 13, color: '#888', marginTop: 4 }}>
+                  {disc > 0 ? `${Math.round(disc * 100)}% rabatt på listpris` : 'Standardpris'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
@@ -317,7 +470,7 @@ function MarketingHome({ products, allImages, openLogin }: { products: any[]; al
 
       {/* ── PRODUCTS ── */}
       {products.length > 0 && (
-        <section style={{ background: '#fff', padding: '80px 24px' }}>
+        <section id="virtus-pro-center" style={{ background: '#fff', padding: '80px 24px' }}>
           <div style={{ maxWidth: 1160, margin: '0 auto' }}>
             <Reveal>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 40, flexWrap: 'wrap' }}>
@@ -366,7 +519,7 @@ function MarketingHome({ products, allImages, openLogin }: { products: any[]; al
       )}
 
       {/* ── CATEGORIES ── */}
-      <section style={{ background: '#F8F5F0', padding: '72px 24px' }}>
+      <section id="aterforsaljare" style={{ background: '#F8F5F0', padding: '72px 24px' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
@@ -391,7 +544,7 @@ function MarketingHome({ products, allImages, openLogin }: { products: any[]; al
       </section>
 
       {/* ── BRANDS ── */}
-      <section style={{ background: '#fff', padding: '72px 24px' }}>
+      <section id="utbildning" style={{ background: '#fff', padding: '72px 24px' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
@@ -421,7 +574,7 @@ function MarketingHome({ products, allImages, openLogin }: { products: any[]; al
       </section>
 
       {/* ── CTA ── */}
-      <section style={{ background: '#F8F5F0', padding: '72px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
+      <section id="om-oss" style={{ background: '#F8F5F0', padding: '72px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
         <Reveal>
           <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
             <Image src="/logo-mark.svg" alt="" width={32} height={44} style={{ display: 'block', margin: '0 auto 18px', opacity: .4 }} />
