@@ -10,13 +10,19 @@ import type { User as SupaUser } from '@supabase/supabase-js'
 export const LoginModalContext = createContext<() => void>(() => {})
 export function useLoginModal() { return useContext(LoginModalContext) }
 
-const NAV = [
+const NAV_PUBLIC = [
   { href: '/#virtus-pro-center', label: 'Virtus Pro Center' },
   { href: '/produkter',          label: 'Produkter' },
   { href: '/#aterforsaljare',    label: 'Bli återförsäljare' },
   { href: '/#utbildning',        label: 'Bilvårdsutbildning' },
   { href: '/#om-oss',            label: 'Om oss' },
   { href: '/#kontakt',           label: 'Kontakta oss' },
+]
+
+const NAV_CUSTOMER = [
+  { href: '/',              label: 'Min portal' },
+  { href: '/produkter',     label: 'Produkter' },
+  { href: '/#kontakt',      label: 'Kontakta oss' },
 ]
 
 const S = {
@@ -125,8 +131,8 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
         {/* Desktop nav */}
         <nav className="pub-desktop-nav" style={{ display: 'none', gap: 0, flex: 1, alignItems: 'center', marginLeft: 12 }}>
-          {NAV.map(({ href, label }) => {
-            const active = !href.includes('#') && pathname.startsWith(href)
+          {(authUser && role !== 'admin' && role !== 'crm' ? NAV_CUSTOMER : NAV_PUBLIC).map(({ href, label }) => {
+            const active = !href.includes('#') && href !== '/' && pathname.startsWith(href)
             return (
               <Link key={href} href={href} style={{
                 padding: '7px 11px', borderRadius: 7,
@@ -225,7 +231,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           display: 'flex', flexDirection: 'column', gap: 8,
           animation: 'fadeIn .15s ease',
         }}>
-          {NAV.map(({ href, label }) => (
+          {(authUser && role !== 'admin' && role !== 'crm' ? NAV_CUSTOMER : NAV_PUBLIC).map(({ href, label }) => (
             <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '16px 20px', borderRadius: 10,
