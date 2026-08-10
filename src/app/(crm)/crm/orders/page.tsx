@@ -408,29 +408,48 @@ export default function CrmOrdersPage() {
           </button>
         </div>
 
-        {/* Customer selector */}
-        <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 16, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>👤 Välj kund</span>
+        {/* Customer selector — collapses once a customer is chosen */}
+        {selectedCustomer ? (
+          <div style={{ background: 'rgba(232,184,75,.06)', border: '1.5px solid rgba(232,184,75,.25)', borderRadius: 12, marginBottom: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 3 }}>Kund</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{selectedCustomer.company}</div>
+              <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
+                {selectedCustomer.contact_name && `${selectedCustomer.contact_name} · `}Prislista {selectedCustomer.price_list_id}
+              </div>
+            </div>
+            <button onClick={() => { setSelectedCustomer(null); setCart([]); setCustomerSearch(''); setLastBought([]); setRecommendations([]) }}
+              style={{ padding: '7px 14px', borderRadius: 7, background: 'var(--bg4)', border: '1px solid var(--border)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              Byt kund
+            </button>
           </div>
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ position: 'relative' }}>
-              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
-              <input placeholder="Sök företag..." value={customerSearch} onChange={e => setCustomerSearch(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px 8px 30px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+        ) : (
+          <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 16, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>👤 Välj kund</span>
+            </div>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ position: 'relative' }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
+                <input autoFocus placeholder="Sök företag..." value={customerSearch} onChange={e => setCustomerSearch(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px 8px 30px', background: 'var(--bg4)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            </div>
+            <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+              {filteredCustomers.slice(0, 10).map(c => (
+                <button key={c.id} onClick={() => selectCustomerAndLoad(c)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border2)', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(232,184,75,.04)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{c.company}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text3)' }}>Prislista {c.price_list_id}</span>
+                </button>
+              ))}
+              {filteredCustomers.length === 0 && <p style={{ padding: '16px', textAlign: 'center', color: 'var(--text3)', fontSize: 13, margin: 0 }}>Inga kunder hittades</p>}
             </div>
           </div>
-          <div style={{ maxHeight: 180, overflowY: 'auto' }}>
-            {filteredCustomers.slice(0, 8).map(c => (
-              <button key={c.id} onClick={() => selectCustomerAndLoad(c)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: selectedCustomer?.id === c.id ? 'rgba(232,184,75,.08)' : 'transparent', border: 'none', borderBottom: '1px solid var(--border2)', cursor: 'pointer' }}>
-                <span style={{ fontSize: 13, color: selectedCustomer?.id === c.id ? 'var(--gold)' : 'var(--text)', fontWeight: selectedCustomer?.id === c.id ? 600 : 400 }}>{c.company}</span>
-                <span style={{ fontSize: 11, color: 'var(--text3)' }}>Prislista {c.price_list_id}</span>
-              </button>
-            ))}
-            {filteredCustomers.length === 0 && <p style={{ padding: '16px', textAlign: 'center', color: 'var(--text3)', fontSize: 13, margin: 0 }}>Inga kunder hittades</p>}
-          </div>
-        </div>
+        )}
 
 {/* Strip removed — pinned rows now appear at top of product list */}
 
