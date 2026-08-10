@@ -84,7 +84,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
     const role = authUser?.user_metadata?.role
     if (role === 'admin') router.push('/admin/dashboard')
     else if (role === 'crm') router.push('/crm/dashboard')
-    else router.push('/portal/dashboard')
+    else router.push('/')
     setUserDropOpen(false)
   }
 
@@ -166,9 +166,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     <button onClick={goToPortal} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
                       <Package size={14} color="#C9971A" /> Min portal
                     </button>
-                    <Link href="/portal/orders" onClick={() => setUserDropOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', fontSize: 14, color: '#111', textDecoration: 'none' }}>
+                    <button onClick={() => { router.push('/#portal-shop'); setUserDropOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
                       <ShoppingBag size={14} color="#555" /> Mina ordrar
-                    </Link>
+                    </button>
                     <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#E05252', cursor: 'pointer', borderTop: '1px solid rgba(0,0,0,.06)', textAlign: 'left' }}>
                       <LogOut size={14} /> Logga ut
                     </button>
@@ -277,7 +277,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
               {authUser ? (
                 <>
                   <button onClick={goToPortal} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Min portal</button>
-                  <Link href="/portal/orders" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', textDecoration: 'none', marginBottom: 10 }}>Mina ordrar</Link>
+                  <button onClick={goToPortal} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Mina ordrar</button>
                 </>
               ) : (
                 <>
