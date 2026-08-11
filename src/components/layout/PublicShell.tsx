@@ -121,7 +121,11 @@ export function PublicShell({ children }: { children: ReactNode }) {
     const role = data.user?.user_metadata?.role
     if (role === 'admin') { window.location.href = '/admin/dashboard'; return }
     if (role === 'crm')   { window.location.href = '/crm/dashboard';   return }
-    window.location.href = '/?gotoPortal=1'
+    // Signal HomeContent to scroll to portal once auth state propagates
+    sessionStorage.setItem('scrollToPortal', '1')
+    if (window.location.pathname !== '/') {
+      window.location.href = '/'
+    }
   }
 
   async function handleSignup(e: React.FormEvent) {

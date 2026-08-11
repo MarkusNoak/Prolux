@@ -1068,21 +1068,21 @@ function HomeContent() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Scroll to portal after login (URL has ?gotoPortal=1)
+  // Scroll to portal when user just logged in (sessionStorage flag set by login handler)
   useEffect(() => {
     if (!authChecked || !authUser) return
-    const params = new URLSearchParams(window.location.search)
-    if (!params.has('gotoPortal')) return
-    // Clean URL first
-    window.history.replaceState({}, '', '/')
-    // Poll until #min-portal is in the DOM (renders asynchronously after auth)
+    const role = authUser.user_metadata?.role
+    if (role === 'admin' || role === 'crm') return
+    if (sessionStorage.getItem('scrollToPortal') !== '1') return
+    sessionStorage.removeItem('scrollToPortal')
+    // Poll until #min-portal is rendered (it appears after React processes authUser state)
     let attempts = 0
     const poll = setInterval(() => {
       const el = document.getElementById('min-portal')
       if (el) {
         clearInterval(poll)
         el.scrollIntoView({ behavior: 'smooth' })
-      } else if (++attempts > 30) {
+      } else if (++attempts > 40) {
         clearInterval(poll)
       }
     }, 50)
