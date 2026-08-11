@@ -505,6 +505,16 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
       status: 'active',
     }).select().single()
     if (error) { setRegError('Kunde inte skapa konto: ' + error.message); setRegSaving(false); return }
+    if (data) {
+      // Log activity so CRM shows when and how the customer registered
+      await sb.from('activities').insert({
+        customer_id: data.id,
+        type: 'note',
+        title: 'Registrerade sig via kundportalen',
+        body: `Kund skapade sitt konto självmant via portalen.\n\nFöretag: ${data.company}\nKontakt: ${data.contact_name || '—'}\nE-post: ${data.email}\nTelefon: ${data.phone || '—'}\nStad: ${data.city || '—'}\nOrg.nr: ${data.org_nr || '—'}`,
+        created_by: 'System',
+      })
+    }
     window.location.reload()
   }
 
