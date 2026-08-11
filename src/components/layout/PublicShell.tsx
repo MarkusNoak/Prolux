@@ -71,6 +71,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
   const [orderDone, setOrderDone] = useState<number | null>(null)
   const [guestForm, setGuestForm] = useState({ name: '', company: '', email: '', address: '', city: '', phone: '' })
   const [guestStep, setGuestStep] = useState(false)
+  const [regMode, setRegMode] = useState(false)
+  const [regForm, setRegForm] = useState({ email: '', password: '', company: '', contact_name: '', phone: '' })
+  const [regLoading, setRegLoading] = useState(false)
+  const [regError, setRegError] = useState('')
 
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -101,8 +105,8 @@ export function PublicShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  function openLogin()  { setLoginOpen(true); setMenuOpen(false); setError('') }
-  function closeLogin() { setLoginOpen(false); setEmail(''); setPassword(''); setError('') }
+  function openLogin(startReg = false)  { setLoginOpen(true); setMenuOpen(false); setError(''); setRegError(''); setRegMode(startReg) }
+  function closeLogin() { setLoginOpen(false); setEmail(''); setPassword(''); setError(''); setRegMode(false); setRegForm({ email: '', password: '', company: '', contact_name: '', phone: '' }); setRegError('') }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -113,6 +117,37 @@ export function PublicShell({ children }: { children: ReactNode }) {
     setAuthUser(data.user)
     closeLogin()
     setLoading(false)
+  }
+
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault()
+    if (!regForm.company.trim()) { setRegError('Företagsnamn krävs'); return }
+    setRegLoading(true); setRegError('')
+    const sb = createClient()
+    const { data, error: signUpErr } = await sb.auth.signUp({ email: regForm.email, password: regForm.password })
+    if (signUpErr) { setRegError(signUpErr.message); setRegLoading(false); return }
+    if (data.user) {
+      const { data: custData, error: custErr } = await sb.from('customers').insert({
+        company: regForm.company,
+        contact_name: regForm.contact_name,
+        email: regForm.email,
+        phone: regForm.phone,
+        auth_user_id: data.user.id,
+        price_list_id: 'Standard',
+        status: 'active',
+      }).select().single()
+      if (!custErr && custData) {
+        await sb.from('activities').insert({
+          customer_id: custData.id,
+          type: 'note',
+          title: 'Nytt konto skapat',
+          body: `Kund registrerade sig via webbshoppen.\n\nFöretag: ${custData.company}\nKontakt: ${custData.contact_name || '—'}\nE-post: ${custData.email}\nTelefon: ${custData.phone || '—'}`,
+          created_by: 'System',
+        })
+      }
+    }
+    closeLogin()
+    setRegLoading(false)
   }
 
   async function handleLogout() {
@@ -311,10 +346,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
               </div>
             ) : (
               <>
-                <button onClick={openLogin} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', borderRadius: 8, background: '#E8B84B', color: '#0D0900', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <button onClick={() => openLogin(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', borderRadius: 8, background: '#E8B84B', color: '#0D0900', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                   Skapa konto
                 </button>
-                <button onClick={openLogin} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', borderRadius: 8, background: 'transparent', color: '#111', fontSize: 13, fontWeight: 600, border: '1.5px solid rgba(0,0,0,.15)', cursor: 'pointer' }}>
+                <button onClick={() => openLogin()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', borderRadius: 8, background: 'transparent', color: '#111', fontSize: 13, fontWeight: 600, border: '1.5px solid rgba(0,0,0,.15)', cursor: 'pointer' }}>
                   Logga in
                 </button>
               </>
@@ -360,7 +395,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
               </button>
             </>
           ) : (
-            <button onClick={openLogin} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', borderRadius: 10, background: '#111', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', width: '100%' }}>
+            <button onClick={() => openLogin()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', borderRadius: 10, background: '#111', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', width: '100%' }}>
               Logga in på kundportalen
             </button>
           )}
@@ -527,8 +562,8 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 </>
               ) : (
                 <>
-                  <button onClick={openLogin} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Logga in</button>
-                  <button onClick={openLogin} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>Bli B2B-kund</button>
+                  <button onClick={() => openLogin()} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Logga in</button>
+                  <button onClick={() => openLogin()} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>Bli B2B-kund</button>
                 </>
               )}
             </div>
@@ -548,55 +583,89 @@ export function PublicShell({ children }: { children: ReactNode }) {
         </div>
       </footer>
 
-      {/* ── LOGIN MODAL ──────────────────────────────────────── */}
+      {/* ── LOGIN / REGISTER MODAL ──────────────────────────── */}
       {loginOpen && (
         <div onClick={closeLogin} style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, animation: 'fadeIn .15s ease' }}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 20, boxShadow: '0 24px 80px rgba(0,0,0,.2)', padding: '36px 32px', position: 'relative' }}>
             <button onClick={closeLogin} style={{ position: 'absolute', top: 16, right: 16, background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', padding: 6 }}>
               <X size={18} />
             </button>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-              <Image src="/logo-mark.svg" alt="Prolux Shine" width={40} height={55} style={{ display: 'block' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+              <Image src="/logo-mark.svg" alt="Prolux Shine" width={36} height={49} style={{ display: 'block' }} />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                <span style={{ fontFamily: 'var(--font-serif)', fontSize: 17, fontWeight: 400, letterSpacing: '.18em', color: '#111', textTransform: 'uppercase' }}>Prolux</span>
-                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 700, letterSpacing: '.45em', color: '#C9971A', textTransform: 'uppercase' }}>Shine</span>
+                <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 400, letterSpacing: '.18em', color: '#111', textTransform: 'uppercase' }}>Prolux</span>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 7.5, fontWeight: 700, letterSpacing: '.45em', color: '#C9971A', textTransform: 'uppercase' }}>Shine</span>
               </div>
             </div>
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, color: '#111', margin: '0 0 4px', textAlign: 'center' }}>Logga in</h2>
-            <p style={{ fontSize: 13, color: '#999', margin: '0 0 20px', textAlign: 'center' }}>B2B-portal för återförsäljare</p>
 
-            <div style={{ marginBottom: 20, padding: '12px 14px', background: '#F5F3EE', border: '1px solid rgba(0,0,0,.06)', borderRadius: 10, fontSize: 12, color: '#888', lineHeight: 1.8 }}>
-              <div style={{ fontWeight: 600, color: '#555', marginBottom: 6 }}>Demo-konton · lösenord: <span style={{ color: '#C9971A' }}>prolux2024</span></div>
-              {[
-                { label: 'bashar@proluxshine.se',     role: 'Admin',   color: '#B8860B', em: 'bashar@proluxshine.se' },
-                { label: 'stefan@detailingproffs.se', role: 'Säljare', color: '#2563EB', em: 'stefan@detailingproffs.se' },
-                { label: 'demo@proluxshine.se',       role: 'Kund',    color: '#16A34A', em: 'demo@proluxshine.se' },
-              ].map(({ label, role, color, em }) => (
-                <div key={em} onClick={() => { setEmail(em); setPassword('prolux2024') }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, cursor: 'pointer', borderRadius: 6, padding: '2px 4px' }}>
-                  <span style={{ color: '#333' }}>{label}</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: `${color}18`, color }}>{role}</span>
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>E-post</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="namn@foretag.se" autoFocus style={S.inp}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#C9971A'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(201,151,26,.12)' }}
-                  onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,.1)'; e.currentTarget.style.boxShadow = 'none' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>Lösenord</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" style={S.inp}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#C9971A'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(201,151,26,.12)' }}
-                  onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,.1)'; e.currentTarget.style.boxShadow = 'none' }} />
-              </div>
-              {error && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 12px' }}>{error}</div>}
-              <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', background: loading ? '#ddd' : '#111', color: loading ? '#999' : '#fff', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, letterSpacing: '.03em', border: 'none', borderRadius: 8, cursor: loading ? 'default' : 'pointer', marginTop: 4 }}>
-                {loading ? 'Loggar in…' : 'Logga in'}
+            {/* Tabs */}
+            <div style={{ display: 'flex', background: '#F5F3EE', borderRadius: 10, padding: 3, marginBottom: 20 }}>
+              <button onClick={() => { setRegMode(false); setRegError(''); setError('') }} style={{ flex: 1, padding: '9px', borderRadius: 8, background: !regMode ? '#fff' : 'transparent', color: !regMode ? '#111' : '#888', fontSize: 13, fontWeight: !regMode ? 700 : 500, border: 'none', cursor: 'pointer', boxShadow: !regMode ? '0 1px 4px rgba(0,0,0,.08)' : 'none', transition: 'all .15s' }}>
+                Logga in
               </button>
-            </form>
+              <button onClick={() => { setRegMode(true); setError(''); setRegError('') }} style={{ flex: 1, padding: '9px', borderRadius: 8, background: regMode ? '#fff' : 'transparent', color: regMode ? '#111' : '#888', fontSize: 13, fontWeight: regMode ? 700 : 500, border: 'none', cursor: 'pointer', boxShadow: regMode ? '0 1px 4px rgba(0,0,0,.08)' : 'none', transition: 'all .15s' }}>
+                Skapa konto
+              </button>
+            </div>
+
+            {!regMode ? (
+              <>
+                <div style={{ marginBottom: 16, padding: '12px 14px', background: '#F5F3EE', border: '1px solid rgba(0,0,0,.06)', borderRadius: 10, fontSize: 12, color: '#888', lineHeight: 1.8 }}>
+                  <div style={{ fontWeight: 600, color: '#555', marginBottom: 6 }}>Demo-konton · lösenord: <span style={{ color: '#C9971A' }}>prolux2024</span></div>
+                  {[
+                    { label: 'bashar@proluxshine.se',     role: 'Admin',   color: '#B8860B', em: 'bashar@proluxshine.se' },
+                    { label: 'stefan@detailingproffs.se', role: 'Säljare', color: '#2563EB', em: 'stefan@detailingproffs.se' },
+                    { label: 'demo@proluxshine.se',       role: 'Kund',    color: '#16A34A', em: 'demo@proluxshine.se' },
+                  ].map(({ label, role, color, em }) => (
+                    <div key={em} onClick={() => { setEmail(em); setPassword('prolux2024') }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, cursor: 'pointer', borderRadius: 6, padding: '2px 4px' }}>
+                      <span style={{ color: '#333' }}>{label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: `${color}18`, color }}>{role}</span>
+                    </div>
+                  ))}
+                </div>
+                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>E-post</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="namn@foretag.se" autoFocus style={S.inp}
+                      onFocus={e => { e.currentTarget.style.borderColor = '#C9971A'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(201,151,26,.12)' }}
+                      onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,.1)'; e.currentTarget.style.boxShadow = 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.08em' }}>Lösenord</label>
+                    <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" style={S.inp}
+                      onFocus={e => { e.currentTarget.style.borderColor = '#C9971A'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(201,151,26,.12)' }}
+                      onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,.1)'; e.currentTarget.style.boxShadow = 'none' }} />
+                  </div>
+                  {error && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 12px' }}>{error}</div>}
+                  <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', background: loading ? '#ddd' : '#111', color: loading ? '#999' : '#fff', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, letterSpacing: '.03em', border: 'none', borderRadius: 8, cursor: loading ? 'default' : 'pointer', marginTop: 4 }}>
+                    {loading ? 'Loggar in…' : 'Logga in'}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p style={{ fontSize: 13, color: '#888', margin: '0 0 4px', textAlign: 'center' }}>Skapa ditt B2B-konto — det tar en minut</p>
+                {[
+                  { key: 'company', label: 'Företagsnamn *', placeholder: 'AB Bilservice', type: 'text' },
+                  { key: 'contact_name', label: 'Kontaktperson', placeholder: 'Erik Lindgren', type: 'text' },
+                  { key: 'email', label: 'E-post *', placeholder: 'erik@foretag.se', type: 'email' },
+                  { key: 'password', label: 'Välj lösenord *', placeholder: 'Minst 6 tecken', type: 'password' },
+                  { key: 'phone', label: 'Telefon', placeholder: '08-123 45 67', type: 'tel' },
+                ].map(({ key, label, placeholder, type }) => (
+                  <div key={key}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.08em' }}>{label}</label>
+                    <input type={type} value={(regForm as any)[key]} onChange={e => setRegForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder} style={S.inp}
+                      onFocus={e => { e.currentTarget.style.borderColor = '#C9971A'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(201,151,26,.12)' }}
+                      onBlur={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,.1)'; e.currentTarget.style.boxShadow = 'none' }} />
+                  </div>
+                ))}
+                {regError && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 12px' }}>{regError}</div>}
+                <button type="submit" disabled={regLoading || !regForm.company || !regForm.email || !regForm.password} style={{ width: '100%', padding: '13px', background: (regLoading || !regForm.company || !regForm.email || !regForm.password) ? '#ddd' : '#111', color: (regLoading || !regForm.company || !regForm.email || !regForm.password) ? '#999' : '#fff', fontFamily: 'inherit', fontWeight: 700, fontSize: 14, border: 'none', borderRadius: 8, cursor: (regLoading || !regForm.company || !regForm.email || !regForm.password) ? 'default' : 'pointer', marginTop: 4 }}>
+                  {regLoading ? 'Skapar konto…' : 'Skapa konto'}
+                </button>
+                <p style={{ fontSize: 11, color: '#bbb', textAlign: 'center', margin: 0 }}>Ditt konto kopplas direkt till vår B2B-portal och CRM.</p>
+              </form>
+            )}
           </div>
         </div>
       )}
