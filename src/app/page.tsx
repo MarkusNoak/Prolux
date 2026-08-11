@@ -1030,7 +1030,15 @@ function HomeContent() {
       setAuthChecked(true)
       if (session?.user) {
         sb.from('customers').select('*').eq('auth_user_id', session.user.id).single()
-          .then(({ data }) => { if (data) setCustomer(data) })
+          .then(({ data }) => {
+            if (data) setCustomer(data)
+            // Scroll to portal after auth + customer load if hash is set
+            if (window.location.hash === '#min-portal') {
+              setTimeout(() => {
+                document.getElementById('min-portal')?.scrollIntoView({ behavior: 'smooth' })
+              }, 100)
+            }
+          })
       }
     })
     const { data: { subscription } } = sb.auth.onAuthStateChange((_e, session) => {
