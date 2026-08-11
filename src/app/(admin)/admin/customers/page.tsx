@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { fmt } from '@/lib/utils'
 import { X } from 'lucide-react'
@@ -30,6 +31,7 @@ const EMPTY_FORM = {
 }
 
 export default function AdminCustomers() {
+  const router = useRouter()
   const [customers, setCustomers] = useState<any[]>([])
   const [orders, setOrders]       = useState<any[]>([])
   const [search, setSearch]       = useState('')
@@ -179,7 +181,10 @@ export default function AdminCustomers() {
               const sc  = STATUS_CSS[c.status] || STATUS_CSS.inactive
               const plc = PL_COLORS[c.price_list_id] || PL_COLORS.Standard
               return (
-                <tr key={c.id} onClick={() => openCust(c)} style={{ cursor: 'pointer' }}>
+                <tr key={c.id} onClick={() => router.push(`/crm/customers/${c.id}`)} style={{ cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(255,255,255,.03)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
+                >
                   <td style={{ padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
                     <strong style={{ fontSize: 13, color: 'var(--text)', display: 'block' }}>{c.company}</strong>
                     <span style={{ fontSize: 10, color: 'var(--text3)' }}>{c.org_nr || ''}</span>
