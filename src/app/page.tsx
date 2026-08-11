@@ -458,11 +458,15 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
   const [saved, setSaved]         = useState(false)
 
   useEffect(() => {
-    if (!customer?.id || ordersLoaded) return
+    if (ordersLoaded) return
     const sb = createClient()
-    sb.from('orders').select('id,order_nr,status,subtotal,total,created_at,order_items(product_name,qty)')
-      .eq('customer_id', customer.id).order('created_at', { ascending: false }).limit(20)
-      .then(({ data }) => { if (data) setOrders(data); setOrdersLoaded(true) })
+    if (customer?.id) {
+      sb.from('orders').select('id,order_nr,status,subtotal,total,created_at,order_items(product_id,product_name,qty,unit_price,list_price)')
+        .eq('customer_id', customer.id).order('created_at', { ascending: false }).limit(20)
+        .then(({ data }) => { if (data) setOrders(data); setOrdersLoaded(true) })
+    } else {
+      setOrdersLoaded(true)
+    }
   }, [customer?.id, ordersLoaded])
 
   async function saveProfile() {
@@ -495,12 +499,12 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
           <div>
             <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.15em' }}>Min portal</p>
             <h2 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 'clamp(24px, 3.5vw, 38px)', fontWeight: 400, color: '#111', lineHeight: 1.1 }}>
-              Välkommen, {customer?.contact_name?.split(' ')[0] || 'kund'}
+              Välkommen, {customer?.contact_name?.split(' ')[0] || authUser?.email?.split('@')[0] || 'kund'}
             </h2>
-            <p style={{ margin: '6px 0 0', fontSize: 14, color: '#888' }}>{customer?.company}</p>
+            <p style={{ margin: '6px 0 0', fontSize: 14, color: '#888' }}>{customer?.company || authUser?.email}</p>
           </div>
-          {/* KPIs */}
-          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {/* KPIs — only for B2B customers */}
+          {customer && <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             {[
               { label: 'Prislista', value: customer?.price_list_id || 'Standard', accent: true },
               { label: 'Rabatt', value: `${Math.round(disc * 100)}%`, accent: false },
@@ -512,7 +516,7 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
                 <div style={{ fontSize: 20, fontWeight: 700, color: accent ? '#C9971A' : '#111' }}>{value}</div>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
 
         {/* Tabs */}
@@ -530,6 +534,17 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
           <div>
             {!ordersLoaded ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: '#bbb' }}>Laddar ordrar…</div>
+            ) : !customer ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                <ClipboardList size={48} strokeWidth={1} style={{ margin: '0 auto 16px', display: 'block', color: '#ddd' }} />
+                <p style={{ fontSize: 16, color: '#555', margin: '0 0 8px', fontWeight: 600 }}>Inget B2B-konto kopplat</p>
+                <p style={{ fontSize: 14, color: '#999', margin: '0 0 24px', maxWidth: 380, marginInline: 'auto', lineHeight: 1.6 }}>
+                  Du är inloggad men saknar ett B2B-kundkort. Kontakta oss så sätter vi upp ditt avtalspris och orderhistorik.
+                </p>
+                <a href="mailto:info@proluxshine.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', borderRadius: 9, background: '#111', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+                  Kontakta oss
+                </a>
+              </div>
             ) : orders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', color: '#bbb' }}>
                 <ClipboardList size={48} strokeWidth={1} style={{ margin: '0 auto 16px', display: 'block', color: '#ddd' }} />
@@ -781,7 +796,9 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       </section>
 
       {/* ── CUSTOMER PORTAL SECTION (logged in only) ── */}
-      {authUser && customer && <CustomerPortalSection customer={customer} authUser={authUser} openLogin={openLogin} />}
+      {authUser && authUser.user_metadata?.role !== 'admin' && authUser.user_metadata?.role !== 'crm' && (
+        <CustomerPortalSection customer={customer} authUser={authUser} openLogin={openLogin} />
+      )}
 
       {/* ── CTA (not logged in) ── */}
       {!authUser && (

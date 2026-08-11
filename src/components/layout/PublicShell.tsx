@@ -246,7 +246,13 @@ export function PublicShell({ children }: { children: ReactNode }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {/* Min portal button for customers */}
                 {isCustomer && (
-                  <button onClick={() => { router.push('/#min-portal') }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#F5F3EE', border: 'none', cursor: 'pointer', color: '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
+                  <button onClick={() => {
+                    if (window.location.pathname === '/') {
+                      document.getElementById('min-portal')?.scrollIntoView({ behavior: 'smooth' })
+                    } else {
+                      router.push('/#min-portal')
+                    }
+                  }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#F5F3EE', border: 'none', cursor: 'pointer', color: '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
                     <Package size={15} /> Min portal
                   </button>
                 )}
@@ -280,7 +286,14 @@ export function PublicShell({ children }: { children: ReactNode }) {
                         {customer?.company && <div style={{ fontWeight: 600, color: '#555', marginTop: 2 }}>{customer.company}</div>}
                       </div>
                       {isCustomer && <>
-                        <button onClick={() => { router.push('/#min-portal'); setUserDropOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
+                        <button onClick={() => {
+                          setUserDropOpen(false)
+                          if (window.location.pathname === '/') {
+                            document.getElementById('min-portal')?.scrollIntoView({ behavior: 'smooth' })
+                          } else {
+                            router.push('/#min-portal')
+                          }
+                        }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
                           <Package size={14} color="#C9971A" /> Min portal
                         </button>
                         <button onClick={() => { setCartOpen(true); setUserDropOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
