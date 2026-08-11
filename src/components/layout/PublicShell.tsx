@@ -117,6 +117,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
     setAuthUser(data.user)
     closeLogin()
     setLoading(false)
+    const role = data.user?.user_metadata?.role
+    if (role === 'admin') { window.location.href = '/admin/dashboard'; return }
+    if (role === 'crm')   { window.location.href = '/crm/dashboard';   return }
+    window.location.href = '/#min-portal'
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -285,7 +289,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                     if (window.location.pathname === '/') {
                       document.getElementById('min-portal')?.scrollIntoView({ behavior: 'smooth' })
                     } else {
-                      router.push('/#min-portal')
+                      window.location.href = '/#min-portal'
                     }
                   }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#F5F3EE', border: 'none', cursor: 'pointer', color: '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
                     <Package size={15} /> Min portal
