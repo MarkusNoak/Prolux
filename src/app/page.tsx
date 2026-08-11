@@ -447,10 +447,10 @@ function HeroSlider({ images, openLogin, loggedIn }: { images: string[]; openLog
 ════════════════════════════════════════════════════════ */
 function CustomerPortalSection({ customer, authUser, openLogin }: { customer: any; authUser: any; openLogin: () => void }) {
   const cart = usePublicCart()
-  const [portalTab, setPortalTab] = useState<'orders'|'account'>('orders')
+  const [portalTab, setPortalTab] = useState<'overview'|'orders'|'account'>('overview')
   const [orders, setOrders]       = useState<any[]>([])
+  const [products, setProducts]   = useState<any[]>([])
   const [ordersLoaded, setOrdersLoaded] = useState(false)
-  const [pwOld, setPwOld]         = useState('')
   const [pwNew, setPwNew]         = useState('')
   const [pwMsg, setPwMsg]         = useState('')
   const [form, setForm]           = useState({ contact_name: customer?.contact_name || '', phone: customer?.phone || '', address: customer?.address || '' })
@@ -464,11 +464,18 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
     if (ordersLoaded) return
     const sb = createClient()
     if (customer?.id) {
-      sb.from('orders').select('id,order_nr,status,subtotal,total,created_at,order_items(product_id,product_name,qty,unit_price,list_price)')
-        .eq('customer_id', customer.id).order('created_at', { ascending: false }).limit(20)
-        .then(({ data }) => { if (data) setOrders(data); setOrdersLoaded(true) })
+      Promise.all([
+        sb.from('orders').select('id,order_nr,status,subtotal,total,created_at,order_items(product_id,product_name,qty,unit_price,list_price)')
+          .eq('customer_id', customer.id).order('created_at', { ascending: false }).limit(20),
+        sb.from('products').select('id,name,list_price,image_url,unit,brand').limit(12),
+      ]).then(([{ data: o }, { data: p }]) => {
+        if (o) setOrders(o)
+        if (p) setProducts(p)
+        setOrdersLoaded(true)
+      })
     } else {
-      setOrdersLoaded(true)
+      sb.from('products').select('id,name,list_price,image_url,unit,brand').limit(6)
+        .then(({ data }) => { if (data) setProducts(data); setOrdersLoaded(true) })
     }
   }, [customer?.id, ordersLoaded])
 
@@ -485,7 +492,7 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
     const sb = createClient()
     const { error } = await sb.auth.updateUser({ password: pwNew })
     if (error) setPwMsg('Fel: ' + error.message)
-    else { setPwMsg('Lösenord uppdaterat!'); setPwOld(''); setPwNew('') }
+    else { setPwMsg('Lösenord uppdaterat!'); setPwNew('') }
     setTimeout(() => setPwMsg(''), 4000)
   }
 
@@ -494,24 +501,16 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
     setRegSaving(true); setRegError('')
     const sb = createClient()
     const { data, error } = await sb.from('customers').insert({
-      company: regForm.company,
-      contact_name: regForm.contact_name,
-      email: authUser.email,
-      phone: regForm.phone,
-      city: regForm.city,
-      org_nr: regForm.org_nr,
-      auth_user_id: authUser.id,
-      price_list_id: 'Standard',
-      status: 'active',
+      company: regForm.company, contact_name: regForm.contact_name,
+      email: authUser.email, phone: regForm.phone, city: regForm.city,
+      org_nr: regForm.org_nr, auth_user_id: authUser.id,
+      price_list_id: 'Standard', status: 'active',
     }).select().single()
     if (error) { setRegError('Kunde inte skapa konto: ' + error.message); setRegSaving(false); return }
     if (data) {
-      // Log activity so CRM shows when and how the customer registered
       await sb.from('activities').insert({
-        customer_id: data.id,
-        type: 'note',
-        title: 'Registrerade sig via kundportalen',
-        body: `Kund skapade sitt konto självmant via portalen.\n\nFöretag: ${data.company}\nKontakt: ${data.contact_name || '—'}\nE-post: ${data.email}\nTelefon: ${data.phone || '—'}\nStad: ${data.city || '—'}\nOrg.nr: ${data.org_nr || '—'}`,
+        customer_id: data.id, type: 'note', title: 'Registrerade sig via kundportalen',
+        body: `Kund skapade sitt konto via portalen.\n\nFöretag: ${data.company}\nKontakt: ${data.contact_name || '—'}\nE-post: ${data.email}`,
         created_by: 'System',
       })
     }
@@ -520,115 +519,239 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
 
   const STATUS_LABEL: Record<string, string> = { pending: 'Mottagen', confirmed: 'Bekräftad', packed: 'Packad', shipped: 'Skickad', delivered: 'Levererad', cancelled: 'Avbruten' }
   const STATUS_COLOR: Record<string, string> = { pending: '#D48A3A', confirmed: '#C9971A', packed: '#C9971A', shipped: '#4A8FD4', delivered: '#4CAF7D', cancelled: '#E05252' }
-  const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
   const disc = DISCOUNT[customer?.price_list_id] ?? 0
   const totalSpend = orders.reduce((s, o) => s + (o.subtotal || 0), 0)
+  const latestOrder = orders[0]
+  const pl = customer?.price_list_id || 'Standard'
+
+  // Most purchased: flatten all order items and aggregate by product
+  const productFreq: Record<string, { name: string; qty: number }> = {}
+  orders.forEach(o => o.order_items?.forEach((i: any) => {
+    if (!productFreq[i.product_id]) productFreq[i.product_id] = { name: i.product_name, qty: 0 }
+    productFreq[i.product_id].qty += i.qty
+  }))
+  const topProducts = Object.entries(productFreq).sort((a, b) => b[1].qty - a[1].qty).slice(0, 4)
+
+  // Recommended: products not in topProducts
+  const topIds = new Set(topProducts.map(([id]) => id))
+  const recommended = products.filter(p => !topIds.has(p.id)).slice(0, 4)
+
+  function reorder(o: any) {
+    if (!o.order_items?.length) return
+    o.order_items.forEach((item: any) => {
+      for (let i = 0; i < item.qty; i++) {
+        cart.addItem({ id: item.product_id || item.id, name: item.product_name, brand: '', list_price: item.list_price || item.unit_price, image_url: null, unit: '' }, pl)
+      }
+    })
+    cart.openCart()
+  }
 
   return (
-    <section id="min-portal" style={{ background: '#fff', borderTop: '3px solid #C9971A', padding: '64px 24px 80px' }}>
+    <section id="min-portal" style={{ background: '#FAFAF8', borderTop: '3px solid #C9971A', padding: '56px 24px 80px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: 20 }}>
           <div>
-            <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.15em' }}>Min portal</p>
-            <h2 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 'clamp(24px, 3.5vw, 38px)', fontWeight: 400, color: '#111', lineHeight: 1.1 }}>
+            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.15em' }}>Min portal</p>
+            <h2 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: 400, color: '#111', lineHeight: 1.1 }}>
               Välkommen, {customer?.contact_name?.split(' ')[0] || authUser?.email?.split('@')[0] || 'kund'}
             </h2>
-            <p style={{ margin: '6px 0 0', fontSize: 14, color: '#888' }}>{customer?.company || authUser?.email}</p>
+            <p style={{ margin: '5px 0 0', fontSize: 14, color: '#888' }}>{customer?.company || authUser?.email}</p>
           </div>
-          {/* KPIs — only for B2B customers */}
-          {customer && <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-            {[
-              { label: 'Prislista', value: customer?.price_list_id || 'Standard', accent: true },
-              { label: 'Rabatt', value: `${Math.round(disc * 100)}%`, accent: false },
-              { label: 'Ordrar totalt', value: orders.length, accent: false },
-              { label: 'Totalt köpt', value: `${fmt(totalSpend)} kr`, accent: false },
-            ].map(({ label, value, accent }) => (
-              <div key={label} style={{ textAlign: 'center', padding: '12px 20px', background: '#F8F5F0', borderRadius: 10, border: `1px solid ${accent ? 'rgba(201,151,26,.3)' : 'rgba(0,0,0,.07)'}` }}>
-                <div style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: accent ? '#C9971A' : '#111' }}>{value}</div>
-              </div>
-            ))}
-          </div>}
+          {customer && (
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Prislista', value: customer.price_list_id || 'Standard', accent: true },
+                { label: 'Din rabatt', value: disc > 0 ? `${Math.round(disc * 100)}%` : '—', accent: false },
+                { label: 'Antal ordrar', value: String(orders.length), accent: false },
+                { label: 'Totalt köpt', value: `${fmt(totalSpend)} kr`, accent: false },
+              ].map(({ label, value, accent }) => (
+                <div key={label} style={{ textAlign: 'center', padding: '12px 18px', background: '#fff', borderRadius: 10, border: `1px solid ${accent ? 'rgba(201,151,26,.3)' : 'rgba(0,0,0,.07)'}`, boxShadow: '0 1px 4px rgba(0,0,0,.04)' }}>
+                  <div style={{ fontSize: 10, color: '#aaa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: accent ? '#C9971A' : '#111' }}>{value}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid rgba(0,0,0,.08)', marginBottom: 28 }}>
-          {([['orders', 'Mina ordrar'], ['account', 'Mitt konto']] as const).map(([key, label]) => (
-            <button key={key} onClick={() => setPortalTab(key)}
-              style={{ padding: '10px 24px', background: 'none', border: 'none', borderBottom: `2px solid ${portalTab === key ? '#C9971A' : 'transparent'}`, color: portalTab === key ? '#111' : '#888', fontSize: 14, fontWeight: portalTab === key ? 700 : 400, cursor: 'pointer', marginBottom: -2, transition: 'all .15s' }}>
+        <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid rgba(0,0,0,.08)', marginBottom: 32 }}>
+          {(customer
+            ? [['overview', 'Översikt'], ['orders', 'Mina ordrar'], ['account', 'Mitt konto']] as const
+            : [['orders', 'Kom igång'], ['account', 'Mitt konto']] as const
+          ).map(([key, label]) => (
+            <button key={key} onClick={() => setPortalTab(key as any)}
+              style={{ padding: '10px 22px', background: 'none', border: 'none', borderBottom: `2px solid ${portalTab === key ? '#C9971A' : 'transparent'}`, color: portalTab === key ? '#111' : '#888', fontSize: 14, fontWeight: portalTab === key ? 700 : 400, cursor: 'pointer', marginBottom: -2, transition: 'all .15s' }}>
               {label}
             </button>
           ))}
         </div>
 
-        {/* ORDERS TAB */}
+        {/* ── OVERVIEW TAB ── */}
+        {portalTab === 'overview' && customer && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+
+            {/* Latest order */}
+            <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,.07)', borderRadius: 14, padding: 24, boxShadow: '0 1px 6px rgba(0,0,0,.04)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 14 }}>Senaste order</div>
+              {!ordersLoaded ? (
+                <div style={{ height: 60, background: '#F5F3EE', borderRadius: 8, animation: 'pulse 1.5s ease infinite' }} />
+              ) : latestOrder ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: '#111' }}>Order #{latestOrder.order_nr}</div>
+                      <div style={{ fontSize: 12, color: '#aaa', marginTop: 2 }}>{latestOrder.created_at?.slice(0, 10)}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 700, fontSize: 16, color: '#C9971A' }}>{fmt(latestOrder.subtotal)} kr</div>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: `${STATUS_COLOR[latestOrder.status] || '#999'}18`, color: STATUS_COLOR[latestOrder.status] || '#999' }}>
+                        {STATUS_LABEL[latestOrder.status] || latestOrder.status}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Status progress bar */}
+                  {['pending','confirmed','packed','shipped','delivered'].includes(latestOrder.status) && (
+                    <div style={{ margin: '12px 0 14px' }}>
+                      <div style={{ display: 'flex', gap: 3 }}>
+                        {['pending','confirmed','packed','shipped','delivered'].map((s, i, arr) => {
+                          const idx = arr.indexOf(latestOrder.status)
+                          const active = i <= idx
+                          return <div key={s} style={{ flex: 1, height: 4, borderRadius: 2, background: active ? '#C9971A' : '#E8E4DC', transition: 'background .3s' }} />
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                        {['Mottagen','Packad','Skickad','Levererad'].map(l => (
+                          <span key={l} style={{ fontSize: 9, color: '#bbb', fontWeight: 600 }}>{l}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                    {latestOrder.order_items?.slice(0, 3).map((item: any, i: number) => (
+                      <span key={i} style={{ fontSize: 11, padding: '3px 8px', background: '#F5F3EE', borderRadius: 4, color: '#666' }}>{item.product_name} ×{item.qty}</span>
+                    ))}
+                    {(latestOrder.order_items?.length || 0) > 3 && <span style={{ fontSize: 11, color: '#999' }}>+{latestOrder.order_items.length - 3} till</span>}
+                  </div>
+                  <button onClick={() => reorder(latestOrder)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 7, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                    <RefreshCw size={12} /> Beställ igen
+                  </button>
+                </>
+              ) : (
+                <div style={{ color: '#bbb', fontSize: 13, padding: '20px 0' }}>Inga ordrar ännu</div>
+              )}
+            </div>
+
+            {/* Most purchased */}
+            <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,.07)', borderRadius: 14, padding: 24, boxShadow: '0 1px 6px rgba(0,0,0,.04)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 14 }}>Mest köpta produkter</div>
+              {topProducts.length === 0 ? (
+                <div style={{ color: '#bbb', fontSize: 13, padding: '20px 0' }}>Inga köp registrerade ännu</div>
+              ) : topProducts.map(([id, { name, qty }], i) => (
+                <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBlock: 10, borderBottom: i < topProducts.length - 1 ? '1px solid rgba(0,0,0,.05)' : 'none' }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 7, background: '#F5F3EE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#C9971A', flexShrink: 0 }}>{i + 1}</div>
+                  <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#111', lineHeight: 1.3 }}>{name}</div>
+                  <div style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>{qty} st köpt</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Recommended products */}
+            <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,.07)', borderRadius: 14, padding: 24, boxShadow: '0 1px 6px rgba(0,0,0,.04)', gridColumn: 'span 2' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.1em' }}>Rekommenderade produkter</div>
+                <Link href="/produkter" style={{ fontSize: 12, color: '#C9971A', fontWeight: 600, textDecoration: 'none' }}>Se alla →</Link>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                {recommended.map(p => {
+                  const price = Math.round(p.list_price * (1 - disc))
+                  return (
+                    <div key={p.id} style={{ background: '#F9F7F3', border: '1px solid rgba(0,0,0,.06)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111', lineHeight: 1.3 }}>{p.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#C9971A' }}>{fmt(price)} kr</div>
+                        <button onClick={() => cart.addItem({ id: p.id, name: p.name, brand: p.brand || '', list_price: p.list_price, image_url: p.image_url, unit: p.unit || '' }, pl)}
+                          style={{ padding: '5px 10px', borderRadius: 6, background: '#111', color: '#fff', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                          + Lägg till
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Quick actions */}
+            <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,.07)', borderRadius: 14, padding: 24, boxShadow: '0 1px 6px rgba(0,0,0,.04)', gridColumn: 'span 2' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 14 }}>Snabbåtgärder</div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <Link href="/produkter" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 20px', borderRadius: 9, background: '#111', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+                  <ShoppingBag size={15} /> Beställ produkter
+                </Link>
+                <button onClick={() => setPortalTab('orders')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 20px', borderRadius: 9, background: '#F5F3EE', color: '#333', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                  <ClipboardList size={15} /> Alla mina ordrar
+                </button>
+                <button onClick={() => setPortalTab('account')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 20px', borderRadius: 9, background: '#F5F3EE', color: '#333', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                  <User size={15} /> Mitt konto
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── ORDERS TAB ── */}
         {portalTab === 'orders' && (
           <div>
             {!ordersLoaded ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: '#bbb' }}>Laddar ordrar…</div>
             ) : !customer ? (
               <div style={{ maxWidth: 520, margin: '0 auto', padding: '20px 0 40px' }}>
-                <div style={{ marginBottom: 28 }}>
-                  <h3 style={{ margin: '0 0 6px', fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, color: '#111' }}>Skapa ditt kundkort</h3>
-                  <p style={{ margin: 0, fontSize: 14, color: '#888', lineHeight: 1.6 }}>Fyll i dina uppgifter så är du redo att beställa direkt.</p>
-                </div>
+                <h3 style={{ margin: '0 0 6px', fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, color: '#111' }}>Skapa ditt kundkort</h3>
+                <p style={{ margin: '0 0 24px', fontSize: 14, color: '#888', lineHeight: 1.6 }}>Fyll i dina uppgifter så är du redo att beställa direkt.</p>
                 {[
-                  { key: 'company',      label: 'Företagsnamn *', placeholder: 'AB Bilservice',    type: 'text' },
-                  { key: 'contact_name', label: 'Ditt namn',      placeholder: 'Erik Lindgren',    type: 'text' },
-                  { key: 'phone',        label: 'Telefon',         placeholder: '070-123 45 67',   type: 'tel'  },
-                  { key: 'city',         label: 'Stad',            placeholder: 'Stockholm',        type: 'text' },
-                  { key: 'org_nr',       label: 'Org.nr',          placeholder: '556123-4567',     type: 'text' },
+                  { key: 'company',      label: 'Företagsnamn *', placeholder: 'AB Bilservice',  type: 'text' },
+                  { key: 'contact_name', label: 'Ditt namn',      placeholder: 'Erik Lindgren',  type: 'text' },
+                  { key: 'phone',        label: 'Telefon',         placeholder: '070-123 45 67', type: 'tel'  },
+                  { key: 'city',         label: 'Stad',            placeholder: 'Stockholm',      type: 'text' },
+                  { key: 'org_nr',       label: 'Org.nr',          placeholder: '556123-4567',   type: 'text' },
                 ].map(({ key, label, placeholder, type }) => (
                   <div key={key} style={{ marginBottom: 14 }}>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#666', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.08em' }}>{label}</label>
-                    <input
-                      type={type}
-                      value={(regForm as any)[key]}
-                      onChange={e => setRegForm(f => ({ ...f, [key]: e.target.value }))}
-                      placeholder={placeholder}
-                      style={{ width: '100%', padding: '11px 14px', background: '#F9F7F3', border: '1.5px solid rgba(0,0,0,.1)', borderRadius: 8, color: '#111', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
-                    />
+                    <input type={type} value={(regForm as any)[key]} onChange={e => setRegForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
+                      style={{ width: '100%', padding: '11px 14px', background: '#F9F7F3', border: '1.5px solid rgba(0,0,0,.1)', borderRadius: 8, color: '#111', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                 ))}
                 {regError && <p style={{ color: '#E05252', fontSize: 13, marginBottom: 12 }}>{regError}</p>}
                 <button onClick={createCustomer} disabled={regSaving}
-                  style={{ width: '100%', padding: '13px', borderRadius: 9, background: regSaving ? '#ccc' : '#111', color: '#fff', fontSize: 15, fontWeight: 700, border: 'none', cursor: regSaving ? 'default' : 'pointer', marginTop: 4 }}>
+                  style={{ width: '100%', padding: '13px', borderRadius: 9, background: regSaving ? '#ccc' : '#111', color: '#fff', fontSize: 15, fontWeight: 700, border: 'none', cursor: regSaving ? 'default' : 'pointer' }}>
                   {regSaving ? 'Skapar konto…' : 'Skapa kundkort'}
                 </button>
-                <p style={{ fontSize: 12, color: '#bbb', textAlign: 'center', marginTop: 12 }}>
-                  Ditt konto får prislista Standard. Kontakta oss för att uppgradera till B2B-avtalspris.
-                </p>
               </div>
             ) : orders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#bbb' }}>
+              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                 <ClipboardList size={48} strokeWidth={1} style={{ margin: '0 auto 16px', display: 'block', color: '#ddd' }} />
                 <p style={{ fontSize: 15, color: '#999', margin: 0 }}>Inga ordrar ännu</p>
-                <p style={{ fontSize: 13, color: '#bbb', marginTop: 6 }}>Bläddra bland produkterna ovan och lägg din första order</p>
+                <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 16, padding: '10px 20px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+                  <ShoppingBag size={14} /> Bläddra bland produkter
+                </Link>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {orders.map(o => (
-                  <div key={o.id} style={{ background: '#F9F7F3', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: '16px 20px' }}>
+                  <div key={o.id} style={{ background: '#fff', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 4px rgba(0,0,0,.04)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ fontWeight: 700, fontSize: 14, color: '#111' }}>Order #{o.order_nr}</div>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: `${STATUS_COLOR[o.status] || '#999'}15`, color: STATUS_COLOR[o.status] || '#999' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: `${STATUS_COLOR[o.status] || '#999'}18`, color: STATUS_COLOR[o.status] || '#999' }}>
                           {STATUS_LABEL[o.status] || o.status}
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ fontSize: 12, color: '#999' }}>{o.created_at?.slice(0, 10)}</div>
+                        <div style={{ fontSize: 12, color: '#aaa' }}>{o.created_at?.slice(0, 10)}</div>
                         <div style={{ fontWeight: 700, fontSize: 15, color: '#C9971A' }}>{fmt(o.subtotal)} kr</div>
-                        <button onClick={() => {
-                          if (!o.order_items?.length) return
-                          const pl = customer?.price_list_id || 'Standard'
-                          o.order_items.forEach((item: any) => {
-                            for (let i = 0; i < item.qty; i++) {
-                              cart.addItem({ id: item.product_id || item.id, name: item.product_name, brand: '', list_price: item.list_price || item.unit_price, image_url: null, unit: '' }, pl)
-                            }
-                          })
-                          cart.openCart()
-                        }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 7, background: '#111', color: '#fff', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                        <button onClick={() => reorder(o)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 7, background: '#111', color: '#fff', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                           <RefreshCw size={11} /> Beställ igen
                         </button>
                       </div>
@@ -636,9 +759,7 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
                     {o.order_items?.length > 0 && (
                       <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {o.order_items.slice(0, 4).map((item: any, i: number) => (
-                          <span key={i} style={{ fontSize: 11, padding: '3px 8px', background: 'rgba(0,0,0,.05)', borderRadius: 4, color: '#666' }}>
-                            {item.product_name} ×{item.qty}
-                          </span>
+                          <span key={i} style={{ fontSize: 11, padding: '3px 8px', background: '#F5F3EE', borderRadius: 4, color: '#666' }}>{item.product_name} ×{item.qty}</span>
                         ))}
                         {o.order_items.length > 4 && <span style={{ fontSize: 11, color: '#999', alignSelf: 'center' }}>+{o.order_items.length - 4} till</span>}
                       </div>
@@ -650,37 +771,38 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
           </div>
         )}
 
-        {/* ACCOUNT TAB */}
+        {/* ── ACCOUNT TAB ── */}
         {portalTab === 'account' && (
           <div style={{ maxWidth: 540 }}>
-            <div style={{ background: '#F9F7F3', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: 24, marginBottom: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Kontaktuppgifter</div>
-              {[
-                { label: 'Namn', key: 'contact_name', placeholder: 'Ditt namn', type: 'text' },
-                { label: 'Telefon', key: 'phone', placeholder: '070-123 45 67', type: 'tel' },
-              ].map(({ label, key, placeholder, type }) => (
-                <div key={key} style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</label>
-                  <input type={type} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
-                    style={{ width: '100%', padding: '10px 13px', background: '#fff', border: '1px solid rgba(0,0,0,.1)', borderRadius: 8, fontSize: 14, color: '#111', outline: 'none', boxSizing: 'border-box' }} />
+            {customer && (
+              <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: 24, marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Kontaktuppgifter</div>
+                {[
+                  { label: 'Namn', key: 'contact_name', placeholder: 'Ditt namn', type: 'text' },
+                  { label: 'Telefon', key: 'phone', placeholder: '070-123 45 67', type: 'tel' },
+                ].map(({ label, key, placeholder, type }) => (
+                  <div key={key} style={{ marginBottom: 14 }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</label>
+                    <input type={type} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
+                      style={{ width: '100%', padding: '10px 13px', background: '#F9F7F3', border: '1px solid rgba(0,0,0,.1)', borderRadius: 8, fontSize: 14, color: '#111', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                ))}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>E-post</label>
+                  <input value={authUser?.email || ''} disabled style={{ width: '100%', padding: '10px 13px', background: '#eee', border: '1px solid rgba(0,0,0,.06)', borderRadius: 8, fontSize: 14, color: '#999', boxSizing: 'border-box' }} />
                 </div>
-              ))}
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>E-post</label>
-                <input value={authUser?.email || ''} disabled style={{ width: '100%', padding: '10px 13px', background: '#f0f0f0', border: '1px solid rgba(0,0,0,.08)', borderRadius: 8, fontSize: 14, color: '#999', boxSizing: 'border-box' }} />
+                <button onClick={saveProfile} disabled={saving}
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '11px 22px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                  {saved ? <><Check size={14} /> Sparat!</> : saving ? 'Sparar…' : <><Save size={14} /> Spara</>}
+                </button>
               </div>
-              <button onClick={saveProfile} disabled={saving}
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '11px 22px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
-                {saved ? <><Check size={14} /> Sparat!</> : saving ? 'Sparar…' : <><Save size={14} /> Spara</>}
-              </button>
-            </div>
-
-            <div style={{ background: '#F9F7F3', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: 24 }}>
+            )}
+            <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,.07)', borderRadius: 12, padding: 24 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 16 }}>Byt lösenord</div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.06em' }}>Nytt lösenord</label>
                 <input type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="Minst 6 tecken"
-                  style={{ width: '100%', padding: '10px 13px', background: '#fff', border: '1px solid rgba(0,0,0,.1)', borderRadius: 8, fontSize: 14, color: '#111', outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', padding: '10px 13px', background: '#F9F7F3', border: '1px solid rgba(0,0,0,.1)', borderRadius: 8, fontSize: 14, color: '#111', outline: 'none', boxSizing: 'border-box' }} />
               </div>
               {pwMsg && <div style={{ fontSize: 12, padding: '8px 12px', borderRadius: 6, background: pwMsg.includes('Fel') ? '#fef2f2' : '#f0fdf4', color: pwMsg.includes('Fel') ? '#dc2626' : '#16a34a', marginBottom: 12 }}>{pwMsg}</div>}
               <button onClick={changePassword}
@@ -691,6 +813,8 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
           </div>
         )}
       </div>
+
+      <style>{`@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }`}</style>
     </section>
   )
 }
