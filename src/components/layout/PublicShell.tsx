@@ -244,6 +244,12 @@ export function PublicShell({ children }: { children: ReactNode }) {
           {!authLoading && (
             authUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* Min portal button for customers */}
+                {isCustomer && (
+                  <button onClick={() => { router.push('/#min-portal') }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#F5F3EE', border: 'none', cursor: 'pointer', color: '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
+                    <Package size={15} /> Min portal
+                  </button>
+                )}
                 {/* Cart button for customers */}
                 {isCustomer && (
                   <button onClick={() => setCartOpen(true)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8, background: count > 0 ? '#111' : '#F5F3EE', border: 'none', cursor: 'pointer', color: count > 0 ? '#fff' : '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>

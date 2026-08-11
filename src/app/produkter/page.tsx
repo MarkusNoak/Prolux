@@ -142,7 +142,9 @@ function ProductsContent() {
             {filtered.map(p => {
               const unitPrice = isLoggedInCustomer && customer
                 ? Math.round(p.list_price * (1 - (DISCOUNT[priceList] ?? 0)))
-                : Math.round(p.list_price * 0.6)
+                : isLoggedInCustomer
+                  ? p.list_price
+                  : Math.round(p.list_price * 0.6)
               const added = justAdded === p.id
               return (
                 <div key={p.id} style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.06)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'all .2s', boxShadow: '0 1px 4px rgba(0,0,0,.04)' }}
@@ -158,12 +160,12 @@ function ProductsContent() {
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
                       <div>
                         <div style={{ fontSize: 11, color: '#bbb', marginBottom: 2 }}>
-                          {isLoggedInCustomer && customer ? `Ditt pris (${priceList})` : 'B2B-pris från'}
+                          {isLoggedInCustomer && customer ? `Ditt pris (${priceList})` : isLoggedInCustomer ? 'Pris' : 'B2B-pris från'}
                         </div>
                         <div style={{ fontSize: 20, fontWeight: 700, color: '#C9971A' }}>{fmt(unitPrice)} kr</div>
                         <div style={{ fontSize: 10, color: '#ccc' }}>exkl. moms · {p.unit}</div>
                       </div>
-                      {isLoggedInCustomer && customer ? (
+                      {isLoggedInCustomer ? (
                         <button onClick={() => handleAddToCart(p)}
                           style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', borderRadius: 8, background: added ? '#4CAF7D' : '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'background .2s', flexShrink: 0 }}>
                           {added ? <><Check size={13} /> Lagd</> : <><ShoppingCart size={13} /> Lägg i korg</>}
