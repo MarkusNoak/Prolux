@@ -1046,12 +1046,6 @@ function HomeContent() {
         sb.from('customers').select('*').eq('auth_user_id', session.user.id).single()
           .then(({ data }) => {
             if (data) setCustomer(data)
-            // Scroll to portal after auth + customer load if hash is set
-            if (window.location.hash === '#min-portal') {
-              setTimeout(() => {
-                document.getElementById('min-portal')?.scrollIntoView({ behavior: 'smooth' })
-              }, 100)
-            }
           })
       }
     })
@@ -1073,6 +1067,27 @@ function HomeContent() {
       })
     return () => subscription.unsubscribe()
   }, [])
+
+  // Scroll to portal after login (URL has ?gotoPortal=1)
+  useEffect(() => {
+    if (!authChecked || !authUser) return
+    const params = new URLSearchParams(window.location.search)
+    if (!params.has('gotoPortal')) return
+    // Clean URL first
+    window.history.replaceState({}, '', '/')
+    // Poll until #min-portal is in the DOM (renders asynchronously after auth)
+    let attempts = 0
+    const poll = setInterval(() => {
+      const el = document.getElementById('min-portal')
+      if (el) {
+        clearInterval(poll)
+        el.scrollIntoView({ behavior: 'smooth' })
+      } else if (++attempts > 30) {
+        clearInterval(poll)
+      }
+    }, 50)
+    return () => clearInterval(poll)
+  }, [authChecked, authUser])
 
   if (!authChecked) return <div style={{ minHeight: '100vh', background: '#fff' }} />
   return <MarketingHome products={products} allImages={allImages} openLogin={openLogin} authUser={authUser} customer={customer} />
