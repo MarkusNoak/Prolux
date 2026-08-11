@@ -75,6 +75,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
   const [regForm, setRegForm] = useState({ email: '', password: '', company: '', contact_name: '', phone: '' })
   const [regLoading, setRegLoading] = useState(false)
   const [regError, setRegError] = useState('')
+  const [regDone, setRegDone] = useState(false)
 
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -106,7 +107,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
   }, [])
 
   function openLogin(startReg = false)  { setLoginOpen(true); setMenuOpen(false); setError(''); setRegError(''); setRegMode(startReg) }
-  function closeLogin() { setLoginOpen(false); setEmail(''); setPassword(''); setError(''); setRegMode(false); setRegForm({ email: '', password: '', company: '', contact_name: '', phone: '' }); setRegError('') }
+  function closeLogin() { setLoginOpen(false); setEmail(''); setPassword(''); setError(''); setRegMode(false); setRegForm({ email: '', password: '', company: '', contact_name: '', phone: '' }); setRegError(''); setRegDone(false) }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -150,8 +151,8 @@ export function PublicShell({ children }: { children: ReactNode }) {
         })
       }
     }
-    closeLogin()
     setRegLoading(false)
+    setRegDone(true)
   }
 
   async function handleLogout() {
@@ -646,6 +647,18 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   </button>
                 </form>
               </>
+            ) : regDone ? (
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>📬</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#111', marginBottom: 10 }}>Kolla din inkorg!</div>
+                <p style={{ fontSize: 13, color: '#666', lineHeight: 1.7, margin: '0 0 20px' }}>
+                  Vi har skickat en bekräftelse till <strong>{regForm.email}</strong>.<br />
+                  Klicka på länken i mailet för att aktivera ditt konto.
+                </p>
+                <button onClick={closeLogin} style={{ padding: '11px 28px', background: '#111', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Stäng
+                </button>
+              </div>
             ) : (
               <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <p style={{ fontSize: 13, color: '#888', margin: '0 0 4px', textAlign: 'center' }}>Skapa ditt B2B-konto — det tar en minut</p>

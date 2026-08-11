@@ -199,7 +199,7 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div style={{ padding: '28px 28px 60px', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: 'clamp(14px,4vw,28px) clamp(14px,4vw,28px) 60px', maxWidth: 1400, margin: '0 auto' }}>
 
       {/* Header */}
       <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -249,7 +249,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Chart + Budget side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 16, marginBottom: 20 }}>
+      <div className="dash-chart-row" style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 16, marginBottom: 20 }}>
 
         {/* Revenue chart */}
         <div style={{ ...card, padding: '22px 24px' }}>
@@ -527,6 +527,11 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+      <style>{`
+        @media (max-width: 700px) {
+          .dash-chart-row { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   )
 }
