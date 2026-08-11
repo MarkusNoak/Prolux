@@ -456,6 +456,9 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
   const [form, setForm]           = useState({ contact_name: customer?.contact_name || '', phone: customer?.phone || '', address: customer?.address || '' })
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]         = useState(false)
+  const [regForm, setRegForm]     = useState({ company: '', contact_name: authUser?.email?.split('@')[0] || '', phone: '', city: '', org_nr: '' })
+  const [regSaving, setRegSaving] = useState(false)
+  const [regError, setRegError]   = useState('')
 
   useEffect(() => {
     if (ordersLoaded) return
@@ -484,6 +487,25 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
     if (error) setPwMsg('Fel: ' + error.message)
     else { setPwMsg('Lösenord uppdaterat!'); setPwOld(''); setPwNew('') }
     setTimeout(() => setPwMsg(''), 4000)
+  }
+
+  async function createCustomer() {
+    if (!regForm.company.trim()) { setRegError('Företagsnamn krävs'); return }
+    setRegSaving(true); setRegError('')
+    const sb = createClient()
+    const { data, error } = await sb.from('customers').insert({
+      company: regForm.company,
+      contact_name: regForm.contact_name,
+      email: authUser.email,
+      phone: regForm.phone,
+      city: regForm.city,
+      org_nr: regForm.org_nr,
+      auth_user_id: authUser.id,
+      price_list_id: 'Standard',
+      status: 'active',
+    }).select().single()
+    if (error) { setRegError('Kunde inte skapa konto: ' + error.message); setRegSaving(false); return }
+    window.location.reload()
   }
 
   const STATUS_LABEL: Record<string, string> = { pending: 'Mottagen', confirmed: 'Bekräftad', packed: 'Packad', shipped: 'Skickad', delivered: 'Levererad', cancelled: 'Avbruten' }
@@ -535,15 +557,37 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
             {!ordersLoaded ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: '#bbb' }}>Laddar ordrar…</div>
             ) : !customer ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <ClipboardList size={48} strokeWidth={1} style={{ margin: '0 auto 16px', display: 'block', color: '#ddd' }} />
-                <p style={{ fontSize: 16, color: '#555', margin: '0 0 8px', fontWeight: 600 }}>Inget B2B-konto kopplat</p>
-                <p style={{ fontSize: 14, color: '#999', margin: '0 0 24px', maxWidth: 380, marginInline: 'auto', lineHeight: 1.6 }}>
-                  Du är inloggad men saknar ett B2B-kundkort. Kontakta oss så sätter vi upp ditt avtalspris och orderhistorik.
+              <div style={{ maxWidth: 520, margin: '0 auto', padding: '20px 0 40px' }}>
+                <div style={{ marginBottom: 28 }}>
+                  <h3 style={{ margin: '0 0 6px', fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, color: '#111' }}>Skapa ditt kundkort</h3>
+                  <p style={{ margin: 0, fontSize: 14, color: '#888', lineHeight: 1.6 }}>Fyll i dina uppgifter så är du redo att beställa direkt.</p>
+                </div>
+                {[
+                  { key: 'company',      label: 'Företagsnamn *', placeholder: 'AB Bilservice',    type: 'text' },
+                  { key: 'contact_name', label: 'Ditt namn',      placeholder: 'Erik Lindgren',    type: 'text' },
+                  { key: 'phone',        label: 'Telefon',         placeholder: '070-123 45 67',   type: 'tel'  },
+                  { key: 'city',         label: 'Stad',            placeholder: 'Stockholm',        type: 'text' },
+                  { key: 'org_nr',       label: 'Org.nr',          placeholder: '556123-4567',     type: 'text' },
+                ].map(({ key, label, placeholder, type }) => (
+                  <div key={key} style={{ marginBottom: 14 }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#666', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '.08em' }}>{label}</label>
+                    <input
+                      type={type}
+                      value={(regForm as any)[key]}
+                      onChange={e => setRegForm(f => ({ ...f, [key]: e.target.value }))}
+                      placeholder={placeholder}
+                      style={{ width: '100%', padding: '11px 14px', background: '#F9F7F3', border: '1.5px solid rgba(0,0,0,.1)', borderRadius: 8, color: '#111', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                ))}
+                {regError && <p style={{ color: '#E05252', fontSize: 13, marginBottom: 12 }}>{regError}</p>}
+                <button onClick={createCustomer} disabled={regSaving}
+                  style={{ width: '100%', padding: '13px', borderRadius: 9, background: regSaving ? '#ccc' : '#111', color: '#fff', fontSize: 15, fontWeight: 700, border: 'none', cursor: regSaving ? 'default' : 'pointer', marginTop: 4 }}>
+                  {regSaving ? 'Skapar konto…' : 'Skapa kundkort'}
+                </button>
+                <p style={{ fontSize: 12, color: '#bbb', textAlign: 'center', marginTop: 12 }}>
+                  Ditt konto får prislista Standard. Kontakta oss för att uppgradera till B2B-avtalspris.
                 </p>
-                <a href="mailto:info@proluxshine.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', borderRadius: 9, background: '#111', color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                  Kontakta oss
-                </a>
               </div>
             ) : orders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', color: '#bbb' }}>
