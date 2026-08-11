@@ -382,37 +382,51 @@ const SLIDES = [
   { bg: '#0A0D1A', label: 'Fälg & Exteriör',      heading: 'Rena fälgar.\nKlara resultat.',        sub: 'Starka rengöringsmedel formulerade för tunga jobb.' },
 ]
 
+const HERO_VIDEO = 'https://videos.pexels.com/video-files/3763891/3763891-hd_1920_1080_30fps.mp4'
+
 function HeroSlider({ images, openLogin, loggedIn }: { images: string[]; openLogin: () => void; loggedIn?: boolean }) {
   const [current, setCurrent] = useState(0)
-  const slides = images.length > 0 ? images : []
-  const total  = Math.max(slides.length, SLIDES.length)
+  const [videoOk, setVideoOk] = useState(true)
+  const slide = SLIDES[current % SLIDES.length]
+  const total = SLIDES.length
 
   useEffect(() => {
-    const t = setInterval(() => setCurrent(c => (c + 1) % total), 5000)
+    const t = setInterval(() => setCurrent(c => (c + 1) % total), 6000)
     return () => clearInterval(t)
   }, [total])
 
-  const slide = SLIDES[current % SLIDES.length]
-  const img   = slides[current % slides.length]
-
   return (
-    <section style={{ position: 'relative', height: 'clamp(480px, 70vh, 760px)', overflow: 'hidden', marginTop: 64 }}>
-      {/* Background slides */}
-      {img ? (
-        <img key={current} src={img} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', animation: 'slideIn .8s ease' }} />
+    <section style={{ position: 'relative', height: 'clamp(520px, 68vh, 780px)', overflow: 'hidden', marginTop: 64 }}>
+
+      {/* Video background */}
+      {videoOk ? (
+        <video
+          autoPlay muted loop playsInline
+          onError={() => setVideoOk(false)}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        >
+          <source src={HERO_VIDEO} type="video/mp4" />
+        </video>
       ) : (
-        <div style={{ position: 'absolute', inset: 0, background: slide.bg, transition: 'background .6s ease' }} />
+        /* Fallback: product image or dark gradient */
+        images[0]
+          ? <img src={images[0]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <div style={{ position: 'absolute', inset: 0, background: '#111' }} />
       )}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.28) 55%, rgba(0,0,0,.08) 100%)' }} />
+
+      {/* Gradient overlay — left heavier for text legibility */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.45) 50%, rgba(0,0,0,.18) 100%)' }} />
+      {/* Bottom fade */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, background: 'linear-gradient(to top, rgba(250,250,248,.9), transparent)' }} />
 
       {/* Content */}
       <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 32px', width: '100%' }}>
-          <div key={current} style={{ maxWidth: 540, animation: 'fadeUp .55s ease' }}>
-            <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.6)', textTransform: 'uppercase', letterSpacing: '.2em' }}>
+          <div key={current} style={{ maxWidth: 560, animation: 'fadeUp .55s ease' }}>
+            <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.6)', textTransform: 'uppercase', letterSpacing: '.22em' }}>
               {slide.label}
             </p>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(38px, 5.5vw, 72px)', fontWeight: 400, color: '#fff', margin: '0 0 18px', lineHeight: 1.08, letterSpacing: '-.01em', whiteSpace: 'pre-line' }}>
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(36px, 5.2vw, 68px)', fontWeight: 400, color: '#fff', margin: '0 0 18px', lineHeight: 1.08, letterSpacing: '-.01em', whiteSpace: 'pre-line' }}>
               {slide.heading}
             </h1>
             <p style={{ fontSize: 16, color: 'rgba(255,255,255,.75)', lineHeight: 1.7, margin: '0 0 34px', maxWidth: 400 }}>
@@ -432,10 +446,10 @@ function HeroSlider({ images, openLogin, loggedIn }: { images: string[]; openLog
         </div>
       </div>
 
-      {/* Dots */}
-      <div style={{ position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
+      {/* Slide dots */}
+      <div style={{ position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
         {Array.from({ length: total }).map((_, i) => (
-          <button key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 4, background: i === current ? '#fff' : 'rgba(255,255,255,.4)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all .3s ease' }} />
+          <button key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 4, background: i === current ? '#C9971A' : 'rgba(255,255,255,.4)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all .3s ease' }} />
         ))}
       </div>
     </section>
