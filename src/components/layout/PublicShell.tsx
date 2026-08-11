@@ -40,11 +40,6 @@ const NAV_PUBLIC = [
   { href: '/#kontakt',           label: 'Kontakta oss' },
 ]
 
-const NAV_CUSTOMER = [
-  { href: '/#min-portal',   label: 'Min portal' },
-  { href: '/produkter',     label: 'Produkter' },
-  { href: '/#kontakt',      label: 'Kontakta oss' },
-]
 
 const S = {
   inp: {
@@ -230,7 +225,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
         {/* Desktop nav */}
         <nav className="pub-desktop-nav" style={{ display: 'none', gap: 0, flex: 1, alignItems: 'center', marginLeft: 12 }}>
-          {(isCustomer ? NAV_CUSTOMER : NAV_PUBLIC).map(({ href, label }) => {
+          {NAV_PUBLIC.map(({ href, label }) => {
             const active = !href.includes('#') && href !== '/' && pathname.startsWith(href)
             return (
               <Link key={href} href={href} style={{
@@ -325,7 +320,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
       {/* Mobile menu */}
       {menuOpen && (
         <div style={{ position: 'fixed', top: 64, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,.98)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', zIndex: 199, padding: '24px 20px 40px', display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeIn .15s ease' }}>
-          {(isCustomer ? NAV_CUSTOMER : NAV_PUBLIC).map(({ href, label }) => (
+          {NAV_PUBLIC.map(({ href, label }) => (
             <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderRadius: 10, background: '#F5F3EE', border: '1px solid rgba(0,0,0,.06)', color: '#111', fontSize: 16, fontWeight: 500, textDecoration: 'none' }}>
               {label} <ChevronRight size={16} color="#999" />
             </Link>
