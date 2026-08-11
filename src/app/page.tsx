@@ -7,7 +7,7 @@ import { PublicShell, useLoginModal, usePublicCart } from '@/components/layout/P
 import { fmt, formatDate } from '@/lib/utils'
 import {
   ArrowRight, ChevronRight, Package, Truck, Shield, Phone,
-  ShoppingCart, ShoppingBag, ExternalLink, Star, User, Lock, Save, Check, ClipboardList
+  ShoppingCart, ShoppingBag, ExternalLink, Star, User, Lock, Save, Check, ClipboardList, RefreshCw
 } from 'lucide-react'
 import type { User as SupaUser } from '@supabase/supabase-js'
 
@@ -446,6 +446,7 @@ function HeroSlider({ images, openLogin, loggedIn }: { images: string[]; openLog
    CUSTOMER PORTAL SECTION — shows below marketing for logged-in users
 ════════════════════════════════════════════════════════ */
 function CustomerPortalSection({ customer, authUser, openLogin }: { customer: any; authUser: any; openLogin: () => void }) {
+  const cart = usePublicCart()
   const [portalTab, setPortalTab] = useState<'orders'|'account'>('orders')
   const [orders, setOrders]       = useState<any[]>([])
   const [ordersLoaded, setOrdersLoaded] = useState(false)
@@ -546,9 +547,21 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
                           {STATUS_LABEL[o.status] || o.status}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ fontSize: 12, color: '#999' }}>{o.created_at?.slice(0, 10)}</div>
                         <div style={{ fontWeight: 700, fontSize: 15, color: '#C9971A' }}>{fmt(o.subtotal)} kr</div>
+                        <button onClick={() => {
+                          if (!o.order_items?.length) return
+                          const pl = customer?.price_list_id || 'Standard'
+                          o.order_items.forEach((item: any) => {
+                            for (let i = 0; i < item.qty; i++) {
+                              cart.addItem({ id: item.product_id || item.id, name: item.product_name, brand: '', list_price: item.list_price || item.unit_price, image_url: null, unit: '' }, pl)
+                            }
+                          })
+                          cart.openCart()
+                        }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 7, background: '#111', color: '#fff', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                          <RefreshCw size={11} /> Beställ igen
+                        </button>
                       </div>
                     </div>
                     {o.order_items?.length > 0 && (
@@ -692,7 +705,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
                             </>
                           )}
                         </div>
-                        {authUser && customer ? (
+                        {authUser ? (
                           <button onClick={() => cart.addItem(p, priceList)}
                             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                             <ShoppingCart size={13} /> Lägg i korg

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Customer } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { Plus, Search, Bell } from 'lucide-react'
+import { Plus, Search, Bell, Mail, ChevronRight, Phone } from 'lucide-react'
 import Link from 'next/link'
 
 const supabase = createClient()
@@ -90,22 +90,15 @@ export default function CrmCustomersPage() {
 
       {/* Customer list */}
       <div style={{ background: 'var(--bg3)', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
-        {/* Table header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 120px 80px 80px', gap: 0, padding: '10px 20px', borderBottom: '1px solid var(--line)', background: 'var(--bg2)' }}>
-          {['Företag', 'Kontaktperson', 'Stad', 'Prislista', 'Senast'].map(h => (
-            <div key={h} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
-          ))}
-        </div>
-
         {loading ? (
           <div style={{ padding: '8px 0' }}>
             {[1,2,3,4,5,6].map(i => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 160px 120px 80px 80px', gap: 0, padding: '16px 20px', borderBottom: '1px solid var(--line)' }}>
-                <div style={{ height: 14, width: `${50 + i * 8}%`, background: 'var(--bg4)', borderRadius: 4, animation: 'pulse 1.5s ease infinite' }} />
-                <div style={{ height: 12, width: '80%', background: 'var(--bg4)', borderRadius: 4, opacity: 0.6, animation: 'pulse 1.5s ease infinite' }} />
-                <div style={{ height: 12, width: '60%', background: 'var(--bg4)', borderRadius: 4, opacity: 0.5, animation: 'pulse 1.5s ease infinite' }} />
-                <div style={{ height: 12, width: '50%', background: 'var(--bg4)', borderRadius: 4, opacity: 0.4, animation: 'pulse 1.5s ease infinite' }} />
-                <div style={{ height: 12, width: '60%', background: 'var(--bg4)', borderRadius: 4, opacity: 0.4, animation: 'pulse 1.5s ease infinite' }} />
+              <div key={i} style={{ padding: '18px 20px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg4)', flexShrink: 0, animation: 'pulse 1.5s ease infinite' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ height: 14, width: `${40 + i * 8}%`, background: 'var(--bg4)', borderRadius: 4, marginBottom: 8, animation: 'pulse 1.5s ease infinite' }} />
+                  <div style={{ height: 11, width: '60%', background: 'var(--bg4)', borderRadius: 4, opacity: 0.5, animation: 'pulse 1.5s ease infinite' }} />
+                </div>
               </div>
             ))}
           </div>
@@ -116,39 +109,52 @@ export default function CrmCustomersPage() {
         ) : filtered.map((c, i) => {
           const overdueCount = allReminders.filter(r => r.customer_id === c.id && r.due_date < today).length
           return (
-            <Link key={c.id} href={`/crm/customers/${c.id}`} style={{
-              display: 'grid', gridTemplateColumns: '1fr 160px 120px 80px 80px',
-              gap: 0, padding: '15px 20px',
+            <div key={c.id} style={{
+              display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px',
               borderBottom: i < filtered.length - 1 ? '1px solid var(--line)' : 'none',
-              textDecoration: 'none',
-              background: 'transparent',
-              transition: 'background .1s',
+              background: 'transparent', transition: 'background .1s',
             }}
-              onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,.03)'}
-              onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'}
+              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,.03)'}
+              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
             >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{c.company}</span>
+              {/* Avatar */}
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: PL_BADGE_COLOR[c.price_list_id], border: `1px solid ${PL_TEXT_COLOR[c.price_list_id]}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: PL_TEXT_COLOR[c.price_list_id], flexShrink: 0 }}>
+                {c.company[0]}
+              </div>
+
+              {/* Main info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.company}</span>
+                  <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: PL_BADGE_COLOR[c.price_list_id], color: PL_TEXT_COLOR[c.price_list_id], fontWeight: 700, flexShrink: 0 }}>{c.price_list_id}</span>
                   {overdueCount > 0 && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(224,82,82,.15)', border: '1px solid rgba(224,82,82,.25)', borderRadius: 10, padding: '1px 6px', fontSize: 10, fontWeight: 700, color: 'var(--red)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(224,82,82,.15)', border: '1px solid rgba(224,82,82,.25)', borderRadius: 10, padding: '1px 6px', fontSize: 10, fontWeight: 700, color: 'var(--red)', flexShrink: 0 }}>
                       <Bell size={9} /> {overdueCount}
                     </span>
                   )}
                 </div>
-                {c.email && <div style={{ fontSize: 11, color: 'var(--text3)' }}>{c.email}</div>}
+                <div style={{ fontSize: 12, color: 'var(--text3)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <span>{c.contact_name}</span>
+                  {c.city && <span>📍 {c.city}</span>}
+                  {c.last_order_at && <span>Senast: {formatDate(c.last_order_at)}</span>}
+                </div>
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text2)', alignSelf: 'center' }}>{c.contact_name}</div>
-              <div style={{ fontSize: 13, color: 'var(--text3)', alignSelf: 'center' }}>{c.city || '—'}</div>
-              <div style={{ alignSelf: 'center' }}>
-                <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 5, background: PL_BADGE_COLOR[c.price_list_id], color: PL_TEXT_COLOR[c.price_list_id], fontWeight: 700 }}>
-                  {c.price_list_id}
-                </span>
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                {c.phone && (
+                  <a href={`tel:${c.phone}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 7, background: 'rgba(76,175,125,.1)', border: '1px solid rgba(76,175,125,.2)', color: 'var(--green)', textDecoration: 'none' }}>
+                    <Phone size={13} />
+                  </a>
+                )}
+                <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 7, background: 'rgba(74,143,212,.1)', border: '1px solid rgba(74,143,212,.2)', color: 'var(--blue)', textDecoration: 'none' }}>
+                  <Mail size={13} />
+                </a>
+                <Link href={`/crm/customers/${c.id}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 7, background: 'rgba(232,184,75,.1)', border: '1px solid rgba(232,184,75,.2)', color: 'var(--gold)', textDecoration: 'none' }}>
+                  <ChevronRight size={15} />
+                </Link>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text3)', alignSelf: 'center' }}>
-                {c.last_order_at ? formatDate(c.last_order_at) : '—'}
-              </div>
-            </Link>
+            </div>
           )
         })}
       </div>

@@ -1,10 +1,10 @@
 'use client'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X, GitBranch, CalendarDays, StickyNote } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Users, Tag, Megaphone, Zap, LogOut, UserCog, Menu, X, GitBranch, CalendarDays, StickyNote, Bell } from 'lucide-react'
 
 const ADMIN_NAV = [
   { href: '/admin/dashboard',  label: 'Översikt',  icon: LayoutDashboard },
@@ -32,7 +32,22 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
   const pathname = usePathname()
   const router   = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [newOrderCount, setNewOrderCount] = useState(0)
+  const [realtimeToast, setRealtimeToast] = useState<{nr: number; company: string} | null>(null)
   const supabase = createClient()
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-orders-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+        const order = payload.new as any
+        setNewOrderCount(n => n + 1)
+        setRealtimeToast({ nr: order.order_nr, company: order.delivery_name || 'Ny kund' })
+        setTimeout(() => setRealtimeToast(null), 5000)
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
 
   async function logout() {
     await supabase.auth.signOut()
@@ -102,8 +117,32 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
           })()}
         </nav>
 
+        {/* Realtime toast */}
+        {realtimeToast && (
+          <div style={{ position: 'fixed', top: 72, right: 20, zIndex: 999, background: 'var(--bg2)', border: '1px solid var(--gold)', borderRadius: 12, padding: '14px 18px', boxShadow: '0 8px 32px rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', gap: 12, minWidth: 280, animation: 'slideInRight .3s ease' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(232,184,75,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShoppingBag size={18} color="var(--gold)" />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Ny order #{realtimeToast.nr}</div>
+              <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>{realtimeToast.company}</div>
+            </div>
+            <button onClick={() => setRealtimeToast(null)} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 4 }}>
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {/* Right side */}
         <div className="admin-desktop-right" style={{ display: 'none', alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0 }}>
+          <Link href="/admin/orders" onClick={() => setNewOrderCount(0)} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, background: newOrderCount > 0 ? 'rgba(232,184,75,.12)' : 'rgba(255,255,255,.04)', border: `1px solid ${newOrderCount > 0 ? 'rgba(232,184,75,.3)' : 'var(--line)'}`, textDecoration: 'none', transition: 'all .2s' }}>
+            <Bell size={15} color={newOrderCount > 0 ? 'var(--gold)' : 'var(--text3)'} />
+            {newOrderCount > 0 && (
+              <span style={{ position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8, background: 'var(--gold)', color: '#111', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingInline: 3 }}>
+                {newOrderCount}
+              </span>
+            )}
+          </Link>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '5px 10px 5px 6px',
@@ -228,6 +267,10 @@ export function AdminShell({ children, email }: { children: ReactNode; email: st
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-8px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(20px); }
+          to   { opacity: 1; transform: translateX(0); }
         }
       `}</style>
     </div>
