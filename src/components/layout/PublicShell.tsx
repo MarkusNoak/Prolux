@@ -121,7 +121,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
     const role = data.user?.user_metadata?.role
     if (role === 'admin') { window.location.href = '/admin/dashboard'; return }
     if (role === 'crm')   { window.location.href = '/crm/dashboard';   return }
-    window.location.href = '/#min-portal'
+    window.location.href = '/portal'
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -164,9 +164,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
   function goToPortal() {
     const role = authUser?.user_metadata?.role
-    if (role === 'admin') router.push('/admin/dashboard')
-    else if (role === 'crm') router.push('/crm/dashboard')
-    else router.push('/')
+    if (role === 'admin') { window.location.href = '/admin/dashboard' }
+    else if (role === 'crm') { window.location.href = '/crm/dashboard' }
+    else { window.location.href = '/portal' }
     setUserDropOpen(false)
   }
 
@@ -286,13 +286,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {/* Min portal button for customers */}
                 {isCustomer && (
-                  <button onClick={() => {
-                    if (window.location.pathname === '/') {
-                      document.getElementById('min-portal')?.scrollIntoView({ behavior: 'smooth' })
-                    } else {
-                      window.location.href = '/#min-portal'
-                    }
-                  }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#F5F3EE', border: 'none', cursor: 'pointer', color: '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
+                  <button onClick={() => { window.location.href = '/portal' }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#F5F3EE', border: 'none', cursor: 'pointer', color: '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
                     <Package size={15} /> Min portal
                   </button>
                 )}
@@ -326,14 +320,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                         {customer?.company && <div style={{ fontWeight: 600, color: '#555', marginTop: 2 }}>{customer.company}</div>}
                       </div>
                       {isCustomer && <>
-                        <button onClick={() => {
-                          setUserDropOpen(false)
-                          if (window.location.pathname === '/') {
-                            document.getElementById('min-portal')?.scrollIntoView({ behavior: 'smooth' })
-                          } else {
-                            router.push('/#min-portal')
-                          }
-                        }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
+                        <button onClick={() => { setUserDropOpen(false); window.location.href = '/portal' }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
                           <Package size={14} color="#C9971A" /> Min portal
                         </button>
                         <button onClick={() => { setCartOpen(true); setUserDropOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '12px 16px', background: 'transparent', border: 'none', fontSize: 14, color: '#111', cursor: 'pointer', textAlign: 'left' }}>
@@ -562,7 +549,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
               <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 16 }}>Kundportal</div>
               {authUser ? (
                 <>
-                  <button onClick={() => router.push('/')} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Min portal</button>
+                  <button onClick={() => { window.location.href = '/portal' }} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Min portal</button>
                   <button onClick={() => setCartOpen(true)} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Varukorg {count > 0 && `(${count})`}</button>
                 </>
               ) : (
