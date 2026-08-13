@@ -834,20 +834,100 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
 }
 
 /* ════════════════════════════════════════════════════════
-   MARKETING HOME — light, no dark sections
+   MARKETING HOME — redesigned professional B2B webshop
 ════════════════════════════════════════════════════════ */
+const BADGES = ['Storsäljare', 'Storsäljare', 'Nyhet', 'Storsäljare', 'Nyhet', 'Storsäljare', 'Storsäljare', 'Nyhet']
+
+const CAT_IMAGES: Record<string, string> = {
+  'Exteriör':        'https://proluxshine.com/wp-content/uploads/2025/11/IMG_7192-Edited-scaled.png',
+  'Interiör':        'https://proluxshine.com/wp-content/uploads/2025/11/80690ec5-0a73-4a38-aa98-1c6d03d6b8e7.png',
+  'Tvätt & Rengöring': 'https://proluxshine.com/wp-content/uploads/2025/11/a7ffd562-2bb4-4699-aaeb-ce4da03ba0ac.png',
+  'Vax & Polish':    'https://proluxshine.com/wp-content/uploads/2025/11/df6ba40f-5d3d-4c32-8cfd-55f9c68de3e7.png',
+  'Fälgvård':        'https://proluxshine.com/wp-content/uploads/2025/11/575e0484-0ee1-4e5f-a8a2-e91ebe0e3547.png',
+  'Avfettning':      'https://proluxshine.com/wp-content/uploads/2025/11/IMG_8356-scaled.png',
+}
+
 function MarketingHome({ products, allImages, openLogin, authUser, customer }: { products: any[]; allImages: string[]; openLogin: () => void; authUser?: any; customer?: any }) {
   const cart = usePublicCart()
   const priceList = customer?.price_list_id || 'Standard'
+  const heroImgs = products.filter(p => p.image_url).slice(0, 4).map((p: any) => p.image_url)
+
   return (
     <>
-      {/* ── HERO SLIDER ── */}
-      <HeroSlider images={allImages} openLogin={openLogin} loggedIn={!!authUser} />
+      {/* ── ANNOUNCEMENT BAR ── */}
+      <div style={{ background: '#111', borderBottom: '1px solid rgba(255,255,255,.08)', padding: '9px 24px' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 'clamp(16px, 4vw, 56px)', flexWrap: 'wrap' }}>
+          {[
+            { icon: Truck,   text: 'Fri frakt över 2 000 kr' },
+            { icon: Shield,  text: 'Professionell kvalitet' },
+            { icon: Star,    text: 'Virtus & Frescura' },
+            { icon: Phone,   text: 'Personlig säljare' },
+          ].map(({ icon: Icon, text }) => (
+            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'rgba(255,255,255,.7)', whiteSpace: 'nowrap' }}>
+              <Icon size={13} color="#C9971A" />
+              {text}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── HERO — split layout ── */}
+      <section style={{ background: '#0D0F13', paddingTop: 64, minHeight: 'clamp(520px, 72vh, 780px)', display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative' }}>
+        {/* Subtle radial glow */}
+        <div style={{ position: 'absolute', top: '30%', left: '30%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,151,26,.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ maxWidth: 1160, margin: '0 auto', padding: 'clamp(48px,6vw,80px) 24px', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }} className="hero-grid">
+          {/* Left — text */}
+          <div style={{ animation: 'fadeUp .6s ease' }}>
+            <p style={{ margin: '0 0 16px', fontSize: 11, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.22em' }}>
+              Professionell bilvård
+            </p>
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 400, color: '#F0EDE8', margin: '0 0 20px', lineHeight: 1.08, letterSpacing: '-.01em' }}>
+              Proffs&shy;produkter<br />för proffs
+            </h1>
+            <p style={{ fontSize: 16, color: 'rgba(240,237,232,.6)', lineHeight: 1.75, margin: '0 0 36px', maxWidth: 420 }}>
+              Exklusiva B2B-avtal med Virtus och Frescura — Italiens ledande bilvårdsmärken. Beställ till dina avtalspriser.
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 8, background: '#C9971A', color: '#111', fontSize: 15, fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 20px rgba(201,151,26,.3)' }}>
+                Shoppa nu <ArrowRight size={16} />
+              </Link>
+              {!authUser && (
+                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', borderRadius: 8, background: 'transparent', border: '1.5px solid rgba(255,255,255,.2)', color: '#F0EDE8', fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'border-color .15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,.45)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,.2)' }}>
+                  Logga in
+                </button>
+              )}
+            </div>
+            {/* Mini trust row */}
+            <div style={{ display: 'flex', gap: 20, marginTop: 36, flexWrap: 'wrap' }}>
+              {['1–2 dagars leverans', 'Avtalspriser A–C', '100% italiensk kvalitet'].map(t => (
+                <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'rgba(240,237,232,.45)' }}>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#C9971A', flexShrink: 0 }} />
+                  {t}
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Right — product image collage */}
+          <div className="hero-imgs" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 12, height: 420 }}>
+            {heroImgs.length >= 4 ? heroImgs.slice(0, 4).map((src: string, i: number) => (
+              <div key={i} style={{ borderRadius: 14, overflow: 'hidden', background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)', ...(i === 0 ? { gridRow: '1 / 2', gridColumn: '1 / 2' } : {}), animation: `fadeUp .6s ease ${i * 120}ms both` }}>
+                <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
+              </div>
+            )) : (
+              <div style={{ gridColumn: '1/-1', gridRow: '1/-1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 14, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)' }}>
+                <Package size={72} color="rgba(201,151,26,.3)" strokeWidth={1} />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* ── TRUST STRIP ── */}
       <section style={{ background: '#fff', borderBottom: '1px solid rgba(0,0,0,.07)' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+          <div className="trust-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
             {TRUST.map(({ icon: Icon, title, sub }, i) => (
               <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '22px 16px', borderRight: i < 3 ? '1px solid rgba(0,0,0,.07)' : 'none' }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: '#F5F2ED', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -863,63 +943,100 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         </div>
       </section>
 
-      {/* ── PRODUCTS ── */}
+      {/* ── CATEGORIES ── */}
+      <section style={{ background: '#F8F5F0', padding: '72px 24px' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+          <Reveal>
+            <div style={{ marginBottom: 36 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.15em' }}>Sortiment</p>
+              <h2 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 400, color: '#111' }}>Shoppa efter kategori</h2>
+            </div>
+          </Reveal>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 14 }}>
+            {CATEGORIES.map((cat, i) => (
+              <Reveal key={cat.name} delay={i * 50}>
+                <Link href="/produkter" style={{ display: 'flex', flexDirection: 'column', borderRadius: 14, overflow: 'hidden', textDecoration: 'none', border: '1.5px solid rgba(0,0,0,.07)', background: '#fff', transition: 'all .2s' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLAnchorElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 10px 28px rgba(0,0,0,.1)'; el.style.borderColor = '#C9971A' }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLAnchorElement; el.style.transform = 'none'; el.style.boxShadow = 'none'; el.style.borderColor = 'rgba(0,0,0,.07)' }}>
+                  <div style={{ height: 120, background: '#F0EDE8', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {CAT_IMAGES[cat.name]
+                      ? <img src={CAT_IMAGES[cat.name]} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <span style={{ fontSize: 42, lineHeight: 1 }}>{cat.emoji}</span>
+                    }
+                  </div>
+                  <div style={{ padding: '12px 14px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{cat.name}</span>
+                    <ChevronRight size={14} color="#C9971A" />
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRODUCTS — Utvalda favoriter ── */}
       {products.length > 0 && (
-        <section id="virtus-pro-center" style={{ background: '#fff', padding: '80px 24px' }}>
+        <section style={{ background: '#fff', padding: '80px 24px' }}>
           <div style={{ maxWidth: 1160, margin: '0 auto' }}>
             <Reveal>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 40, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 36, flexWrap: 'wrap' }}>
                 <div>
-                  <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.15em' }}>Storsäljare just nu</p>
+                  <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.15em' }}>Bästsäljare</p>
                   <h2 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 400, color: '#111', lineHeight: 1.1 }}>
-                    Populära produkter
+                    Utvalda favoriter
                   </h2>
                 </div>
-                <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 8, border: '1.5px solid rgba(0,0,0,.15)', color: '#111', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+                <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, border: '1.5px solid rgba(0,0,0,.15)', color: '#111', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
                   Se alla <ArrowRight size={15} />
                 </Link>
               </div>
             </Reveal>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 18 }}>
               {products.map((p, i) => (
                 <Reveal key={p.id} delay={i * 50}>
-                  <div style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'all .2s' }}
+                  <div style={{ background: '#fff', border: '1.5px solid rgba(0,0,0,.08)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'all .2s', position: 'relative' }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 12px 32px rgba(0,0,0,.1)'; el.style.borderColor = '#C9971A' }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'none'; el.style.boxShadow = 'none'; el.style.borderColor = 'rgba(0,0,0,.08)' }}
-                  >
-                    <div style={{ height: 220, background: '#F5F2ED', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                      {p.image_url ? <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Package size={56} color="#ccc" strokeWidth={1} />}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.transform = 'none'; el.style.boxShadow = 'none'; el.style.borderColor = 'rgba(0,0,0,.08)' }}>
+                    {/* Badge */}
+                    {BADGES[i] && (
+                      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, background: BADGES[i] === 'Nyhet' ? '#111' : '#C9971A', color: BADGES[i] === 'Nyhet' ? '#fff' : '#111', fontSize: 10, fontWeight: 800, padding: '4px 9px', borderRadius: 6, letterSpacing: '.05em', textTransform: 'uppercase' }}>
+                        {BADGES[i]}
+                      </div>
+                    )}
+                    <div style={{ height: 200, background: '#F5F2ED', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      {p.image_url ? <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Package size={52} color="#ccc" strokeWidth={1} />}
                     </div>
-                    <div style={{ padding: '16px 18px 20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ fontSize: 10, color: '#bbb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 5 }}>{p.brand}</div>
+                    <div style={{ padding: '14px 16px 16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ fontSize: 10, color: '#bbb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 4 }}>{p.brand}</div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: '#111', flex: 1, lineHeight: 1.35, marginBottom: 14 }}>{p.name}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                         <div>
                           {authUser && customer ? (
                             <>
-                              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 2 }}>Ditt pris ({priceList})</div>
-                              <div style={{ fontSize: 20, fontWeight: 800, color: '#C9971A' }}>
-                                {fmt(Math.round(p.list_price * (1 - (DISCOUNT[priceList] ?? 0))))} kr
-                              </div>
+                              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 1 }}>Ditt pris ({priceList})</div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: '#C9971A' }}>{fmt(Math.round(p.list_price * (1 - (DISCOUNT[priceList] ?? 0))))} kr</div>
                               <div style={{ fontSize: 10, color: '#ccc' }}>exkl. moms · {p.unit}</div>
                             </>
                           ) : (
                             <>
-                              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 2 }}>B2B-pris från</div>
-                              <div style={{ fontSize: 20, fontWeight: 800, color: '#C9971A' }}>{fmt(Math.round(p.list_price * 0.6))} kr</div>
+                              <div style={{ fontSize: 11, color: '#bbb', marginBottom: 1 }}>B2B-pris från</div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: '#C9971A' }}>{fmt(Math.round(p.list_price * 0.6))} kr</div>
                               <div style={{ fontSize: 10, color: '#ccc' }}>exkl. moms</div>
                             </>
                           )}
                         </div>
                         {authUser ? (
                           <button onClick={() => cart.addItem(p, priceList)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '9px 14px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                            <ShoppingCart size={13} /> Lägg i korg
+                            style={{ width: 38, height: 38, borderRadius: '50%', background: '#111', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#C9971A' }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#111' }}>
+                            <ShoppingCart size={15} />
                           </button>
                         ) : (
-                          <button onClick={openLogin} style={{ padding: '9px 18px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                            Beställ
+                          <button onClick={openLogin}
+                            style={{ width: 38, height: 38, borderRadius: '50%', background: '#111', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <ShoppingCart size={15} />
                           </button>
                         )}
                       </div>
@@ -932,33 +1049,67 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         </section>
       )}
 
-      {/* ── CATEGORIES ── */}
-      <section id="aterforsaljare" style={{ background: '#F8F5F0', padding: '72px 24px' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+      {/* ── B2B PRO CENTER — dark split ── */}
+      <section style={{ background: '#0D0F13', padding: '80px 24px', overflow: 'hidden', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, width: '45%', height: '100%', background: 'linear-gradient(135deg, rgba(201,151,26,.04) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }} className="b2b-grid">
           <Reveal>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.15em' }}>Kategorierna</p>
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 4vw, 40px)', fontWeight: 400, color: '#111' }}>Utvalda kategorier</h2>
+            <div>
+              <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.22em' }}>B2B Portal</p>
+              <h2 style={{ margin: '0 0 20px', fontFamily: 'var(--font-serif)', fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 400, color: '#F0EDE8', lineHeight: 1.1 }}>
+                Ditt Pro Center
+              </h2>
+              <p style={{ margin: '0 0 32px', fontSize: 15, color: 'rgba(240,237,232,.55)', lineHeight: 1.75 }}>
+                Som B2B-kund hos ProLuxShine får du tillgång till din personliga portal med avtalspriser, orderhistorik och direkt kontakt med din säljare.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 36 }}>
+                {[
+                  'Avtalade priser — prisnivå A, B eller C',
+                  'Orderhistorik & spårning i realtid',
+                  'Personlig säljare mån–fre',
+                  'Snabb leverans 1–2 arbetsdagar',
+                ].map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(201,151,26,.15)', border: '1px solid rgba(201,151,26,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Check size={11} color="#C9971A" />
+                    </div>
+                    <span style={{ fontSize: 14, color: 'rgba(240,237,232,.75)' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+              {!authUser ? (
+                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 8, background: '#C9971A', color: '#111', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(201,151,26,.3)' }}>
+                  Logga in på portalen <ArrowRight size={16} />
+                </button>
+              ) : (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', borderRadius: 8, background: 'rgba(201,151,26,.12)', border: '1px solid rgba(201,151,26,.25)', color: '#C9971A', fontSize: 14, fontWeight: 600 }}>
+                  <Check size={15} /> Inloggad som kund
+                </div>
+              )}
             </div>
           </Reveal>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }}>
-            {CATEGORIES.map((cat, i) => (
-              <Reveal key={cat.name} delay={i * 40}>
-                <Link href="/produkter" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '28px 16px', background: '#fff', border: '1.5px solid rgba(0,0,0,.07)', borderRadius: 14, textDecoration: 'none', transition: 'all .2s' }}
-                  onMouseEnter={e => { const el = e.currentTarget as HTMLAnchorElement; el.style.borderColor = '#C9971A'; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 24px rgba(0,0,0,.07)' }}
-                  onMouseLeave={e => { const el = e.currentTarget as HTMLAnchorElement; el.style.borderColor = 'rgba(0,0,0,.07)'; el.style.transform = 'none'; el.style.boxShadow = 'none' }}
-                >
-                  <span style={{ fontSize: 36, lineHeight: 1 }}>{cat.emoji}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#111', textAlign: 'center' }}>{cat.name}</span>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
+          {/* Right visual */}
+          <Reveal delay={150}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {[
+                { label: 'Aktiva kunder', value: '240+', sub: 'i Norden' },
+                { label: 'Produkter', value: '50+', sub: 'Virtus & Frescura' },
+                { label: 'Leveranstid', value: '1–2 d', sub: 'Snabb frakt' },
+                { label: 'B2B-rabatt', value: 'upp till 40%', sub: 'Prisnivå A' },
+              ].map(({ label, value, sub }) => (
+                <div key={label} style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '24px 20px' }}>
+                  <div style={{ fontSize: 11, color: 'rgba(240,237,232,.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>{label}</div>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 400, color: '#C9971A', lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 12, color: 'rgba(240,237,232,.35)', marginTop: 4 }}>{sub}</div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
       {/* ── BRANDS ── */}
-      <section id="utbildning" style={{ background: '#fff', padding: '72px 24px' }}>
+      <section style={{ background: '#fff', padding: '72px 24px' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto' }}>
           <Reveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
@@ -994,33 +1145,43 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
 
       {/* ── CTA (not logged in) ── */}
       {!authUser && (
-      <section id="om-oss" style={{ background: '#F8F5F0', padding: '72px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
-        <Reveal>
-          <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
-            <Image src="/logo-mark.svg" alt="" width={32} height={44} style={{ display: 'block', margin: '0 auto 18px', opacity: .4 }} />
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 4vw, 44px)', fontWeight: 400, color: '#111', margin: '0 0 12px', lineHeight: 1.15 }}>
-              Redo att beställa?
-            </h2>
-            <p style={{ fontSize: 16, color: '#888', margin: '0 0 32px', lineHeight: 1.7 }}>
-              Logga in på din kundportal och beställ med dina avtalspriser.
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 36px', borderRadius: 9, background: '#111', color: '#fff', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                Logga in <ArrowRight size={16} />
-              </button>
-              <a href="mailto:info@proluxshine.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', borderRadius: 9, background: 'transparent', border: '1.5px solid rgba(0,0,0,.15)', color: '#111', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>
-                Kontakta oss
-              </a>
+        <section style={{ background: '#F8F5F0', padding: '72px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
+          <Reveal>
+            <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+              <Image src="/logo-mark.svg" alt="" width={32} height={44} style={{ display: 'block', margin: '0 auto 18px', opacity: .4 }} />
+              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px, 4vw, 44px)', fontWeight: 400, color: '#111', margin: '0 0 12px', lineHeight: 1.15 }}>
+                Redo att beställa?
+              </h2>
+              <p style={{ fontSize: 16, color: '#888', margin: '0 0 32px', lineHeight: 1.7 }}>
+                Logga in på din kundportal och beställ med dina avtalspriser.
+              </p>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 36px', borderRadius: 9, background: '#111', color: '#fff', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                  Logga in <ArrowRight size={16} />
+                </button>
+                <a href="mailto:info@proluxshine.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', borderRadius: 9, background: 'transparent', border: '1.5px solid rgba(0,0,0,.15)', color: '#111', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>
+                  Kontakta oss
+                </a>
+              </div>
             </div>
-          </div>
-        </Reveal>
-      </section>
+          </Reveal>
+        </section>
       )}
 
       <style>{`
         @keyframes fadeUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
         @keyframes slideIn { from{opacity:0;transform:scale(1.04)} to{opacity:1;transform:scale(1)} }
         @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .hero-grid { grid-template-columns: 1fr 1fr; }
+        .hero-imgs { display: grid; }
+        .b2b-grid  { grid-template-columns: 1fr 1fr; }
+        .trust-grid { grid-template-columns: repeat(4,1fr); }
+        @media (max-width: 760px) {
+          .hero-grid  { grid-template-columns: 1fr !important; }
+          .hero-imgs  { display: none !important; }
+          .b2b-grid   { grid-template-columns: 1fr !important; }
+          .trust-grid { grid-template-columns: repeat(2,1fr) !important; }
+        }
       `}</style>
     </>
   )
@@ -1058,7 +1219,7 @@ function HomeContent() {
         setCustomer(null)
       }
     })
-    supabase.from('products').select('id,name,brand,list_price,image_url,unit').eq('active', true).order('sort_order').limit(8)
+    supabase.from('products').select('id,name,brand,list_price,image_url,unit').eq('active', true).order('sort_order').limit(12)
       .then(({ data }) => {
         if (data) {
           setProducts(data)
