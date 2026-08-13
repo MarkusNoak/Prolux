@@ -22,7 +22,7 @@ export default function CrmShell({ children }: { children: ReactNode }) {
 
   async function logout() {
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    window.location.href = '/'
   }
 
   return (
