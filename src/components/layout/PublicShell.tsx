@@ -36,7 +36,7 @@ const NAV_PUBLIC = [
   { href: '/produkter',  label: 'Kategorier' },
   { href: '/produkter',  label: 'Paket' },
   { href: '/#pro-center', label: 'Pro Center' },
-  { href: '/produkter',  label: 'Guider' },
+  { href: '/guider',     label: 'Guider' },
   { href: '/#om-prolux', label: 'Om Prolux' },
 ]
 
