@@ -1025,7 +1025,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       )}
 
       {/* ── PRO CENTER — full-width dark banner ── */}
-      <section style={{ background: '#0D0F13', position: 'relative', overflow: 'hidden' }}>
+      <section id="pro-center" style={{ background: '#0D0F13', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'grid', gridTemplateColumns: '420px 1fr', alignItems: 'center', minHeight: 360 }} className="b2b-grid">
           {/* Left — image placeholder with product */}
           <div className="b2b-img" style={{ height: '100%', position: 'relative', overflow: 'hidden', minHeight: 320 }}>
@@ -1133,7 +1133,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
 
       {/* ── CTA (not logged in) ── */}
       {!authUser && (
-        <section style={{ background: '#F8F5F0', padding: '64px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
+        <section id="om-prolux" style={{ background: '#F8F5F0', padding: '64px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
           <Reveal>
             <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
               <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px,4vw,44px)', fontWeight: 700, color: '#111', margin: '0 0 12px', lineHeight: 1.1 }}>
