@@ -32,12 +32,12 @@ export function usePublicCart() { return useContext(CartContext) }
 const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
 
 const NAV_PUBLIC = [
-  { href: '/#virtus-pro-center', label: 'Virtus Pro Center' },
-  { href: '/produkter',          label: 'Produkter' },
-  { href: '/#aterforsaljare',    label: 'Bli återförsäljare' },
-  { href: '/#utbildning',        label: 'Bilvårdsutbildning' },
-  { href: '/#om-oss',            label: 'Om oss' },
-  { href: '/#kontakt',           label: 'Kontakta oss' },
+  { href: '/produkter',  label: 'Produkter' },
+  { href: '/produkter',  label: 'Kategorier' },
+  { href: '/produkter',  label: 'Paket' },
+  { href: '/#pro-center', label: 'Pro Center' },
+  { href: '/produkter',  label: 'Guider' },
+  { href: '/#om-prolux', label: 'Om Prolux' },
 ]
 
 
