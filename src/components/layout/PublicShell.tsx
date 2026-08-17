@@ -32,12 +32,11 @@ export function usePublicCart() { return useContext(CartContext) }
 const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
 
 const NAV_PUBLIC = [
-  { href: '/produkter',  label: 'Produkter' },
-  { href: '/produkter',  label: 'Kategorier' },
-  { href: '/produkter',  label: 'Paket' },
-  { href: '/#pro-center', label: 'Pro Center' },
-  { href: '/guider',     label: 'Guider' },
-  { href: '/#om-prolux', label: 'Om Prolux' },
+  { href: '/produkter',    label: 'Exteriör' },
+  { href: '/produkter',    label: 'Produkter' },
+  { href: '/guider',       label: 'Bilvårdsguider' },
+  { href: '/#pro-center',  label: 'Bli Återförsäljare' },
+  { href: '/om-oss',       label: 'Om Oss' },
 ]
 
 
@@ -528,9 +527,11 @@ export function PublicShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* ── Footer ─────────────────────────────────────────── */}
-      <footer id="kontakt" style={{ background: '#111', color: '#fff', padding: '60px 24px 40px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40, marginBottom: 56 }}>
+      <footer id="kontakt" style={{ background: '#0D0F13', color: '#fff', padding: '64px 24px 32px' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 40, marginBottom: 52 }}>
+
+            {/* Col 1 — Brand */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <Image src="/logo-mark.svg" alt="Prolux Shine" width={22} height={30} style={{ display: 'block' }} />
@@ -539,42 +540,52 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   <span style={{ fontFamily: 'var(--font-sans)', fontSize: 6.5, fontWeight: 700, letterSpacing: '.45em', color: '#E8B84B', textTransform: 'uppercase' }}>Shine</span>
                 </div>
               </div>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', lineHeight: 1.7, maxWidth: 220 }}>
-                Premium bilvårdsprodukter för professionella — distributör av Virtus & Frescura i Sverige.
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.45)', lineHeight: 1.75, maxWidth: 240, marginBottom: 24 }}>
+                Exklusiv distributör för premium bilvårdssystem i Norden. Vi levererar prestanda och resultat till professionella användare.
               </p>
+              <div style={{ display: 'flex', gap: 14 }}>
+                {['IG', 'FB', 'YT'].map(s => (
+                  <span key={s} style={{ fontSize: 11, color: 'rgba(255,255,255,.3)', fontWeight: 700, cursor: 'pointer' }}>{s}</span>
+                ))}
+              </div>
             </div>
+
+            {/* Col 2 — Produkter */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 16 }}>Produkter</div>
-              {['Tvätt & Rengöring', 'Vax & Polish', 'Fälgvård', 'Exteriör', 'Interiör', 'Avfettning'].map(c => (
-                <Link key={c} href="/produkter" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', textDecoration: 'none', marginBottom: 10 }}>{c}</Link>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Produkter</div>
+              {['Exteriör rengöring', 'Interiörvård', 'Polermedel & Trissor', 'Keramiskt Lackskydd', 'Paketerbjudanden'].map(c => (
+                <Link key={c} href="/produkter" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.45)', textDecoration: 'none', marginBottom: 11, lineHeight: 1.4 }}>{c}</Link>
               ))}
             </div>
+
+            {/* Col 3 — Kundtjänst */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 16 }}>Kundportal</div>
-              {authUser ? (
-                <>
-                  <button onClick={() => { sessionStorage.setItem('scrollToPortal', '1'); window.location.pathname === '/' ? (() => { const el = document.getElementById('min-portal'); el ? el.scrollIntoView({ behavior: 'smooth' }) : null })() : (window.location.href = '/') }} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Min portal</button>
-                  <button onClick={() => setCartOpen(true)} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Varukorg {count > 0 && `(${count})`}</button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => openLogin()} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10, fontFamily: 'inherit' }}>Logga in</button>
-                  <button onClick={() => openLogin()} style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>Bli B2B-kund</button>
-                </>
-              )}
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Kundtjänst</div>
+              {['Kontakta Oss', 'Köpvillkor & Returer', 'Frakt & Leverans', 'Vanliga Frågor (FAQ)', 'Säkerhetsdatablad'].map(c => (
+                <Link key={c} href="/om-oss" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.45)', textDecoration: 'none', marginBottom: 11, lineHeight: 1.4 }}>{c}</Link>
+              ))}
             </div>
+
+            {/* Col 4 — Betalning */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 16 }}>Kontakt</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', lineHeight: 2 }}>
-                <div>info@proluxshine.com</div>
-                <div>08-123 456 78</div>
-                <div style={{ marginTop: 12, color: 'rgba(255,255,255,.3)' }}>Mån–Fre 08–17</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Säkra betalningar</div>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.45)', lineHeight: 1.7, marginBottom: 20 }}>
+                Vi samarbetar med Klarna och Swish för smidiga och säkra transaktioner.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ background: '#fff', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 700, color: '#1B1F2E' }}>Klarna</div>
+                <div style={{ background: '#0A9960', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 700, color: '#fff' }}>Swish</div>
               </div>
             </div>
           </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.3)' }}>© {new Date().getFullYear()} ProLuxShine. Alla rättigheter förbehållna.</p>
-            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.3)' }}>Distributör av Virtus & Frescura Sverige</p>
+
+          {/* Bottom bar */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,.07)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.25)' }}>© {new Date().getFullYear()} ProLux vi Shine Sverige. Alla rättigheter reserverade.</p>
+            <div style={{ display: 'flex', gap: 20 }}>
+              <Link href="/om-oss" style={{ fontSize: 12, color: 'rgba(255,255,255,.25)', textDecoration: 'none' }}>Integritetspolicy</Link>
+              <Link href="/om-oss" style={{ fontSize: 12, color: 'rgba(255,255,255,.25)', textDecoration: 'none' }}>Allmänna villkor</Link>
+            </div>
           </div>
         </div>
       </footer>

@@ -1,13 +1,26 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PublicShell, useLoginModal, usePublicCart } from '@/components/layout/PublicShell'
 import { fmt } from '@/lib/utils'
-import { Search, Package, ShoppingCart, Check, SlidersHorizontal, X, ChevronRight } from 'lucide-react'
+import { Search, Package, ShoppingCart, ChevronRight, Star, SlidersHorizontal, X, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 
-const supabase = createClient()
 const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
-const BADGES: Record<number, string> = { 0: 'Storsäljare', 2: 'Nyhet', 4: 'Nyhet', 6: 'Storsäljare' }
+
+const CAT_ICONS: Record<string, string> = {
+  'Exteriör': '🚗',
+  'Interiör': '🪑',
+  'Vax & Polish': '✨',
+  'Tvätt': '🧴',
+  'Fälg': '⚙️',
+  'Avfettning': '🧹',
+  'Tillbehör': '🔧',
+}
+
+const SORT_OPTIONS = ['Popularast', 'Lägsta pris', 'Högsta pris', 'Namn A–Ö']
+
+const PAGE_SIZE = 8
 
 function ProductsContent() {
   const openLogin = useLoginModal()
@@ -20,7 +33,8 @@ function ProductsContent() {
   const [authUser, setAuthUser]   = useState<any>(null)
   const [customer, setCustomer]   = useState<any>(null)
   const [justAdded, setJustAdded] = useState<string | null>(null)
-  const [filterOpen, setFilterOpen] = useState(false)
+  const [sort, setSort]           = useState('Popularast')
+  const [page, setPage]           = useState(1)
 
   useEffect(() => {
     const sb = createClient()
@@ -28,267 +42,241 @@ function ProductsContent() {
       setAuthUser(session?.user ?? null)
       if (session?.user) {
         sb.from('customers').select('*').eq('auth_user_id', session.user.id).single()
-          .then(({ data }) => { if (data) setCustomer(data) })
+          .then(({ data }) => setCustomer(data))
       }
     })
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_e, session) => {
-      setAuthUser(session?.user ?? null)
-      if (session?.user) {
-        supabase.from('customers').select('*').eq('auth_user_id', session.user.id).single()
-          .then(({ data }) => { if (data) setCustomer(data) })
-      } else setCustomer(null)
-    })
     Promise.all([
-      supabase.from('products').select('id,name,brand,list_price,image_url,unit,category_id,active').eq('active', true).order('sort_order'),
-      supabase.from('categories').select('id,name,sort_order').order('sort_order'),
+      sb.from('products').select('*').order('name'),
+      sb.from('categories').select('*').order('name'),
     ]).then(([{ data: p }, { data: c }]) => {
-      if (p) setProducts(p)
-      if (c) setCategories(c)
+      setProducts(p || [])
+      setCategories(c || [])
       setLoading(false)
     })
-    return () => subscription.unsubscribe()
   }, [])
 
-  function handleAddToCart(p: any) {
-    const pl = customer?.price_list_id || 'Standard'
-    cart.addItem(p, pl)
-    setJustAdded(p.id)
-    setTimeout(() => setJustAdded(null), 1500)
+  const priceList = customer?.price_list_id || 'Standard'
+  const discount  = DISCOUNT[priceList] ?? 0
+
+  function custPrice(listPrice: number) {
+    return Math.round(listPrice * (1 - discount))
   }
 
-  const filtered = products.filter(p => {
-    const matchSearch = !search ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.brand || '').toLowerCase().includes(search.toLowerCase())
+  // Filter
+  let filtered = products.filter(p => {
     const matchCat = selectedCat === 'all' || p.category_id === selectedCat
-    return matchSearch && matchCat
+    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.brand || '').toLowerCase().includes(search.toLowerCase())
+    return matchCat && matchSearch
   })
 
-  const priceList = customer?.price_list_id || 'Standard'
-  const isLoggedInCustomer = authUser && authUser.user_metadata?.role !== 'admin' && authUser.user_metadata?.role !== 'crm'
+  // Sort
+  if (sort === 'Lägsta pris') filtered = [...filtered].sort((a, b) => a.list_price - b.list_price)
+  else if (sort === 'Högsta pris') filtered = [...filtered].sort((a, b) => b.list_price - a.list_price)
+  else if (sort === 'Namn A–Ö') filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  function addToCart(p: any) {
+    cart.addItem({ id: p.id, name: p.name, brand: p.brand, list_price: p.list_price, image_url: p.image_url, unit: p.unit }, priceList)
+    setJustAdded(p.id)
+    setTimeout(() => setJustAdded(null), 1600)
+  }
+
+  function selectCat(id: string) {
+    setSelectedCat(id)
+    setPage(1)
+  }
 
   return (
-    <div style={{ paddingTop: 64, background: '#fff', minHeight: '100vh' }}>
+    <div style={{ background: '#fff', minHeight: '100vh' }}>
+      <style>{`
+        .prod-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; }
+        @media (max-width:1100px) { .prod-grid { grid-template-columns: repeat(3,1fr); } }
+        @media (max-width:720px)  { .prod-grid { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width:480px)  { .prod-grid { grid-template-columns: 1fr 1fr; } }
+      `}</style>
 
-      {/* ── Page header ── */}
-      <div style={{ background: '#F8F5F0', borderBottom: '1px solid rgba(0,0,0,.07)', padding: '40px 24px 36px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          {/* Breadcrumb */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#999', marginBottom: 14 }}>
-            <span style={{ cursor: 'pointer', color: '#555' }} onClick={() => window.location.href = '/'}>Hem</span>
-            <ChevronRight size={12} />
-            <span>Produkter</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: 'clamp(24px,4vw,36px)', fontWeight: 800, color: '#111', letterSpacing: '-.02em' }}>
-                Alla produkter
-              </h1>
-              {isLoggedInCustomer && customer && (
-                <p style={{ margin: '6px 0 0', fontSize: 13, color: '#888' }}>
-                  Dina priser med prislista <strong style={{ color: '#C9971A' }}>{priceList}</strong> — {Math.round((DISCOUNT[priceList] ?? 0) * 100)}% rabatt
-                </p>
-              )}
-            </div>
-            {!isLoggedInCustomer && (
-              <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 22px', borderRadius: 7, background: '#C9971A', color: '#111', fontSize: 13, fontWeight: 800, border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '.06em', flexShrink: 0 }}>
-                <ShoppingCart size={14} /> Logga in för att beställa
-              </button>
-            )}
-          </div>
+      {/* ── HERO ── */}
+      <div style={{ position: 'relative', height: 280, overflow: 'hidden', marginTop: 64 }}>
+        <img
+          src="https://proluxshine.com/wp-content/uploads/2025/11/a7ffd562-5a98-4bc9-86a4-9af4db4d2282.webp"
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }}
+        />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,.72) 0%, rgba(0,0,0,.4) 60%, rgba(0,0,0,.15) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 48px' }}>
+          <h1 style={{ color: '#fff', fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, margin: '0 0 10px', letterSpacing: '-.01em' }}>
+            Alla Produkter
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,.78)', fontSize: 15, maxWidth: 520, margin: 0, lineHeight: 1.6 }}>
+            Professionella bilvårdsprodukter från Frescura, Virtus och Prolux Shine. Allt du behöver för exteriör, interiör och polering.
+          </p>
         </div>
       </div>
 
-      {/* ── Main layout: sidebar + grid ── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 80px', display: 'grid', gridTemplateColumns: '220px 1fr', gap: 32, alignItems: 'start' }} className="products-layout">
+      {/* ── BREADCRUMB ── */}
+      <div style={{ borderBottom: '1px solid #e8e8e8', padding: '12px 48px', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Link href="/" style={{ color: '#888', fontSize: 13, textDecoration: 'none' }}>Hem</Link>
+        <ChevronRight size={12} color="#ccc" />
+        <Link href="/produkter" style={{ color: '#888', fontSize: 13, textDecoration: 'none' }}>Produkter</Link>
+        <ChevronRight size={12} color="#ccc" />
+        <span style={{ color: '#111', fontSize: 13, fontWeight: 600 }}>
+          {selectedCat === 'all' ? 'Alla Produkter' : categories.find(c => c.id === selectedCat)?.name || 'Alla'}
+        </span>
+      </div>
 
-        {/* ── Sidebar ── */}
-        <aside className="products-sidebar" style={{ position: 'sticky', top: 80 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#111', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 14 }}>Kategorier</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[{ id: 'all', name: 'Alla produkter' }, ...categories].map(cat => {
-              const count = cat.id === 'all' ? products.length : products.filter(p => p.category_id === cat.id).length
-              return (
-                <button key={cat.id} onClick={() => setSelectedCat(cat.id)} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '9px 12px', borderRadius: 7, border: 'none', textAlign: 'left',
-                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: selectedCat === cat.id ? 700 : 400,
-                  background: selectedCat === cat.id ? '#111' : 'transparent',
-                  color: selectedCat === cat.id ? '#fff' : '#444',
-                  transition: 'all .12s',
-                }}>
-                  <span>{cat.name}</span>
-                  <span style={{ fontSize: 11, opacity: 0.55 }}>{count}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Varumärken */}
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#111', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 14, marginTop: 28 }}>Varumärken</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {['Virtus', 'Frescura'].map(brand => (
-              <label key={brand} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#444', cursor: 'pointer' }}>
-                <input type="checkbox" onChange={e => {
-                  if (e.target.checked) setSearch(brand)
-                  else if (search === brand) setSearch('')
-                }} checked={search === brand} style={{ accentColor: '#C9971A' }} />
-                {brand}
-              </label>
-            ))}
-          </div>
-
-          {isLoggedInCustomer && customer && (
-            <div style={{ marginTop: 28, padding: '14px 16px', background: '#FEF9EE', border: '1px solid rgba(201,151,26,.2)', borderRadius: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 4 }}>Din prislista</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#111' }}>Nivå {priceList}</div>
-              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{Math.round((DISCOUNT[priceList] ?? 0) * 100)}% rabatt</div>
-            </div>
-          )}
-        </aside>
-
-        {/* ── Right side ── */}
-        <div>
-          {/* Toolbar */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 24, alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#aaa' }} />
-              <input
-                placeholder="Sök produkt eller varumärke..."
-                value={search} onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px 10px 36px', background: '#fff', border: '1.5px solid #e5e5e5', borderRadius: 8, color: '#111', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-              {search && (
-                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: 2 }}>
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-            {/* Mobile filter toggle */}
-            <button onClick={() => setFilterOpen(o => !o)} className="filter-btn" style={{ display: 'none', alignItems: 'center', gap: 6, padding: '10px 14px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 }}>
-              <SlidersHorizontal size={14} /> Filter
+      {/* ── CATEGORY ICONS ── */}
+      <div style={{ borderBottom: '1px solid #e8e8e8', padding: '20px 48px', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', gap: 24, minWidth: 'max-content' }}>
+          {[{ id: 'all', name: 'Alla', emoji: '🏪' }, ...categories.map(c => ({ id: c.id, name: c.name, emoji: CAT_ICONS[c.name] || '📦' }))].map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => selectCat(cat.id)}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', minWidth: 72 }}
+            >
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: selectedCat === cat.id ? '#E8B84B' : '#f4f4f4',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 26, border: selectedCat === cat.id ? '2px solid #E8B84B' : '2px solid transparent',
+                transition: 'all .2s',
+              }}>
+                {cat.emoji}
+              </div>
+              <span style={{ fontSize: 11, color: selectedCat === cat.id ? '#111' : '#555', fontWeight: selectedCat === cat.id ? 700 : 400, textAlign: 'center', lineHeight: 1.3 }}>
+                {cat.name}
+              </span>
             </button>
-            <div style={{ fontSize: 13, color: '#999', flexShrink: 0 }}>
-              {loading ? '…' : `${filtered.length} produkter`}
-            </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          {/* Mobile category strip */}
-          <div className="mobile-cats" style={{ display: 'none', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
-            {[{ id: 'all', name: 'Alla' }, ...categories].map(cat => (
-              <button key={cat.id} onClick={() => setSelectedCat(cat.id)} style={{
-                padding: '6px 14px', borderRadius: 20, border: '1.5px solid', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
-                background: selectedCat === cat.id ? '#111' : '#fff',
-                borderColor: selectedCat === cat.id ? '#111' : '#e5e5e5',
-                color: selectedCat === cat.id ? '#fff' : '#555',
-                fontWeight: selectedCat === cat.id ? 700 : 400,
-              }}>{cat.name}</button>
-            ))}
-          </div>
+      {/* ── TOOLBAR: count + search + sort ── */}
+      <div style={{ padding: '16px 48px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', borderBottom: '1px solid #e8e8e8' }}>
+        <span style={{ fontSize: 14, color: '#555', flexShrink: 0 }}>
+          {loading ? '...' : `${filtered.length} produkter`}
+        </span>
+        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#aaa' }} />
+          <input
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1) }}
+            placeholder="Sök produkt..."
+            style={{ width: '100%', padding: '8px 36px 8px 36px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 14, color: '#111', background: '#fff', outline: 'none', boxSizing: 'border-box' }}
+          />
+          {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 16, lineHeight: 1 }}>×</button>}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, color: '#555' }}>Sortera:</span>
+          <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 14, color: '#111', background: '#fff', cursor: 'pointer', outline: 'none' }}>
+            {SORT_OPTIONS.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
 
-          {/* Grid */}
-          {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 16 }}>
-              {[1,2,3,4,5,6].map(i => (
-                <div key={i} style={{ background: '#fff', border: '1px solid #eee', borderRadius: 10, overflow: 'hidden' }}>
-                  <div style={{ height: 200, background: '#F5F3EE', animation: 'pulse 1.5s ease infinite' }} />
-                  <div style={{ padding: 16 }}>
-                    <div style={{ height: 10, width: '40%', background: '#F5F3EE', borderRadius: 4, marginBottom: 8 }} />
-                    <div style={{ height: 14, width: '80%', background: '#F5F3EE', borderRadius: 4 }} />
+      {/* ── PRODUCT GRID ── */}
+      {loading ? (
+        <div style={{ padding: '80px 48px', textAlign: 'center', color: '#aaa' }}>Laddar produkter...</div>
+      ) : paged.length === 0 ? (
+        <div style={{ padding: '80px 48px', textAlign: 'center', color: '#aaa' }}>
+          <Package size={48} style={{ marginBottom: 16 }} />
+          <p>Inga produkter hittades.</p>
+        </div>
+      ) : (
+        <div className="prod-grid" style={{ padding: '0 40px' }}>
+          {paged.map((p, i) => {
+            const price = custPrice(p.list_price)
+            const added = justAdded === p.id
+            return (
+              <div key={p.id} style={{ border: '1px solid #e8e8e8', borderRadius: 0, background: '#fff', display: 'flex', flexDirection: 'column', margin: '-1px 0 0 -1px' }}>
+                <Link href={`/produkter/${p.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                  <div style={{ background: '#f8f8f8', aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative' }}>
+                    {p.image_url ? (
+                      <img src={p.image_url} alt={p.name} style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain' }} />
+                    ) : (
+                      <Package size={64} color="#ddd" strokeWidth={1} />
+                    )}
+                    {(i === 0 || i === 3) && (
+                      <span style={{ position: 'absolute', top: 12, left: 12, background: '#E8B84B', color: '#111', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                        Storsäljare
+                      </span>
+                    )}
+                    {i === 2 && (
+                      <span style={{ position: 'absolute', top: 12, left: 12, background: '#4CAF7D', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                        Nyhet
+                      </span>
+                    )}
+                  </div>
+                </Link>
+                <div style={{ padding: '14px 16px 16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.08em', margin: '0 0 4px' }}>
+                    {p.brand || 'ProLuxShine'}
+                  </p>
+                  <Link href={`/produkter/${p.id}`} style={{ textDecoration: 'none' }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: '0 0 12px', lineHeight: 1.3 }}>
+                      {p.name}
+                    </p>
+                  </Link>
+                  <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{fmt(price)} kr</div>
+                      {discount > 0 && (
+                        <div style={{ fontSize: 11, color: '#aaa', textDecoration: 'line-through' }}>{fmt(p.list_price)} kr</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => authUser ? addToCart(p) : openLogin()}
+                      style={{ width: 38, height: 38, borderRadius: '50%', background: added ? '#4CAF7D' : '#E8B84B', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s', flexShrink: 0 }}
+                    >
+                      <ShoppingCart size={16} color="#111" strokeWidth={2.5} />
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#ccc' }}>
-              <Package size={48} strokeWidth={1} style={{ margin: '0 auto 16px', display: 'block' }} />
-              <p style={{ fontSize: 15, margin: 0, color: '#999' }}>Inga produkter matchar sökningen</p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(195px,1fr))', gap: 16 }}>
-              {filtered.map((p, i) => {
-                const unitPrice = isLoggedInCustomer && customer
-                  ? Math.round(p.list_price * (1 - (DISCOUNT[priceList] ?? 0)))
-                  : Math.round(p.list_price * 0.6)
-                const added = justAdded === p.id
-                const badge = BADGES[i % 8]
-                return (
-                  <div key={p.id} style={{ background: '#fff', border: '1px solid #eee', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'box-shadow .2s, border-color .2s', position: 'relative', cursor: 'pointer' }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.boxShadow = '0 8px 28px rgba(0,0,0,.09)'; el.style.borderColor = '#C9971A' }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.boxShadow = 'none'; el.style.borderColor = '#eee' }}
-                  >
-                    {badge && (
-                      <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 2, background: badge === 'Nyhet' ? '#111' : '#C9971A', color: badge === 'Nyhet' ? '#fff' : '#111', fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 4, letterSpacing: '.07em', textTransform: 'uppercase' }}>
-                        {badge}
-                      </div>
-                    )}
-                    <div style={{ height: 200, background: '#F5F2ED', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 16 }}>
-                      {p.image_url
-                        ? <img src={p.image_url} alt={p.name} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
-                        : <Package size={52} color="#ddd" strokeWidth={1} />
-                      }
-                    </div>
-                    <div style={{ padding: '12px 14px 14px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ fontSize: 10, color: '#bbb', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 3 }}>{p.brand}</div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111', flex: 1, lineHeight: 1.35, marginBottom: 12 }}>{p.name}</div>
-                      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
-                        <div>
-                          <div style={{ fontSize: 16, fontWeight: 800, color: '#111' }}>{fmt(unitPrice)} kr</div>
-                          <div style={{ fontSize: 10, color: '#aaa', marginTop: 1 }}>
-                            {isLoggedInCustomer && customer ? `${p.unit} · prislista ${priceList}` : 'exkl. moms'}
-                          </div>
-                        </div>
-                        {isLoggedInCustomer ? (
-                          <button onClick={() => handleAddToCart(p)}
-                            style={{ width: 36, height: 36, borderRadius: '50%', background: added ? '#4CAF7D' : '#C9971A', color: '#111', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background .15s' }}>
-                            {added ? <Check size={15} color="#fff" /> : <ShoppingCart size={14} />}
-                          </button>
-                        ) : (
-                          <button onClick={openLogin}
-                            style={{ width: 36, height: 36, borderRadius: '50%', background: '#C9971A', color: '#111', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <ShoppingCart size={14} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* B2B prompt */}
-          {!loading && filtered.length > 0 && !isLoggedInCustomer && (
-            <div style={{ marginTop: 40, padding: '24px 28px', background: '#0D0F13', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#F0EDE8', marginBottom: 4 }}>Är du B2B-kund?</div>
-                <div style={{ fontSize: 13, color: 'rgba(240,237,232,.5)' }}>Logga in för att se dina avtalspriser och lägga beställningar.</div>
               </div>
-              <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 7, background: '#C9971A', color: '#111', fontSize: 13, fontWeight: 800, border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '.06em', flexShrink: 0 }}>
-                Logga in på kundportalen
-              </button>
-            </div>
-          )}
+            )
+          })}
         </div>
-      </div>
+      )}
 
-      <style>{`
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .products-layout  { grid-template-columns: 220px 1fr; }
-        .products-sidebar { display: block; }
-        .mobile-cats      { display: none; }
-        .filter-btn       { display: none; }
-        @media (max-width: 720px) {
-          .products-layout  { grid-template-columns: 1fr !important; }
-          .products-sidebar { display: none !important; }
-          .mobile-cats      { display: flex !important; }
-          .filter-btn       { display: flex !important; }
-        }
-      `}</style>
+      {/* ── PAGINATION ── */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, padding: '40px 48px' }}>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid #e0e0e0', background: '#fff', cursor: page === 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: page === 1 ? .4 : 1 }}>
+            <ChevronLeft size={16} color="#555" />
+          </button>
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button key={i} onClick={() => setPage(i + 1)} style={{ width: 36, height: 36, borderRadius: '50%', border: page === i + 1 ? 'none' : '1px solid #e0e0e0', background: page === i + 1 ? '#E8B84B' : '#fff', color: page === i + 1 ? '#111' : '#555', fontWeight: page === i + 1 ? 700 : 400, fontSize: 14, cursor: 'pointer' }}>
+              {i + 1}
+            </button>
+          ))}
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid #e0e0e0', background: '#fff', cursor: page === totalPages ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: page === totalPages ? .4 : 1 }}>
+            <ChevronRight size={16} color="#555" />
+          </button>
+        </div>
+      )}
+
+      {/* ── B2B PROMPT ── */}
+      {!customer && (
+        <div style={{ margin: '0 40px 48px', background: '#0D0F13', borderRadius: 12, padding: '36px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+          <div>
+            <p style={{ color: '#E8B84B', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 6 }}>B2B-partner</p>
+            <h3 style={{ color: '#F0EDE8', fontSize: 20, fontWeight: 700, margin: '0 0 6px' }}>Handla till grossistpris</h3>
+            <p style={{ color: '#9BA0AB', fontSize: 14, margin: 0 }}>Registrera dig som företagskund och få upp till 40% rabatt.</p>
+          </div>
+          <button onClick={openLogin} style={{ padding: '13px 28px', background: '#E8B84B', color: '#0F1115', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+            Bli B2B-kund
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-export default function PublicProductsPage() {
-  return <PublicShell><ProductsContent /></PublicShell>
+export default function ProdukterPage() {
+  return (
+    <PublicShell>
+      <ProductsContent />
+    </PublicShell>
+  )
 }
