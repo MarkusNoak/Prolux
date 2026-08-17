@@ -361,12 +361,12 @@ export function PublicShell({ children }: { children: ReactNode }) {
         {/* Mobile: cart icon + hamburger */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           {isCustomer && count > 0 && (
-            <button onClick={() => setCartOpen(true)} className="pub-mobile-btn" style={{ position: 'relative', padding: 8, background: 'transparent', border: 'none', color: '#111', cursor: 'pointer', display: 'flex' }}>
+            <button onClick={() => setCartOpen(true)} className="pub-mobile-btn" style={{ position: 'relative', padding: 8, background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex' }}>
               <ShoppingCart size={22} />
-              <span style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, borderRadius: '50%', background: '#C9971A', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{count}</span>
+              <span style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, borderRadius: '50%', background: '#E8B84B', color: '#111', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{count}</span>
             </button>
           )}
-          <button onClick={() => setMenuOpen(o => !o)} className="pub-mobile-btn" aria-label="Meny" style={{ padding: 8, background: 'transparent', border: 'none', color: '#111', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <button onClick={() => setMenuOpen(o => !o)} className="pub-mobile-btn" aria-label="Meny" style={{ padding: 8, background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
@@ -374,31 +374,36 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div style={{ position: 'fixed', top: 64, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,.98)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', zIndex: 199, padding: '24px 20px 40px', display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeIn .15s ease' }}>
+        <div style={{ position: 'fixed', top: 64, left: 0, right: 0, bottom: 0, background: 'rgba(13,15,20,.97)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', zIndex: 199, padding: '24px 20px 40px', display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeIn .15s ease' }}>
           {NAV_PUBLIC.map(({ href, label }) => (
-            <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderRadius: 10, background: '#F5F3EE', border: '1px solid rgba(0,0,0,.06)', color: '#111', fontSize: 16, fontWeight: 500, textDecoration: 'none' }}>
-              {label} <ChevronRight size={16} color="#999" />
+            <Link key={href} href={href} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderRadius: 10, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.08)', color: '#F0EDE8', fontSize: 16, fontWeight: 500, textDecoration: 'none' }}>
+              {label} <ChevronRight size={16} color="rgba(255,255,255,.4)" />
             </Link>
           ))}
           <div style={{ flex: 1 }} />
           {authUser ? (
             <>
               {isCustomer && (
-                <button onClick={() => { setCartOpen(true); setMenuOpen(false) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 20px', borderRadius: 10, background: '#F5F3EE', border: '1px solid rgba(0,0,0,.08)', color: '#111', fontSize: 16, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
+                <button onClick={() => { setCartOpen(true); setMenuOpen(false) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 20px', borderRadius: 10, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.1)', color: '#F0EDE8', fontSize: 16, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
                   <ShoppingCart size={17} /> Varukorg {count > 0 && `(${count})`}
                 </button>
               )}
-              <button onClick={() => { goToPortal(); setMenuOpen(false) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 20px', borderRadius: 10, background: '#111', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', width: '100%' }}>
+              <button onClick={() => { goToPortal(); setMenuOpen(false) }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 20px', borderRadius: 10, background: '#E8B84B', border: 'none', color: '#0D0900', fontSize: 16, fontWeight: 700, cursor: 'pointer', width: '100%' }}>
                 <Package size={17} /> Min portal
               </button>
-              <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 20px', borderRadius: 10, background: 'transparent', border: '1px solid rgba(0,0,0,.1)', color: '#E05252', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', marginTop: 4 }}>
+              <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 20px', borderRadius: 10, background: 'transparent', border: '1px solid rgba(224,82,82,.3)', color: '#E05252', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%', marginTop: 4 }}>
                 <LogOut size={15} /> Logga ut
               </button>
             </>
           ) : (
-            <button onClick={() => openLogin()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', borderRadius: 10, background: '#111', border: 'none', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', width: '100%' }}>
-              Logga in på kundportalen
-            </button>
+            <>
+              <button onClick={() => openLogin(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', borderRadius: 10, background: '#E8B84B', border: 'none', color: '#0D0900', fontSize: 16, fontWeight: 700, cursor: 'pointer', width: '100%' }}>
+                Skapa Konto
+              </button>
+              <button onClick={() => openLogin()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 20px', borderRadius: 10, background: 'transparent', border: '1px solid rgba(255,255,255,.15)', color: 'rgba(255,255,255,.8)', fontSize: 15, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
+                Logga in
+              </button>
+            </>
           )}
         </div>
       )}
