@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -11,7 +12,6 @@ import {
 } from 'lucide-react'
 import type { User as SupaUser } from '@supabase/supabase-js'
 
-const supabase = createClient()
 const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
 
 const CATEGORIES = [
@@ -71,6 +71,7 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
   const disc      = DISCOUNT[priceList] ?? 0
 
   useEffect(() => {
+    const supabase = createClient()
     Promise.all([
       supabase.from('customers').select('*').eq('email', user.email!).maybeSingle(),
       supabase.from('orders')
@@ -97,6 +98,7 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
     e.preventDefault()
     setAcctSaving(true)
     if (customer?.id) {
+      const supabase = createClient()
       await supabase.from('customers').update({ contact_name: acctName, phone: acctPhone, address: acctAddr }).eq('id', customer.id)
     }
     setAcctSaving(false); setAcctSaved(true)
@@ -106,6 +108,7 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
   async function changePassword(e: React.FormEvent) {
     e.preventDefault()
     setPwSaving(true); setPwMsg('')
+    const supabase = createClient()
     const { error } = await supabase.auth.updateUser({ password: pwNew })
     setPwSaving(false)
     if (error) setPwMsg('Kunde inte byta lösenord: ' + error.message)
@@ -1268,13 +1271,13 @@ function HomeContent() {
     const { data: { subscription } } = sb.auth.onAuthStateChange((_e, session) => {
       setAuthUser(session?.user ?? null)
       if (session?.user) {
-        supabase.from('customers').select('*').eq('auth_user_id', session.user.id).single()
+        sb.from('customers').select('*').eq('auth_user_id', session.user.id).single()
           .then(({ data }) => { if (data) setCustomer(data) })
       } else {
         setCustomer(null)
       }
     })
-    supabase.from('products').select('id,name,brand,list_price,image_url,unit').eq('active', true).order('sort_order').limit(12)
+    sb.from('products').select('id,name,brand,list_price,image_url,unit').eq('active', true).order('sort_order').limit(12)
       .then(({ data }) => {
         if (data) {
           setProducts(data)
