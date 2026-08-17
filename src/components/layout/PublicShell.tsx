@@ -32,11 +32,12 @@ export function usePublicCart() { return useContext(CartContext) }
 const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
 
 const NAV_PUBLIC = [
-  { href: '/produkter',    label: 'Exteriör' },
+  { href: '/#pro-center',  label: 'Virtus Pro Center' },
   { href: '/produkter',    label: 'Produkter' },
-  { href: '/guider',       label: 'Bilvårdsguider' },
   { href: '/#pro-center',  label: 'Bli Återförsäljare' },
+  { href: '/guider',       label: 'Bilvårdsutbildning' },
   { href: '/om-oss',       label: 'Om Oss' },
+  { href: '/om-oss',       label: 'Kontakta Oss' },
 ]
 
 
@@ -237,7 +238,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
   const displayName = customer?.contact_name || authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'Kund'
   const isCustomer = authUser && role !== 'admin' && role !== 'crm'
 
-  const navBg = scrolled ? 'rgba(255,255,255,.96)' : 'rgba(255,255,255,.85)'
+  const navBg = scrolled ? 'rgba(13,15,20,.97)' : 'rgba(13,15,20,.92)'
 
   const cartCtx: CartCtx = { items: cartItems, addItem, removeItem, updateQty, clearCart, count, subtotal, openCart: () => setCartOpen(true) }
 
@@ -259,23 +260,28 @@ export function PublicShell({ children }: { children: ReactNode }) {
         boxShadow: scrolled ? '0 2px 20px rgba(0,0,0,.06)' : 'none',
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-          <Image src="/logo-mark.svg" alt="Prolux Shine" width={24} height={33} priority style={{ display: 'block' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, gap: 1 }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 15, fontWeight: 400, letterSpacing: '.14em', color: '#111', textTransform: 'uppercase' }}>Prolux</span>
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 7, fontWeight: 700, letterSpacing: '.45em', color: '#C9971A', textTransform: 'uppercase' }}>Shine</span>
+          <Image src="/logo-mark.svg" alt="Prolux Shine" width={36} height={48} priority style={{ display: 'block' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, gap: 2 }}>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 700, letterSpacing: '.1em', color: '#fff', textTransform: 'uppercase' }}>Prolux Shine</span>
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 500, letterSpacing: '.18em', color: 'rgba(255,255,255,.45)', textTransform: 'uppercase' }}>Bilvårdsprodukter & Drömmar</span>
+            <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+              <span style={{ fontSize: 9, fontWeight: 800, color: '#E8B84B', letterSpacing: '.06em', border: '1px solid rgba(232,184,75,.4)', padding: '1px 5px', borderRadius: 3 }}>FRESCURA</span>
+              <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,.5)', letterSpacing: '.06em', border: '1px solid rgba(255,255,255,.2)', padding: '1px 5px', borderRadius: 3 }}>VIRTUS</span>
+            </div>
           </div>
         </Link>
 
         {/* Desktop nav */}
-        <nav className="pub-desktop-nav" style={{ display: 'none', gap: 0, flex: 1, alignItems: 'center', marginLeft: 12 }}>
+        <nav className="pub-desktop-nav" style={{ display: 'none', gap: 0, flex: 1, alignItems: 'center', marginLeft: 24 }}>
           {NAV_PUBLIC.map(({ href, label }) => {
             const active = !href.includes('#') && href !== '/' && pathname.startsWith(href)
             return (
-              <Link key={href} href={href} style={{
-                padding: '7px 11px', borderRadius: 7,
-                color: active ? '#111' : '#444',
-                fontSize: 13, fontWeight: active ? 600 : 400,
+              <Link key={label} href={href} style={{
+                padding: '7px 12px',
+                color: active ? '#E8B84B' : 'rgba(255,255,255,.78)',
+                fontSize: 13, fontWeight: active ? 700 : 600,
                 textDecoration: 'none', transition: 'color .15s', whiteSpace: 'nowrap',
+                letterSpacing: '.04em', textTransform: 'uppercase',
               }}>
                 {label}
               </Link>
@@ -283,23 +289,23 @@ export function PublicShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="pub-desktop-right" style={{ display: 'none', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+        <div className="pub-desktop-right" style={{ display: 'none', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
           {!authLoading && (
             authUser ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {/* Min portal button for customers */}
                 {isCustomer && (
-                  <button onClick={() => { sessionStorage.setItem('scrollToPortal', '1'); window.location.pathname === '/' ? (() => { const el = document.getElementById('min-portal'); el ? el.scrollIntoView({ behavior: 'smooth' }) : null })() : (window.location.href = '/') }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: '#F5F3EE', border: 'none', cursor: 'pointer', color: '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
+                  <button onClick={() => { sessionStorage.setItem('scrollToPortal', '1'); window.location.pathname === '/' ? (() => { const el = document.getElementById('min-portal'); el ? el.scrollIntoView({ behavior: 'smooth' }) : null })() : (window.location.href = '/') }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, background: 'rgba(255,255,255,.1)', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
                     <Package size={15} /> Min portal
                   </button>
                 )}
                 {/* Cart button for customers */}
                 {isCustomer && (
-                  <button onClick={() => setCartOpen(true)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8, background: count > 0 ? '#111' : '#F5F3EE', border: 'none', cursor: 'pointer', color: count > 0 ? '#fff' : '#555', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
+                  <button onClick={() => setCartOpen(true)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 7, padding: '8px 16px', borderRadius: 8, background: count > 0 ? '#E8B84B' : 'rgba(255,255,255,.1)', border: 'none', cursor: 'pointer', color: count > 0 ? '#111' : '#fff', fontSize: 13, fontWeight: 600, transition: 'all .2s' }}>
                     <ShoppingCart size={16} />
                     {count > 0 ? `${count} vara${count > 1 ? 'r' : ''}` : 'Varukorg'}
                     {count > 0 && (
-                      <span style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#C9971A', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: '#fff', color: '#111', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {count}
                       </span>
                     )}
@@ -308,12 +314,12 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
                 {/* User dropdown */}
                 <div style={{ position: 'relative' }}>
-                  <button onClick={() => setUserDropOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px 7px 10px', borderRadius: 8, background: '#111', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
-                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#E8B84B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#111', flexShrink: 0 }}>
+                  <button onClick={() => setUserDropOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px 7px 10px', borderRadius: 8, background: '#E8B84B', color: '#0D0900', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(0,0,0,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#111', flexShrink: 0 }}>
                       {displayName[0]?.toUpperCase()}
                     </div>
                     {displayName}
-                    {priceList && priceList !== 'Standard' && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: '#E8B84B22', color: '#C9971A', fontWeight: 700 }}>{priceList}</span>}
+                    {priceList && priceList !== 'Standard' && <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: 'rgba(0,0,0,.15)', color: '#111', fontWeight: 700 }}>{priceList}</span>}
                     <ChevronDown size={13} />
                   </button>
                   {userDropOpen && (
@@ -341,11 +347,11 @@ export function PublicShell({ children }: { children: ReactNode }) {
               </div>
             ) : (
               <>
-                <button onClick={() => openLogin(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', borderRadius: 8, background: '#E8B84B', color: '#0D0900', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                  Skapa konto
+                <button onClick={() => openLogin(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 22px', borderRadius: 24, background: '#E8B84B', color: '#0D0900', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', letterSpacing: '.04em' }}>
+                  Skapa Konto
                 </button>
-                <button onClick={() => openLogin()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', borderRadius: 8, background: 'transparent', color: '#111', fontSize: 13, fontWeight: 600, border: '1.5px solid rgba(0,0,0,.15)', cursor: 'pointer' }}>
-                  Logga in
+                <button onClick={() => openLogin()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 8, background: 'transparent', color: 'rgba(255,255,255,.8)', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                  Logga In
                 </button>
               </>
             )

@@ -378,32 +378,36 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
 /* ─── Hero Slider ─────────────────────────────────────── */
 const HERO_SLIDES = [
   {
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/a7ffd562-5a98-4bc9-86a4-9af4db4d2282.webp',
+    bg: 'linear-gradient(135deg, #0a0c10 0%, #1a1400 50%, #0d0f13 100%)',
     label: 'Tvätt & Rengöring',
     heading: 'Professionell\nbilvård för proffs',
     sub: 'Premium B2B-produkter för detailingföretag, biltvättar och verkstäder.',
+    catName: 'Tvätt',
   },
   {
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/IMG_3023.webp',
+    bg: 'linear-gradient(135deg, #0a0c10 0%, #0d1a0a 50%, #0d0f13 100%)',
     label: 'Polering & Finish',
     heading: 'Glans som\nhåller längre',
     sub: 'Keramiska beläggningar och polermedel med professionell finish.',
+    catName: 'Vax & Polish',
   },
   {
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/80690ec5-0bae-4ee3-803e-6d263b1ef2d5.webp',
+    bg: 'linear-gradient(135deg, #0a0c10 0%, #0a0d1a 50%, #0d0f13 100%)',
     label: 'Interiör',
     heading: 'Interiör som\nimponerar',
     sub: 'Professionella rengöringsmedel för kupé, säten och instrumentbräda.',
+    catName: 'Interiör',
   },
   {
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/575e0484-9b37-4d05-8e8a-6803b7e1a38b.webp',
+    bg: 'linear-gradient(135deg, #0a0c10 0%, #1a0a0a 50%, #0d0f13 100%)',
     label: 'Fälg & Exteriör',
     heading: 'Rena fälgar.\nKlara resultat.',
     sub: 'Starka rengöringsmedel formulerade för tunga jobb.',
+    catName: 'Fälg',
   },
 ]
 
-function HeroSlider({ openLogin, loggedIn }: { openLogin: () => void; loggedIn?: boolean }) {
+function HeroSlider({ openLogin, loggedIn, productImages }: { openLogin: () => void; loggedIn?: boolean; productImages: Array<{ img: string; catName: string }> }) {
   const [current, setCurrent] = useState(0)
   const [fading, setFading] = useState(false)
   const total = HERO_SLIDES.length
@@ -420,40 +424,38 @@ function HeroSlider({ openLogin, loggedIn }: { openLogin: () => void; loggedIn?:
   }, [total])
 
   const slide = HERO_SLIDES[current]
+  const slideImg = productImages.find(p => p.catName === slide.catName)?.img || productImages[current % productImages.length]?.img
 
   return (
     <section style={{ position: 'relative', height: 'clamp(520px, 68vh, 780px)', overflow: 'hidden', marginTop: 64 }}>
 
-      {/* Background images — crossfade */}
+      {/* Gradient backgrounds — crossfade */}
       {HERO_SLIDES.map((s, i) => (
-        <img
+        <div
           key={i}
-          src={s.img}
-          alt=""
           style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
+            position: 'absolute', inset: 0,
+            background: s.bg,
             opacity: i === current ? (fading ? 0 : 1) : 0,
             transition: 'opacity 0.4s ease',
           }}
         />
       ))}
 
-      {/* Dark overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.40) 55%, rgba(0,0,0,.15) 100%)' }} />
-      {/* Bottom fade into page */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100, background: 'linear-gradient(to top, #0F1115, transparent)' }} />
+      {/* Bottom fade */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100, background: 'linear-gradient(to top, #0F1115, transparent)', zIndex: 2 }} />
 
-      {/* Content */}
-      <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 32px', width: '100%' }}>
-          <div key={current} style={{ maxWidth: 560, animation: 'fadeUp .45s ease' }}>
+      {/* Content — split: text left, product image right */}
+      <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center', zIndex: 3 }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 48px', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: 40 }} className="hero-split">
+          <div key={current} style={{ animation: 'fadeUp .45s ease' }}>
             <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: '#E8B84B', textTransform: 'uppercase', letterSpacing: '.22em' }}>
               {slide.label}
             </p>
             <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(36px, 5.2vw, 68px)', fontWeight: 700, color: '#fff', margin: '0 0 18px', lineHeight: 1.08, letterSpacing: '-.01em', whiteSpace: 'pre-line' }}>
               {slide.heading}
             </h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,.78)', lineHeight: 1.7, margin: '0 0 34px', maxWidth: 400 }}>
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,.72)', lineHeight: 1.7, margin: '0 0 34px', maxWidth: 400 }}>
               {slide.sub}
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -461,12 +463,22 @@ function HeroSlider({ openLogin, loggedIn }: { openLogin: () => void; loggedIn?:
                 Utforska produkter <ArrowRight size={16} />
               </Link>
               {!loggedIn && (
-                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', borderRadius: 8, background: 'transparent', border: '2px solid rgba(255,255,255,.5)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', borderRadius: 8, background: 'transparent', border: '2px solid rgba(255,255,255,.4)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
                   Logga in
                 </button>
               )}
             </div>
           </div>
+          {/* Product image right */}
+          {slideImg && (
+            <div key={`img-${current}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', animation: 'fadeUp .55s ease 100ms both' }}>
+              <img
+                src={slideImg}
+                alt={slide.label}
+                style={{ maxHeight: 380, maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 24px 60px rgba(0,0,0,.6))' }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -909,7 +921,17 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       </div>
 
       {/* ── HERO — image slider ── */}
-      <HeroSlider openLogin={openLogin} loggedIn={!!authUser} />
+      <HeroSlider
+        openLogin={openLogin}
+        loggedIn={!!authUser}
+        productImages={HERO_SLIDES.map(s => ({
+          catName: s.catName,
+          img: products.find(p =>
+            (p.category_name || '').toLowerCase().includes(s.catName.toLowerCase()) ||
+            (p.name || '').toLowerCase().includes(s.catName.toLowerCase())
+          )?.image_url || products[HERO_SLIDES.indexOf(s) % Math.max(1, products.length)]?.image_url || '',
+        }))}
+      />
 
       {/* ── TRUST STRIP ── */}
       <section style={{ background: '#F8F5F0', borderBottom: '1px solid rgba(0,0,0,.07)' }}>
@@ -928,26 +950,46 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         </div>
       </section>
 
-      {/* ── CATEGORIES — dark overlay photo cards ── */}
-      <section style={{ background: '#fff', padding: '56px 24px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 10 }} className="cat-grid">
-            {CAT_CARDS.map((cat, i) => (
-              <Reveal key={cat.name} delay={i * 50}>
-                <Link href="/produkter" style={{ display: 'block', position: 'relative', borderRadius: 10, overflow: 'hidden', textDecoration: 'none', aspectRatio: '3/4', background: '#1a1a1a', transition: 'transform .2s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'none' }}>
-                  <img src={cat.img} alt={cat.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7, transition: 'opacity .2s' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.1) 60%)' }} />
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 12px 14px' }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '.08em', lineHeight: 1.3 }}>{cat.name}</div>
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── CATEGORIES — dark overlay cards with Supabase product images ── */}
+      {products.length > 0 && (() => {
+        // Build unique category list with one product image each
+        const seen = new Set<string>()
+        const cats: { name: string; img: string }[] = []
+        for (const p of products) {
+          const cname = (p.category_name || p.category || '').trim()
+          if (cname && !seen.has(cname) && p.image_url) {
+            seen.add(cname)
+            cats.push({ name: cname, img: p.image_url })
+          }
+        }
+        // Fallback: use any product with image if no category names
+        if (cats.length === 0) {
+          products.filter(p => p.image_url).slice(0, 6).forEach((p, i) => cats.push({ name: p.name, img: p.image_url }))
+        }
+        const display = cats.slice(0, 6)
+        return (
+          <section style={{ background: '#fff', padding: '48px 24px 56px' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+              <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 800, color: '#111' }}>Utvalda kategorier</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 10 }} className="cat-grid">
+                {display.map((cat, i) => (
+                  <Reveal key={cat.name} delay={i * 50}>
+                    <Link href="/produkter" style={{ display: 'block', position: 'relative', borderRadius: 10, overflow: 'hidden', textDecoration: 'none', aspectRatio: '3/4', background: '#1a1a1a', transition: 'transform .2s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'none' }}>
+                      <img src={cat.img} alt={cat.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 16, background: '#1a1a1a', opacity: 0.85 }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.2) 50%, transparent 100%)' }} />
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 12px 14px' }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '.08em', lineHeight: 1.3 }}>{cat.name}</div>
+                      </div>
+                    </Link>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </section>
+        )
+      })()}
 
       {/* ── PRODUCTS — Populära produkter ── */}
       {products.length > 0 && (
@@ -1065,12 +1107,16 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       <section style={{ background: '#fff', padding: '72px 24px' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }} className="brand-story-grid">
           <Reveal>
-            <div style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: '4/3' }}>
-              <img
-                src="https://proluxshine.com/wp-content/uploads/2025/11/IMG_3023.webp"
-                alt="ProLuxShine laboratorium"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+            <div style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: '4/3', background: 'linear-gradient(135deg, #0a0c10 0%, #1a1400 60%, #0d0f13 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {allImages[0] ? (
+                <img
+                  src={allImages[0]}
+                  alt="ProLuxShine produkter"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 24 }}
+                />
+              ) : (
+                <div style={{ fontSize: 80 }}>✨</div>
+              )}
             </div>
           </Reveal>
           <Reveal delay={100}>

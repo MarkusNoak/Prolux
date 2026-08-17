@@ -12,7 +12,8 @@ const GUIDES = [
     title: 'Så tvättar du bilen på rätt sätt',
     category: 'Tvätt',
     desc: 'Lär dig grunderna i biltvätt – rätt teknik, rätt produkter och i rätt ordning. Undvik swirl-märken och skydda lacken.',
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/a7ffd562-5a98-4bc9-86a4-9af4db4d2282.webp',
+    bg: 'linear-gradient(135deg, #0a1628 0%, #1a2a4a 60%, #0d1520 100%)',
+    emoji: '🚗',
     readTime: '5 min',
     tag: 'Nybörjare',
     tagColor: '#4CAF7D',
@@ -22,7 +23,8 @@ const GUIDES = [
     title: 'Polering – välj rätt pad och polermedel',
     category: 'Polering',
     desc: 'En komplett guide till maskinpolering. Vi går igenom skillnaderna mellan cutting, polishing och finishing pads.',
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/IMG_3023.webp',
+    bg: 'linear-gradient(135deg, #1a0a28 0%, #2d1a4a 60%, #1a0d20 100%)',
+    emoji: '✨',
     readTime: '8 min',
     tag: 'Avancerad',
     tagColor: '#4A8FD4',
@@ -32,7 +34,8 @@ const GUIDES = [
     title: 'Interiörrengöring som gör skillnad',
     category: 'Interiör',
     desc: 'Steg för steg: hur du rengör instrumentbräda, knappar, säten och mattor till showroom-standard.',
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/80690ec5-0bae-4ee3-803e-6d263b1ef2d5.webp',
+    bg: 'linear-gradient(135deg, #0a2010 0%, #1a4a2a 60%, #0d2015 100%)',
+    emoji: '🪑',
     readTime: '6 min',
     tag: 'Nybörjare',
     tagColor: '#4CAF7D',
@@ -42,7 +45,8 @@ const GUIDES = [
     title: 'Lackskydd – så håller det längre',
     category: 'Lackskydd',
     desc: 'Vax, sealant eller keramiskt skydd? Vi förklarar skillnaderna och hjälper dig välja rätt för din situation.',
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/df6ba40f-08c4-4e50-9b1e-a4cdedfb8ef9.webp',
+    bg: 'linear-gradient(135deg, #1a1400 0%, #3a2e00 60%, #1a1200 100%)',
+    emoji: '🛡️',
     readTime: '7 min',
     tag: 'Mellansteg',
     tagColor: '#E8B84B',
@@ -52,7 +56,8 @@ const GUIDES = [
     title: 'Fälgrengöring utan att skada lacken',
     category: 'Fälgar',
     desc: 'Bromsdamm och smuts sätter sig hårt på fälgar. Lär dig rätt teknik och produkter för att tvätta säkert.',
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/575e0484-9b37-4d05-8e8a-6803b7e1a38b.webp',
+    bg: 'linear-gradient(135deg, #1a0a0a 0%, #3a1515 60%, #1a0808 100%)',
+    emoji: '🔩',
     readTime: '4 min',
     tag: 'Nybörjare',
     tagColor: '#4CAF7D',
@@ -62,7 +67,8 @@ const GUIDES = [
     title: 'Avfettning innan polering',
     category: 'Polering',
     desc: 'Varför du alltid måste avfetta lacken ordentligt innan du polerar – och vilka produkter vi rekommenderar.',
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/IMG_8356.webp',
+    bg: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 60%, #080820 100%)',
+    emoji: '⚗️',
     readTime: '3 min',
     tag: 'Tips',
     tagColor: '#9BA0AB',
@@ -72,7 +78,8 @@ const GUIDES = [
     title: 'Tvåhinkmetoden – minska risken för repor',
     category: 'Tvätt',
     desc: 'Tvåhinkmetoden är standard hos proffs. Så här fungerar det och varför du bör börja använda den direkt.',
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/IMG_7192.webp',
+    bg: 'linear-gradient(135deg, #0a1a28 0%, #1a2e4a 60%, #0d1828 100%)',
+    emoji: '🪣',
     readTime: '4 min',
     tag: 'Tips',
     tagColor: '#9BA0AB',
@@ -82,7 +89,8 @@ const GUIDES = [
     title: 'Keramiskt lackskydd – komplett guide',
     category: 'Lackskydd',
     desc: 'Allt du behöver veta om keramiska beläggningar: förberedelse, applicering, härdning och skötsel.',
-    img: 'https://proluxshine.com/wp-content/uploads/2025/11/a7ffd562-5a98-4bc9-86a4-9af4db4d2282.webp',
+    bg: 'linear-gradient(135deg, #1a1200 0%, #2e2000 60%, #181000 100%)',
+    emoji: '💎',
     readTime: '12 min',
     tag: 'Avancerad',
     tagColor: '#4A8FD4',
@@ -178,12 +186,8 @@ export default function GuiderPage() {
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; (e.currentTarget as HTMLElement).style.boxShadow = 'none' }}
                 >
-                  <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden' }}>
-                    <img
-                      src={guide.img}
-                      alt={guide.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
+                  <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden', background: guide.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 56, opacity: 0.6 }}>{guide.emoji}</span>
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
                     <span style={{ position: 'absolute', top: 12, left: 12, background: guide.tagColor, color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: '0.05em' }}>
                       {guide.tag}
