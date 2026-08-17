@@ -381,36 +381,26 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
 /* ─── Hero Slider ─────────────────────────────────────── */
 const HERO_SLIDES = [
   {
-    bg: 'linear-gradient(135deg, #0a0c10 0%, #1a1400 50%, #0d0f13 100%)',
-    label: 'Tvätt & Rengöring',
-    heading: 'Professionell\nbilvård för proffs',
-    sub: 'Premium B2B-produkter för detailingföretag, biltvättar och verkstäder.',
-    catName: 'Tvätt',
+    img: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=1920&q=80&fit=crop',
+    label: 'Kvalitetsgaranti från Italien',
+    heading: 'Prolux Shine',
+    sub: 'Premiumleverantör av italienska bilvårdsprodukter — skapade för proffs och entusiaster.',
   },
   {
-    bg: 'linear-gradient(135deg, #0a0c10 0%, #0d1a0a 50%, #0d0f13 100%)',
-    label: 'Polering & Finish',
-    heading: 'Glans som\nhåller längre',
-    sub: 'Keramiska beläggningar och polermedel med professionell finish.',
-    catName: 'Vax & Polish',
+    img: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80&fit=crop',
+    label: 'Professionell bilvård',
+    heading: 'Rätt teknik.\nRätt produkter.',
+    sub: 'Komplett sortiment för handtvätt, maskinpolering och lackskydd.',
   },
   {
-    bg: 'linear-gradient(135deg, #0a0c10 0%, #0a0d1a 50%, #0d0f13 100%)',
-    label: 'Interiör',
-    heading: 'Interiör som\nimponerar',
-    sub: 'Professionella rengöringsmedel för kupé, säten och instrumentbräda.',
-    catName: 'Interiör',
-  },
-  {
-    bg: 'linear-gradient(135deg, #0a0c10 0%, #1a0a0a 50%, #0d0f13 100%)',
+    img: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1920&q=80&fit=crop',
     label: 'Fälg & Exteriör',
     heading: 'Rena fälgar.\nKlara resultat.',
-    sub: 'Starka rengöringsmedel formulerade för tunga jobb.',
-    catName: 'Fälg',
+    sub: 'Starka rengöringsmedel formulerade för professionella biltvättar och detailingföretag.',
   },
 ]
 
-function HeroSlider({ openLogin, loggedIn, productImages }: { openLogin: () => void; loggedIn?: boolean; productImages: Array<{ img: string; catName: string }> }) {
+function HeroSlider({ openLogin, loggedIn }: { openLogin: () => void; loggedIn?: boolean }) {
   const [current, setCurrent] = useState(0)
   const [fading, setFading] = useState(false)
   const total = HERO_SLIDES.length
@@ -421,77 +411,65 @@ function HeroSlider({ openLogin, loggedIn, productImages }: { openLogin: () => v
       setTimeout(() => {
         setCurrent(c => (c + 1) % total)
         setFading(false)
-      }, 400)
+      }, 500)
     }, 2000)
     return () => clearInterval(t)
   }, [total])
 
   const slide = HERO_SLIDES[current]
-  const slideImg = productImages.find(p => p.catName === slide.catName)?.img || productImages[current % productImages.length]?.img
 
   return (
-    <section style={{ position: 'relative', height: 'clamp(520px, 68vh, 780px)', overflow: 'hidden', marginTop: 64 }}>
+    <section style={{ position: 'relative', height: 'clamp(560px, 80vh, 860px)', overflow: 'hidden', marginTop: 64 }}>
 
-      {/* Gradient backgrounds — crossfade */}
+      {/* Background images — crossfade */}
       {HERO_SLIDES.map((s, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute', inset: 0,
-            background: s.bg,
-            opacity: i === current ? (fading ? 0 : 1) : 0,
-            transition: 'opacity 0.4s ease',
-          }}
-        />
+        <div key={i} style={{
+          position: 'absolute', inset: 0,
+          opacity: i === current ? (fading ? 0 : 1) : 0,
+          transition: 'opacity 0.6s ease',
+        }}>
+          <img src={s.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        </div>
       ))}
 
-      {/* Bottom fade */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100, background: 'linear-gradient(to top, #0F1115, transparent)', zIndex: 2 }} />
+      {/* Dark overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,.75) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.1) 100%)' }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, background: 'linear-gradient(to top, rgba(0,0,0,.6), transparent)' }} />
 
-      {/* Content — split: text left, product image right */}
-      <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center', zIndex: 3 }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 48px', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: 40 }} className="hero-split">
-          <div key={current} style={{ animation: 'fadeUp .45s ease' }}>
-            <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: '#E8B84B', textTransform: 'uppercase', letterSpacing: '.22em' }}>
+      {/* Content — bottom left like reference */}
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', zIndex: 3 }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px 80px', width: '100%' }}>
+          <div key={current} style={{ animation: 'fadeUp .5s ease' }}>
+            <p style={{ margin: '0 0 10px', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.7)', textTransform: 'uppercase', letterSpacing: '.2em' }}>
               {slide.label}
             </p>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(36px, 5.2vw, 68px)', fontWeight: 700, color: '#fff', margin: '0 0 18px', lineHeight: 1.08, letterSpacing: '-.01em', whiteSpace: 'pre-line' }}>
+            <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(42px, 6vw, 88px)', fontWeight: 800, color: '#fff', margin: '0 0 16px', lineHeight: 1.0, letterSpacing: '-.02em', whiteSpace: 'pre-line', textTransform: 'uppercase' }}>
               {slide.heading}
             </h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,.72)', lineHeight: 1.7, margin: '0 0 34px', maxWidth: 400 }}>
+            <p style={{ fontSize: 15, color: 'rgba(255,255,255,.75)', lineHeight: 1.65, margin: '0 0 32px', maxWidth: 480 }}>
               {slide.sub}
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 8, background: '#E8B84B', color: '#0F1115', fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>
-                Utforska produkter <ArrowRight size={16} />
+              <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', borderRadius: 40, background: '#E8B84B', color: '#0F1115', fontSize: 14, fontWeight: 700, textDecoration: 'none', letterSpacing: '.02em' }}>
+                Utforska produkter <ArrowRight size={15} />
               </Link>
               {!loggedIn && (
-                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', borderRadius: 8, background: 'transparent', border: '2px solid rgba(255,255,255,.4)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', borderRadius: 40, background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.3)', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
                   Logga in
                 </button>
               )}
             </div>
           </div>
-          {/* Product image right */}
-          {slideImg && (
-            <div key={`img-${current}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', animation: 'fadeUp .55s ease 100ms both' }}>
-              <img
-                src={slideImg}
-                alt={slide.label}
-                style={{ maxHeight: 380, maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 24px 60px rgba(0,0,0,.6))' }}
-              />
-            </div>
-          )}
         </div>
       </div>
 
       {/* Slide dots */}
-      <div style={{ position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
+      <div style={{ position: 'absolute', bottom: 32, right: 48, display: 'flex', gap: 8, zIndex: 4 }}>
         {Array.from({ length: total }).map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 4, background: i === current ? '#E8B84B' : 'rgba(255,255,255,.35)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all .3s ease' }}
+            style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 4, background: i === current ? '#E8B84B' : 'rgba(255,255,255,.4)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all .3s ease' }}
           />
         ))}
       </div>
@@ -924,17 +902,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       </div>
 
       {/* ── HERO — image slider ── */}
-      <HeroSlider
-        openLogin={openLogin}
-        loggedIn={!!authUser}
-        productImages={HERO_SLIDES.map(s => ({
-          catName: s.catName,
-          img: products.find(p =>
-            (p.category_name || '').toLowerCase().includes(s.catName.toLowerCase()) ||
-            (p.name || '').toLowerCase().includes(s.catName.toLowerCase())
-          )?.image_url || products[HERO_SLIDES.indexOf(s) % Math.max(1, products.length)]?.image_url || '',
-        }))}
-      />
+      <HeroSlider openLogin={openLogin} loggedIn={!!authUser} />
 
       {/* ── TRUST STRIP ── */}
       <section style={{ background: '#F8F5F0', borderBottom: '1px solid rgba(0,0,0,.07)' }}>
