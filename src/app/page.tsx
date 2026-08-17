@@ -376,80 +376,120 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
 }
 
 /* ─── Hero Slider ─────────────────────────────────────── */
-const SLIDES = [
-  { bg: '#1A1200', label: 'Tvätt & Rengöring',   heading: 'Professionell\nbilvård för proffs',   sub: 'Premium B2B-produkter för detailingföretag, biltvättar och verkstäder.' },
-  { bg: '#0D1A10', label: 'Vax & Ytskydd',        heading: 'Glans som\nhåller längre',             sub: 'Keramiska beläggningar och vaxprodukter med professionell finish.' },
-  { bg: '#0A0D1A', label: 'Fälg & Exteriör',      heading: 'Rena fälgar.\nKlara resultat.',        sub: 'Starka rengöringsmedel formulerade för tunga jobb.' },
+const HERO_SLIDES = [
+  {
+    bg: 'linear-gradient(135deg, #0a0c10 0%, #1a1400 50%, #0d0f13 100%)',
+    label: 'Tvätt & Rengöring',
+    heading: 'Professionell\nbilvård för proffs',
+    sub: 'Premium B2B-produkter för detailingföretag, biltvättar och verkstäder.',
+    catName: 'Tvätt',
+  },
+  {
+    bg: 'linear-gradient(135deg, #0a0c10 0%, #0d1a0a 50%, #0d0f13 100%)',
+    label: 'Polering & Finish',
+    heading: 'Glans som\nhåller längre',
+    sub: 'Keramiska beläggningar och polermedel med professionell finish.',
+    catName: 'Vax & Polish',
+  },
+  {
+    bg: 'linear-gradient(135deg, #0a0c10 0%, #0a0d1a 50%, #0d0f13 100%)',
+    label: 'Interiör',
+    heading: 'Interiör som\nimponerar',
+    sub: 'Professionella rengöringsmedel för kupé, säten och instrumentbräda.',
+    catName: 'Interiör',
+  },
+  {
+    bg: 'linear-gradient(135deg, #0a0c10 0%, #1a0a0a 50%, #0d0f13 100%)',
+    label: 'Fälg & Exteriör',
+    heading: 'Rena fälgar.\nKlara resultat.',
+    sub: 'Starka rengöringsmedel formulerade för tunga jobb.',
+    catName: 'Fälg',
+  },
 ]
 
-const HERO_VIDEO = 'https://videos.pexels.com/video-files/3763891/3763891-hd_1920_1080_30fps.mp4'
-
-function HeroSlider({ images, openLogin, loggedIn }: { images: string[]; openLogin: () => void; loggedIn?: boolean }) {
+function HeroSlider({ openLogin, loggedIn, productImages }: { openLogin: () => void; loggedIn?: boolean; productImages: Array<{ img: string; catName: string }> }) {
   const [current, setCurrent] = useState(0)
-  const [videoOk, setVideoOk] = useState(true)
-  const slide = SLIDES[current % SLIDES.length]
-  const total = SLIDES.length
+  const [fading, setFading] = useState(false)
+  const total = HERO_SLIDES.length
 
   useEffect(() => {
-    const t = setInterval(() => setCurrent(c => (c + 1) % total), 6000)
+    const t = setInterval(() => {
+      setFading(true)
+      setTimeout(() => {
+        setCurrent(c => (c + 1) % total)
+        setFading(false)
+      }, 400)
+    }, 2000)
     return () => clearInterval(t)
   }, [total])
+
+  const slide = HERO_SLIDES[current]
+  const slideImg = productImages.find(p => p.catName === slide.catName)?.img || productImages[current % productImages.length]?.img
 
   return (
     <section style={{ position: 'relative', height: 'clamp(520px, 68vh, 780px)', overflow: 'hidden', marginTop: 64 }}>
 
-      {/* Video background */}
-      {videoOk ? (
-        <video
-          autoPlay muted loop playsInline
-          onError={() => setVideoOk(false)}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-        >
-          <source src={HERO_VIDEO} type="video/mp4" />
-        </video>
-      ) : (
-        /* Fallback: product image or dark gradient */
-        images[0]
-          ? <img src={images[0]} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <div style={{ position: 'absolute', inset: 0, background: '#111' }} />
-      )}
+      {/* Gradient backgrounds — crossfade */}
+      {HERO_SLIDES.map((s, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute', inset: 0,
+            background: s.bg,
+            opacity: i === current ? (fading ? 0 : 1) : 0,
+            transition: 'opacity 0.4s ease',
+          }}
+        />
+      ))}
 
-      {/* Gradient overlay — left heavier for text legibility */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.45) 50%, rgba(0,0,0,.18) 100%)' }} />
       {/* Bottom fade */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, background: 'linear-gradient(to top, rgba(250,250,248,.9), transparent)' }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100, background: 'linear-gradient(to top, #0F1115, transparent)', zIndex: 2 }} />
 
-      {/* Content */}
-      <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
-        <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 32px', width: '100%' }}>
-          <div key={current} style={{ maxWidth: 560, animation: 'fadeUp .55s ease' }}>
-            <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.6)', textTransform: 'uppercase', letterSpacing: '.22em' }}>
+      {/* Content — split: text left, product image right */}
+      <div style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center', zIndex: 3 }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 48px', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: 40 }} className="hero-split">
+          <div key={current} style={{ animation: 'fadeUp .45s ease' }}>
+            <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: '#E8B84B', textTransform: 'uppercase', letterSpacing: '.22em' }}>
               {slide.label}
             </p>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(36px, 5.2vw, 68px)', fontWeight: 400, color: '#fff', margin: '0 0 18px', lineHeight: 1.08, letterSpacing: '-.01em', whiteSpace: 'pre-line' }}>
+            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(36px, 5.2vw, 68px)', fontWeight: 700, color: '#fff', margin: '0 0 18px', lineHeight: 1.08, letterSpacing: '-.01em', whiteSpace: 'pre-line' }}>
               {slide.heading}
             </h1>
-            <p style={{ fontSize: 16, color: 'rgba(255,255,255,.75)', lineHeight: 1.7, margin: '0 0 34px', maxWidth: 400 }}>
+            <p style={{ fontSize: 16, color: 'rgba(255,255,255,.72)', lineHeight: 1.7, margin: '0 0 34px', maxWidth: 400 }}>
               {slide.sub}
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 8, background: '#fff', color: '#111', fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>
-                Se produkter <ArrowRight size={16} />
+              <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 30px', borderRadius: 8, background: '#E8B84B', color: '#0F1115', fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>
+                Utforska produkter <ArrowRight size={16} />
               </Link>
               {!loggedIn && (
-                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', borderRadius: 8, background: 'transparent', border: '2px solid rgba(255,255,255,.55)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', borderRadius: 8, background: 'transparent', border: '2px solid rgba(255,255,255,.4)', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
                   Logga in
                 </button>
               )}
             </div>
           </div>
+          {/* Product image right */}
+          {slideImg && (
+            <div key={`img-${current}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', animation: 'fadeUp .55s ease 100ms both' }}>
+              <img
+                src={slideImg}
+                alt={slide.label}
+                style={{ maxHeight: 380, maxWidth: '100%', objectFit: 'contain', filter: 'drop-shadow(0 24px 60px rgba(0,0,0,.6))' }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Slide dots */}
-      <div style={{ position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
+      <div style={{ position: 'absolute', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8 }}>
         {Array.from({ length: total }).map((_, i) => (
-          <button key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 4, background: i === current ? '#C9971A' : 'rgba(255,255,255,.4)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all .3s ease' }} />
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 4, background: i === current ? '#E8B84B' : 'rgba(255,255,255,.35)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all .3s ease' }}
+          />
         ))}
       </div>
     </section>
@@ -880,47 +920,18 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         </div>
       </div>
 
-      {/* ── HERO — light split ── */}
-      <section style={{ background: '#fff', borderBottom: '1px solid rgba(0,0,0,.07)', overflow: 'hidden' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 'clamp(420px,56vh,620px)', alignItems: 'center' }} className="hero-grid">
-          {/* Left text */}
-          <div style={{ padding: 'clamp(48px,6vw,72px) 0', animation: 'fadeUp .55s ease' }}>
-            <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(36px,4.5vw,62px)', fontWeight: 700, color: '#111', margin: '0 0 18px', lineHeight: 1.05, letterSpacing: '-.02em' }}>
-              Professionell bilvård<br />för perfekta resultat
-            </h1>
-            <p style={{ fontSize: 16, color: '#666', lineHeight: 1.7, margin: '0 0 34px', maxWidth: 430 }}>
-              Premiumprodukter för dig som vill ha det bästa — oavsett om du är entusiast eller proffs. Testat i verkstad, älskat på vägen.
-            </p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 32 }}>
-              <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 28px', borderRadius: 7, background: '#C9971A', color: '#111', fontSize: 14, fontWeight: 700, textDecoration: 'none', letterSpacing: '.02em', textTransform: 'uppercase', boxShadow: '0 4px 16px rgba(201,151,26,.3)' }}>
-                Shoppa produkter <ArrowRight size={15} />
-              </Link>
-              {!authUser && (
-                <button onClick={openLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 24px', borderRadius: 7, background: '#fff', border: '2px solid #111', color: '#111', fontSize: 14, fontWeight: 700, cursor: 'pointer', letterSpacing: '.02em', textTransform: 'uppercase' }}>
-                  Se våra paket
-                </button>
-              )}
-            </div>
-            {/* Trustpilot-style row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ display: 'flex', gap: 3 }}>
-                {[...Array(5)].map((_, i) => <Star key={i} size={16} fill="#00B67A" color="#00B67A" />)}
-              </div>
-              <span style={{ fontSize: 13, color: '#555' }}><strong>4,8</strong> av 5 på <span style={{ color: '#00B67A', fontWeight: 700 }}>Trustpilot</span></span>
-            </div>
-          </div>
-          {/* Right — product photo */}
-          <div className="hero-img-wrap" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingBlock: 32 }}>
-            {heroImg ? (
-              <img src={heroImg} alt="ProLuxShine produkter" style={{ maxHeight: 480, maxWidth: '100%', objectFit: 'contain', animation: 'fadeUp .7s ease 100ms both', filter: 'drop-shadow(0 24px 48px rgba(0,0,0,.12))' }} />
-            ) : (
-              <div style={{ width: '100%', height: 420, background: '#F5F2ED', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Package size={80} color="#ccc" strokeWidth={1} />
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      {/* ── HERO — image slider ── */}
+      <HeroSlider
+        openLogin={openLogin}
+        loggedIn={!!authUser}
+        productImages={HERO_SLIDES.map(s => ({
+          catName: s.catName,
+          img: products.find(p =>
+            (p.category_name || '').toLowerCase().includes(s.catName.toLowerCase()) ||
+            (p.name || '').toLowerCase().includes(s.catName.toLowerCase())
+          )?.image_url || products[HERO_SLIDES.indexOf(s) % Math.max(1, products.length)]?.image_url || '',
+        }))}
+      />
 
       {/* ── TRUST STRIP ── */}
       <section style={{ background: '#F8F5F0', borderBottom: '1px solid rgba(0,0,0,.07)' }}>
@@ -939,26 +950,46 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         </div>
       </section>
 
-      {/* ── CATEGORIES — dark overlay photo cards ── */}
-      <section style={{ background: '#fff', padding: '56px 24px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 10 }} className="cat-grid">
-            {CAT_CARDS.map((cat, i) => (
-              <Reveal key={cat.name} delay={i * 50}>
-                <Link href="/produkter" style={{ display: 'block', position: 'relative', borderRadius: 10, overflow: 'hidden', textDecoration: 'none', aspectRatio: '3/4', background: '#1a1a1a', transition: 'transform .2s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'none' }}>
-                  <img src={cat.img} alt={cat.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7, transition: 'opacity .2s' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.1) 60%)' }} />
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 12px 14px' }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '.08em', lineHeight: 1.3 }}>{cat.name}</div>
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── CATEGORIES — dark overlay cards with Supabase product images ── */}
+      {products.length > 0 && (() => {
+        // Build unique category list with one product image each
+        const seen = new Set<string>()
+        const cats: { name: string; img: string }[] = []
+        for (const p of products) {
+          const cname = (p.category_name || p.category || '').trim()
+          if (cname && !seen.has(cname) && p.image_url) {
+            seen.add(cname)
+            cats.push({ name: cname, img: p.image_url })
+          }
+        }
+        // Fallback: use any product with image if no category names
+        if (cats.length === 0) {
+          products.filter(p => p.image_url).slice(0, 6).forEach((p, i) => cats.push({ name: p.name, img: p.image_url }))
+        }
+        const display = cats.slice(0, 6)
+        return (
+          <section style={{ background: '#fff', padding: '48px 24px 56px' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+              <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 800, color: '#111' }}>Utvalda kategorier</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 10 }} className="cat-grid">
+                {display.map((cat, i) => (
+                  <Reveal key={cat.name} delay={i * 50}>
+                    <Link href="/produkter" style={{ display: 'block', position: 'relative', borderRadius: 10, overflow: 'hidden', textDecoration: 'none', aspectRatio: '3/4', background: '#1a1a1a', transition: 'transform .2s' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'none' }}>
+                      <img src={cat.img} alt={cat.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 16, background: '#1a1a1a', opacity: 0.85 }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.2) 50%, transparent 100%)' }} />
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 12px 14px' }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '.08em', lineHeight: 1.3 }}>{cat.name}</div>
+                      </div>
+                    </Link>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </section>
+        )
+      })()}
 
       {/* ── PRODUCTS — Populära produkter ── */}
       {products.length > 0 && (
@@ -1025,7 +1056,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       )}
 
       {/* ── PRO CENTER — full-width dark banner ── */}
-      <section style={{ background: '#0D0F13', position: 'relative', overflow: 'hidden' }}>
+      <section id="pro-center" style={{ background: '#0D0F13', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'grid', gridTemplateColumns: '420px 1fr', alignItems: 'center', minHeight: 360 }} className="b2b-grid">
           {/* Left — image placeholder with product */}
           <div className="b2b-img" style={{ height: '100%', position: 'relative', overflow: 'hidden', minHeight: 320 }}>
@@ -1072,57 +1103,87 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         </div>
       </section>
 
-      {/* ── BRANDS — logo strip ── */}
-      <section style={{ background: '#fff', padding: '48px 24px', borderTop: '1px solid rgba(0,0,0,.06)', borderBottom: '1px solid rgba(0,0,0,.06)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(32px,5vw,72px)', flexWrap: 'wrap' }}>
-            {[
-              { name: 'Virtus', style: { fontFamily: 'var(--font-serif)', fontSize: 26, fontStyle: 'italic', fontWeight: 400, color: '#111', letterSpacing: '-.01em' } },
-              { name: 'Frescura', style: { fontFamily: 'var(--font-serif)', fontSize: 26, fontStyle: 'italic', fontWeight: 400, color: '#111', letterSpacing: '-.01em' } },
-              { name: 'VIRTUS PRO', style: { fontSize: 13, fontWeight: 900, color: '#888', letterSpacing: '.2em' } },
-              { name: 'FRESCURA+', style: { fontSize: 13, fontWeight: 900, color: '#888', letterSpacing: '.2em' } },
-              { name: 'PROLUX', style: { fontSize: 13, fontWeight: 900, color: '#C9971A', letterSpacing: '.2em' } },
-            ].map(b => (
-              <div key={b.name} style={{ opacity: 0.7, transition: 'opacity .15s', cursor: 'default', userSelect: 'none', ...b.style }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.opacity = '1' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.opacity = '0.7' }}>
-                {b.name}
+      {/* ── BRAND STORY — lab image + text ── */}
+      <section style={{ background: '#fff', padding: '72px 24px' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }} className="brand-story-grid">
+          <Reveal>
+            <div style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: '4/3', background: 'linear-gradient(135deg, #0a0c10 0%, #1a1400 60%, #0d0f13 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {allImages[0] ? (
+                <img
+                  src={allImages[0]}
+                  alt="ProLuxShine produkter"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 24 }}
+                />
+              ) : (
+                <div style={{ fontSize: 80 }}>✨</div>
+              )}
+            </div>
+          </Reveal>
+          <Reveal delay={100}>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.14em', marginBottom: 14 }}>Exklusiva agenturer</p>
+              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(24px,3.5vw,40px)', fontWeight: 700, color: '#111', margin: '0 0 18px', lineHeight: 1.15 }}>
+                Italiensk passion &amp; precision i varje droppe
+              </h2>
+              <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8, marginBottom: 20 }}>
+                ProLux Shine är stor distributör av de anrika varumärkena Virtus och Frescura. Frescura har i över 50 år lett utvecklingen av biologiskt nedbrytbara, pH-balanserade rengöringssystem för fordon över hela Europa.
+              </p>
+              <p style={{ fontSize: 14, color: '#555', lineHeight: 1.8, marginBottom: 28 }}>
+                Tillsammans med Virtus avancerade polermedel och lackskydd erbjuder vi ett komplett system som tillgodoser bilvårdsförens extremaste krav på prestanda och finish.
+              </p>
+              <div style={{ display: 'flex', gap: 24 }}>
+                <div style={{ paddingBottom: 8, borderBottom: '2px solid #111', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111' }}>FRESCURA</span>
+                </div>
+                <div style={{ paddingBottom: 8, borderBottom: '2px solid transparent', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#aaa' }}>VIRTUS PRO</span>
+                </div>
               </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── WHY PROLUX — feature grid ── */}
+      <section style={{ background: '#f9f9f9', padding: '64px 24px', borderTop: '1px solid #ebebeb' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 800, color: '#111', marginBottom: 36, textAlign: 'center' }}>
+            Varför välja ProLux Shine?
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 28 }} className="features-grid">
+            {[
+              { icon: '🛡️', title: 'Säker för alla ytor', desc: 'Sammansättningarna ger extremt effektiva formuleringar utformade för att ge utmärkt skydd mot känsliga material.' },
+              { icon: '⚗️', title: 'pH-balanserat', desc: 'Perfekt komponerat pH-värden som inte skadar lackytan, även vid hög koncentration.' },
+              { icon: '⚡', title: 'Effektiv avfettning', desc: 'Våra lättlösliga enskilda och kalklettnings löser på föroreningsrester med överväldigande kraft.' },
+              { icon: '🏆', title: 'Högsta kvalitet', desc: 'Formulerat och tillverkat i Italien av ledande kemister med högsta certifieringar.' },
+            ].map(f => (
+              <Reveal key={f.title}>
+                <div style={{ background: '#fff', borderRadius: 12, padding: '28px 24px', border: '1px solid #e8e8e8' }}>
+                  <div style={{ fontSize: 32, marginBottom: 14 }}>{f.icon}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 8 }}>{f.title}</div>
+                  <div style={{ fontSize: 13, color: '#666', lineHeight: 1.7 }}>{f.desc}</div>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── GUIDES & INSPIRATION ── */}
-      <section style={{ background: '#fff', padding: '56px 24px' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111', textTransform: 'uppercase', letterSpacing: '.08em' }}>Guider & Inspiration</h2>
-            <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#C9971A', fontSize: 13, fontWeight: 700, textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-              Se alla guider <ArrowRight size={14} />
-            </Link>
+      {/* ── B2B CTA banner ── */}
+      <section style={{ background: '#0D0F13', padding: '40px 24px' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#C9971A', textTransform: 'uppercase', letterSpacing: '.14em', marginBottom: 8 }}>Partner &amp; Distributör</p>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(20px,2.5vw,30px)', fontWeight: 700, color: '#F0EDE8', margin: '0 0 8px' }}>
+              Bli auktoriserad återförsäljare
+            </h2>
+            <p style={{ fontSize: 14, color: 'rgba(240,237,232,.5)', maxWidth: 520, lineHeight: 1.6, margin: 0 }}>
+              Driver du bilvårdsföretag, reparerar eller budgetar? Få tillgång till exklusiva inköpspriser av Virtus och Frescura samt teknisk support och produktutbildning.
+            </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(240px,1fr))', gap: 20 }}>
-            {GUIDES.map((g, i) => (
-              <Reveal key={g.title} delay={i * 60}>
-                <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #eee', background: '#fff', cursor: 'pointer', transition: 'box-shadow .2s' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,.09)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'none' }}>
-                  <div style={{ height: 160, background: '#F5F2ED', overflow: 'hidden', position: 'relative' }}>
-                    <img src={g.img} alt={g.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
-                    <div style={{ position: 'absolute', top: 10, left: 10, background: '#111', color: '#fff', fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 4, letterSpacing: '.1em', textTransform: 'uppercase' }}>Guide</div>
-                  </div>
-                  <div style={{ padding: '14px 16px 16px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.4, marginBottom: 6 }}>{g.title}</div>
-                    <div style={{ fontSize: 12, color: '#888', lineHeight: 1.5, marginBottom: 12 }}>{g.desc}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#C9971A' }}>
-                      Läs guiden <ChevronRight size={13} />
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <button onClick={openLogin} style={{ padding: '14px 32px', background: '#C9971A', color: '#0F1115', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: 'pointer', whiteSpace: 'nowrap', letterSpacing: '.04em', textTransform: 'uppercase' }}>
+            Skicka ansökan
+          </button>
         </div>
       </section>
 
@@ -1133,7 +1194,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
 
       {/* ── CTA (not logged in) ── */}
       {!authUser && (
-        <section style={{ background: '#F8F5F0', padding: '64px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
+        <section id="om-prolux" style={{ background: '#F8F5F0', padding: '64px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
           <Reveal>
             <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
               <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px,4vw,44px)', fontWeight: 700, color: '#111', margin: '0 0 12px', lineHeight: 1.1 }}>
@@ -1159,20 +1220,22 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         @keyframes fadeUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
         @keyframes slideIn { from{opacity:0;transform:scale(1.04)} to{opacity:1;transform:scale(1)} }
         @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .hero-grid    { grid-template-columns: 1fr 1fr; }
-        .trust-grid   { grid-template-columns: repeat(4,1fr); }
-        .cat-grid     { grid-template-columns: repeat(6,1fr); }
-        .b2b-grid     { grid-template-columns: 420px 1fr; }
+        .trust-grid        { grid-template-columns: repeat(4,1fr); }
+        .cat-grid          { grid-template-columns: repeat(6,1fr); }
+        .b2b-grid          { grid-template-columns: 420px 1fr; }
+        .brand-story-grid  { grid-template-columns: 1fr 1fr; }
+        .features-grid     { grid-template-columns: repeat(4,1fr); }
         @media (max-width: 860px) {
-          .hero-grid    { grid-template-columns: 1fr !important; }
-          .hero-img-wrap { display: none !important; }
-          .b2b-grid     { grid-template-columns: 1fr !important; }
-          .b2b-img      { display: none !important; }
-          .trust-grid   { grid-template-columns: repeat(2,1fr) !important; }
-          .cat-grid     { grid-template-columns: repeat(3,1fr) !important; }
+          .b2b-grid          { grid-template-columns: 1fr !important; }
+          .b2b-img           { display: none !important; }
+          .trust-grid        { grid-template-columns: repeat(2,1fr) !important; }
+          .cat-grid          { grid-template-columns: repeat(3,1fr) !important; }
+          .brand-story-grid  { grid-template-columns: 1fr !important; }
+          .features-grid     { grid-template-columns: repeat(2,1fr) !important; }
         }
         @media (max-width: 480px) {
-          .cat-grid { grid-template-columns: repeat(2,1fr) !important; }
+          .cat-grid      { grid-template-columns: repeat(2,1fr) !important; }
+          .features-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </>
