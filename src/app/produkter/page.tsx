@@ -7,17 +7,6 @@ import { Search, Package, ShoppingCart, ChevronRight, Star, SlidersHorizontal, X
 import Link from 'next/link'
 
 const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
-
-const CAT_ICONS: Record<string, string> = {
-  'Exteriör': '🚗',
-  'Interiör': '🪑',
-  'Vax & Polish': '✨',
-  'Tvätt': '🧴',
-  'Fälg': '⚙️',
-  'Avfettning': '🧹',
-  'Tillbehör': '🔧',
-}
-
 const SORT_OPTIONS = ['Popularast', 'Lägsta pris', 'Högsta pris', 'Namn A–Ö']
 
 const PAGE_SIZE = 8
@@ -128,27 +117,58 @@ function ProductsContent() {
 
       {/* ── CATEGORY ICONS ── */}
       <div style={{ borderBottom: '1px solid #e8e8e8', padding: '20px 48px', overflowX: 'auto' }}>
-        <div style={{ display: 'flex', gap: 24, minWidth: 'max-content' }}>
-          {[{ id: 'all', name: 'Alla', emoji: '🏪' }, ...categories.map(c => ({ id: c.id, name: c.name, emoji: CAT_ICONS[c.name] || '📦' }))].map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => selectCat(cat.id)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', minWidth: 72 }}
-            >
-              <div style={{
-                width: 64, height: 64, borderRadius: '50%',
-                background: selectedCat === cat.id ? '#E8B84B' : '#f4f4f4',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, border: selectedCat === cat.id ? '2px solid #E8B84B' : '2px solid transparent',
-                transition: 'all .2s',
-              }}>
-                {cat.emoji}
-              </div>
-              <span style={{ fontSize: 11, color: selectedCat === cat.id ? '#111' : '#555', fontWeight: selectedCat === cat.id ? 700 : 400, textAlign: 'center', lineHeight: 1.3 }}>
-                {cat.name}
-              </span>
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: 20, minWidth: 'max-content' }}>
+          {/* "Alla"-knapp med ProLux-logo */}
+          <button
+            onClick={() => selectCat('all')}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', minWidth: 72 }}
+          >
+            <div style={{
+              width: 72, height: 72, borderRadius: '50%',
+              background: selectedCat === 'all' ? '#E8B84B' : '#f4f4f4',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: selectedCat === 'all' ? '2px solid #E8B84B' : '2px solid #e8e8e8',
+              transition: 'all .2s', overflow: 'hidden',
+            }}>
+              <span style={{ fontSize: 28 }}>🏪</span>
+            </div>
+            <span style={{ fontSize: 11, color: selectedCat === 'all' ? '#111' : '#666', fontWeight: selectedCat === 'all' ? 700 : 400, textAlign: 'center', lineHeight: 1.3 }}>Alla</span>
+          </button>
+
+          {/* En knapp per unik kategori med produktbild */}
+          {categories.map(cat => {
+            const catProduct = products.find(p => p.category_id === cat.id && p.image_url)
+            const isActive = selectedCat === cat.id
+            return (
+              <button
+                key={cat.id}
+                onClick={() => selectCat(cat.id)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', minWidth: 72 }}
+              >
+                <div style={{
+                  width: 72, height: 72, borderRadius: '50%',
+                  background: isActive ? '#E8B84B' : '#f4f4f4',
+                  border: isActive ? '2px solid #E8B84B' : '2px solid #e8e8e8',
+                  transition: 'all .2s', overflow: 'hidden',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: catProduct?.image_url ? 8 : 0,
+                }}>
+                  {catProduct?.image_url ? (
+                    <img
+                      src={catProduct.image_url}
+                      alt={cat.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                  ) : (
+                    <Package size={28} color={isActive ? '#111' : '#bbb'} strokeWidth={1.5} />
+                  )}
+                </div>
+                <span style={{ fontSize: 11, color: isActive ? '#111' : '#666', fontWeight: isActive ? 700 : 400, textAlign: 'center', lineHeight: 1.3, maxWidth: 80 }}>
+                  {cat.name}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
