@@ -393,26 +393,24 @@ const HERO_TEXT = [
 
 function HeroSlider({ openLogin, loggedIn, heroImages }: { openLogin: () => void; loggedIn?: boolean; heroImages: string[] }) {
   const [current, setCurrent] = useState(0)
-  const [fading, setFading] = useState(false)
   const slides = heroImages.length >= 3 ? heroImages.slice(0, 3) : heroImages.length > 0 ? [heroImages[0], heroImages[0], heroImages[0]] : []
   const total = HERO_TEXT.length
 
   useEffect(() => {
     const t = setInterval(() => {
-      setFading(true)
-      setTimeout(() => { setCurrent(c => (c + 1) % total); setFading(false) }, 500)
-    }, 2000)
+      setCurrent(c => (c + 1) % total)
+    }, 4000)
     return () => clearInterval(t)
   }, [total])
 
   const slide = HERO_TEXT[current]
 
   return (
-    <section style={{ position: 'relative', height: 'clamp(560px, 80vh, 860px)', overflow: 'hidden', marginTop: 64 }}>
+    <section style={{ position: 'relative', height: 'clamp(560px, 80vh, 860px)', overflow: 'hidden', marginTop: 0 }}>
 
-      {/* Background images — crossfade */}
+      {/* Background images — smooth crossfade, all always mounted */}
       {slides.map((src, i) => (
-        <div key={i} style={{ position: 'absolute', inset: 0, opacity: i === current ? (fading ? 0 : 1) : 0, transition: 'opacity 0.6s ease' }}>
+        <div key={i} style={{ position: 'absolute', inset: 0, opacity: i === current ? 1 : 0, transition: 'opacity 1.2s ease-in-out', zIndex: i === current ? 1 : 0 }}>
           <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
       ))}
@@ -421,8 +419,8 @@ function HeroSlider({ openLogin, loggedIn, heroImages }: { openLogin: () => void
       {slides.length === 0 && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #0a0c10, #1a1400)' }} />}
 
       {/* Dark overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,.72) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.12) 100%)' }} />
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 220, background: 'linear-gradient(to top, rgba(0,0,0,.65), transparent)' }} />
+      <div style={{ position: 'absolute', inset: 0, zIndex: 2, background: 'linear-gradient(to right, rgba(0,0,0,.72) 0%, rgba(0,0,0,.35) 60%, rgba(0,0,0,.12) 100%)' }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 220, zIndex: 2, background: 'linear-gradient(to top, rgba(0,0,0,.65), transparent)' }} />
 
       {/* Content — bottom left */}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', zIndex: 3 }}>
@@ -871,7 +869,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
   return (
     <>
       {/* ── ANNOUNCEMENT BAR ── */}
-      <div style={{ background: '#111', padding: '8px 24px', marginTop: 64 }}>
+      <div style={{ background: '#111', padding: '8px 24px', marginTop: 0 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 'clamp(16px,4vw,48px)', flexWrap: 'wrap' }}>
           {[
             { icon: Truck,  text: '1–2 dagars leverans' },

@@ -244,7 +244,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider value={cartCtx}>
-    <div style={{ minHeight: '100vh', background: '#FAFAF8', display: 'flex', flexDirection: 'column', color: '#111' }}>
+    <div style={{ minHeight: '100vh', background: '#0F1115', display: 'flex', flexDirection: 'column', color: '#111' }}>
 
       {/* ── Topbar ─────────────────────────────────────────── */}
       <header style={{
@@ -411,7 +411,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
       {userDropOpen && <div onClick={() => setUserDropOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 198 }} />}
 
       <LoginModalContext.Provider value={openLogin}>
-        <main style={{ flex: 1 }}>
+        <main style={{ flex: 1, paddingTop: 64 }}>
           {children}
         </main>
       </LoginModalContext.Provider>
