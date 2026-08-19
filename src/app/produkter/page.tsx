@@ -79,13 +79,31 @@ function ProductsContent() {
   }
 
   return (
-    <div style={{ background: '#fff', minHeight: '100vh' }}>
+    <div style={{ background: '#F5F3EF', minHeight: '100vh', position: 'relative' }}>
       <style>{`
+        .prod-page-bg {
+          position: fixed; inset: 0; pointer-events: none; z-index: 0;
+          background:
+            radial-gradient(ellipse 70% 50% at 10% 20%, rgba(232,184,75,.10) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 60% at 90% 80%, rgba(74,143,212,.08) 0%, transparent 60%),
+            radial-gradient(ellipse 50% 40% at 50% 50%, rgba(232,184,75,.05) 0%, transparent 70%),
+            #F5F3EF;
+          animation: bgShift 12s ease-in-out infinite alternate;
+        }
+        @keyframes bgShift {
+          0%   { opacity: 1; }
+          50%  { opacity: .85; }
+          100% { opacity: 1; }
+        }
+        .prod-page-content { position: relative; z-index: 1; }
         .prod-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; }
         @media (max-width:1100px) { .prod-grid { grid-template-columns: repeat(3,1fr); } }
         @media (max-width:720px)  { .prod-grid { grid-template-columns: repeat(2,1fr); } }
         @media (max-width:480px)  { .prod-grid { grid-template-columns: 1fr 1fr; } }
       `}</style>
+
+      <div className="prod-page-bg" />
+      <div className="prod-page-content">
 
       {/* ── HERO ── */}
       <div style={{ position: 'relative', height: 280, overflow: 'hidden', marginTop: 64 }}>
@@ -290,6 +308,7 @@ function ProductsContent() {
           </button>
         </div>
       )}
+      </div>{/* end prod-page-content */}
     </div>
   )
 }
