@@ -889,7 +889,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       <HeroSlider openLogin={openLogin} loggedIn={!!authUser} heroImages={HERO_IMAGES} />
 
       {/* ── TRUST STRIP ── */}
-      <section style={{ background: '#F8F5F0', borderBottom: '1px solid rgba(0,0,0,.07)' }}>
+      <section style={{ background: 'transparent', borderBottom: '1px solid rgba(0,0,0,.07)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
           <div className="trust-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)' }}>
             {TRUST.map(({ icon: Icon, title, sub }, i) => (
@@ -923,7 +923,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         }
         const display = cats.slice(0, 6)
         return (
-          <section style={{ background: '#fff', padding: '48px 24px 56px' }}>
+          <section style={{ background: 'transparent', padding: '48px 24px 56px' }}>
             <div style={{ maxWidth: 1200, margin: '0 auto' }}>
               <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 800, color: '#111' }}>Utvalda kategorier</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 10 }} className="cat-grid">
@@ -948,7 +948,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
 
       {/* ── PRODUCTS — Populära produkter ── */}
       {products.length > 0 && (
-        <section style={{ background: '#fff', padding: '0 24px 64px' }}>
+        <section style={{ background: 'transparent', padding: '0 24px 64px' }}>
           <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #111' }}>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111', textTransform: 'uppercase', letterSpacing: '.08em' }}>Populära produkter</h2>
@@ -1059,7 +1059,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       </section>
 
       {/* ── BRAND STORY — lab image + text ── */}
-      <section style={{ background: '#fff', padding: '72px 24px' }}>
+      <section style={{ background: 'transparent', padding: '72px 24px' }}>
         <div style={{ maxWidth: 1160, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }} className="brand-story-grid">
           <Reveal>
             <div style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: '4/3', background: 'linear-gradient(135deg, #0a0c10 0%, #1a1400 60%, #0d0f13 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1149,7 +1149,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
 
       {/* ── CTA (not logged in) ── */}
       {!authUser && (
-        <section id="om-prolux" style={{ background: '#F8F5F0', padding: '64px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
+        <section id="om-prolux" style={{ background: 'transparent', padding: '64px 24px', borderTop: '1px solid rgba(0,0,0,.07)' }}>
           <Reveal>
             <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
               <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(26px,4vw,44px)', fontWeight: 700, color: '#111', margin: '0 0 12px', lineHeight: 1.1 }}>
