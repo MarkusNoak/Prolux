@@ -79,25 +79,19 @@ function ProductsContent() {
   }
 
   return (
-    <div style={{ background: '#f0f0f0', minHeight: '100vh', position: 'relative' }}>
+    <div style={{ background: '#e8e4dc', minHeight: '100vh', position: 'relative' }}>
       <style>{`
         .prod-page-bg {
           position: fixed; inset: 0; pointer-events: none; z-index: 0;
-          background-color: #eaeaea;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpolygon points='40,0 80,20 80,60 40,80 0,60 0,20' fill='none' stroke='%23c8c8c8' stroke-width='0.8'/%3E%3Cpolygon points='40,10 70,25 70,55 40,70 10,55 10,25' fill='none' stroke='%23d4d4d4' stroke-width='0.4'/%3E%3C/svg%3E");
-          background-size: 80px 80px;
+          overflow: hidden;
         }
-        .prod-page-bg::after {
-          content: '';
+        .prod-page-bg svg {
+          width: 100%; height: 100%;
           position: absolute; inset: 0;
-          background:
-            radial-gradient(ellipse 60% 50% at 15% 20%, rgba(232,184,75,.18) 0%, transparent 55%),
-            radial-gradient(ellipse 50% 60% at 88% 80%, rgba(74,143,212,.12) 0%, transparent 55%);
-          animation: bgPulse 10s ease-in-out infinite alternate;
         }
-        @keyframes bgPulse {
-          0%   { opacity: 0.6; }
-          100% { opacity: 1; }
+        @keyframes polyFloat {
+          0%,100% { transform: translateY(0px); }
+          50%      { transform: translateY(-12px); }
         }
         .prod-page-content { position: relative; z-index: 1; }
         .prod-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; }
@@ -106,7 +100,32 @@ function ProductsContent() {
         @media (max-width:480px)  { .prod-grid { grid-template-columns: 1fr 1fr; } }
       `}</style>
 
-      <div className="prod-page-bg" />
+      <div className="prod-page-bg">
+        <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <rect width="1440" height="900" fill="#e8e4dc"/>
+          {/* Large polygon shapes — Prolux gold + blue tones */}
+          <polygon points="0,0 320,0 180,200" fill="rgba(232,184,75,0.18)"/>
+          <polygon points="320,0 600,0 500,180 180,200" fill="rgba(232,184,75,0.10)"/>
+          <polygon points="600,0 900,0 820,220 500,180" fill="rgba(200,160,60,0.12)"/>
+          <polygon points="900,0 1200,0 1100,160 820,220" fill="rgba(232,184,75,0.08)"/>
+          <polygon points="1200,0 1440,0 1440,200 1100,160" fill="rgba(74,143,212,0.14)"/>
+          <polygon points="0,0 180,200 0,350" fill="rgba(74,143,212,0.10)"/>
+          <polygon points="180,200 500,180 420,420 80,400" fill="rgba(255,255,255,0.30)"/>
+          <polygon points="500,180 820,220 780,460 420,420" fill="rgba(232,184,75,0.07)"/>
+          <polygon points="820,220 1100,160 1120,400 780,460" fill="rgba(255,255,255,0.22)"/>
+          <polygon points="1100,160 1440,200 1440,450 1120,400" fill="rgba(74,143,212,0.10)"/>
+          <polygon points="0,350 80,400 0,580" fill="rgba(232,184,75,0.12)"/>
+          <polygon points="80,400 420,420 380,660 40,640" fill="rgba(74,143,212,0.08)"/>
+          <polygon points="420,420 780,460 740,680 380,660" fill="rgba(255,255,255,0.28)"/>
+          <polygon points="780,460 1120,400 1140,640 740,680" fill="rgba(232,184,75,0.09)"/>
+          <polygon points="1120,400 1440,450 1440,680 1140,640" fill="rgba(255,255,255,0.20)"/>
+          <polygon points="0,580 40,640 0,900" fill="rgba(74,143,212,0.12)"/>
+          <polygon points="40,640 380,660 300,900 0,900" fill="rgba(232,184,75,0.10)"/>
+          <polygon points="380,660 740,680 720,900 300,900" fill="rgba(255,255,255,0.25)"/>
+          <polygon points="740,680 1140,640 1200,900 720,900" fill="rgba(232,184,75,0.07)"/>
+          <polygon points="1140,640 1440,680 1440,900 1200,900" fill="rgba(74,143,212,0.13)"/>
+        </svg>
+      </div>
       <div className="prod-page-content">
 
       {/* ── HERO ── */}
