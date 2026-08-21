@@ -82,7 +82,7 @@ function ProductsContent() {
     <div style={{ minHeight: '100vh', position: 'relative' }}>
       <style>{`
         .prod-page-content { position: relative; z-index: 1; }
-        .prod-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; }
+        .prod-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
         @media (max-width:1100px) { .prod-grid { grid-template-columns: repeat(3,1fr); } }
         @media (max-width:720px)  { .prod-grid { grid-template-columns: repeat(2,1fr); } }
         @media (max-width:480px)  { .prod-grid { grid-template-columns: 1fr 1fr; } }
@@ -103,6 +103,27 @@ function ProductsContent() {
           </p>
         </div>
       </div>
+
+      {/* ── TRUST STRIP ── */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #ececec', padding: '32px 48px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 32 }} className="trust-strip">
+          {[
+            { title: 'Säker för alla ytor', text: 'Skonsamma men extremt effektiva formuleringar utvecklade för att aldrig skada känsliga material.' },
+            { title: 'pH-balanserat', text: 'Perfekt komponerade pH-värden som skapar optimal rengöringseffekt utan att slita på befintliga lackskydd.' },
+            { title: 'Effektiv avfettning', text: 'Våra kända alkaliska och kallavfettningar biter på nordisk vintervägssmuts med oöverträffad kraft.' },
+            { title: 'Högsta kvalitet', text: 'Formulerat och tillverkat i Italien av ledande kemister med högsta certifieringar.' },
+          ].map(({ title, text }) => (
+            <div key={title} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(232,184,75,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#C9971A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#111', margin: 0 }}>{title}</p>
+              <p style={{ fontSize: 13, color: '#777', margin: 0, lineHeight: 1.55 }}>{text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`.trust-strip { } @media(max-width:800px){.trust-strip{grid-template-columns:1fr 1fr!important}} @media(max-width:500px){.trust-strip{grid-template-columns:1fr!important}}`}</style>
 
       {/* ── BREADCRUMB ── */}
       <div style={{ borderBottom: '1px solid #e8e8e8', padding: '12px 48px', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -204,18 +225,21 @@ function ProductsContent() {
           <p>Inga produkter hittades.</p>
         </div>
       ) : (
-        <div className="prod-grid" style={{ padding: '0 40px' }}>
+        <div className="prod-grid" style={{ padding: '24px 40px', gap: 20 } as any}>
           {paged.map((p, i) => {
             const price = custPrice(p.list_price)
             const added = justAdded === p.id
             return (
-              <div key={p.id} style={{ border: '1px solid #e8e8e8', borderRadius: 0, background: '#fff', display: 'flex', flexDirection: 'column', margin: '-1px 0 0 -1px' }}>
+              <div key={p.id} style={{ background: '#fff', borderRadius: 12, display: 'flex', flexDirection: 'column', boxShadow: '0 1px 4px rgba(0,0,0,.06)', overflow: 'hidden', transition: 'box-shadow .2s' }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,.12)')}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,.06)')}
+              >
                 <Link href={`/produkter/${p.id}`} style={{ textDecoration: 'none', display: 'block' }}>
-                  <div style={{ background: '#f8f8f8', aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative' }}>
+                  <div style={{ background: '#f2f2f2', aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28, position: 'relative' }}>
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain' }} />
+                      <img src={p.image_url} alt={p.name} style={{ maxWidth: '82%', maxHeight: '82%', objectFit: 'contain' }} />
                     ) : (
-                      <Package size={64} color="#ddd" strokeWidth={1} />
+                      <Package size={64} color="#ccc" strokeWidth={1} />
                     )}
                     {(i === 0 || i === 3) && (
                       <span style={{ position: 'absolute', top: 12, left: 12, background: '#E8B84B', color: '#111', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
@@ -229,25 +253,33 @@ function ProductsContent() {
                     )}
                   </div>
                 </Link>
-                <div style={{ padding: '14px 16px 16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.08em', margin: '0 0 4px' }}>
+                <div style={{ padding: '14px 18px 18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.1em', margin: '0 0 4px' }}>
                     {p.brand || 'ProLuxShine'}
                   </p>
                   <Link href={`/produkter/${p.id}`} style={{ textDecoration: 'none' }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: '#111', margin: '0 0 12px', lineHeight: 1.3 }}>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: '0 0 14px', lineHeight: 1.3 }}>
                       {p.name}
                     </p>
                   </Link>
                   <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{fmt(price)} kr</div>
-                      {discount > 0 && (
-                        <div style={{ fontSize: 11, color: '#aaa', textDecoration: 'line-through' }}>{fmt(p.list_price)} kr</div>
+                      {authUser ? (
+                        <>
+                          <div style={{ fontSize: 18, fontWeight: 700, color: '#111' }}>{fmt(price)} kr</div>
+                          {discount > 0 && (
+                            <div style={{ fontSize: 12, color: '#bbb', textDecoration: 'line-through' }}>{fmt(p.list_price)} kr</div>
+                          )}
+                        </>
+                      ) : (
+                        <button onClick={openLogin} style={{ fontSize: 13, color: '#C9971A', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                          Logga in för pris
+                        </button>
                       )}
                     </div>
                     <button
                       onClick={() => authUser ? addToCart(p) : openLogin()}
-                      style={{ width: 38, height: 38, borderRadius: '50%', background: added ? '#4CAF7D' : '#E8B84B', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s', flexShrink: 0 }}
+                      style={{ width: 40, height: 40, borderRadius: '50%', background: added ? '#4CAF7D' : '#E8B84B', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s', flexShrink: 0 }}
                     >
                       <ShoppingCart size={16} color="#111" strokeWidth={2.5} />
                     </button>
