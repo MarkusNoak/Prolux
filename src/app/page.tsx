@@ -950,8 +950,8 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
       {products.length > 0 && (
         <section style={{ background: 'transparent', padding: '0 24px 64px' }}>
           <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #111' }}>
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111', textTransform: 'uppercase', letterSpacing: '.08em' }}>Populära produkter</h2>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid rgba(0,0,0,.12)' }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#111', textTransform: 'uppercase', letterSpacing: '.08em' }}>Storsäljare just nu</h2>
               <Link href="/produkter" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#C9971A', fontSize: 13, fontWeight: 700, textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '.06em' }}>
                 Se alla produkter <ArrowRight size={14} />
               </Link>

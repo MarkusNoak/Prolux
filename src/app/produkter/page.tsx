@@ -91,25 +91,16 @@ function ProductsContent() {
       <div className="prod-page-content">
 
       {/* ── HERO ── */}
-      <div style={{ position: 'relative', height: 300, overflow: 'hidden', background: '#0a0c10' }}>
+      <div style={{ position: 'relative', overflow: 'hidden', background: '#0a0c10' }}>
         <img
           src="https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/hero-images/category-hero.png"
           alt="Alla Produkter"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+          style={{ width: '100%', display: 'block', objectFit: 'cover' }}
         />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,.6) 0%, rgba(0,0,0,.1) 60%, transparent 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 48px 32px' }}>
-          <h1 style={{ color: '#fff', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 900, margin: '0 0 8px', letterSpacing: '-.02em', lineHeight: 1.1 }}>
-            Alla Produkter
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 15, maxWidth: 520, margin: 0, lineHeight: 1.6 }}>
-            Professionella bilvårdsprodukter från Frescura, Virtus och Prolux Shine. Allt du behöver för exteriör, interiör och polering.
-          </p>
-        </div>
       </div>
 
       {/* ── TRUST STRIP ── */}
-      <div style={{ background: 'transparent', borderBottom: '1px solid rgba(0,0,0,.08)', padding: '32px 48px' }}>
+      <div style={{ background: 'rgba(255,255,255,.85)', borderBottom: '1px solid rgba(0,0,0,.08)', padding: '32px 48px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 32 }} className="trust-strip">
           {[
             { title: 'Säker för alla ytor', text: 'Skonsamma men extremt effektiva formuleringar utvecklade för att aldrig skada känsliga material.' },
@@ -128,17 +119,6 @@ function ProductsContent() {
         </div>
       </div>
       <style>{`.trust-strip { } @media(max-width:800px){.trust-strip{grid-template-columns:1fr 1fr!important}} @media(max-width:500px){.trust-strip{grid-template-columns:1fr!important}}`}</style>
-
-      {/* ── BREADCRUMB ── */}
-      <div style={{ borderBottom: '1px solid rgba(0,0,0,.08)', padding: '12px 48px', display: 'flex', alignItems: 'center', gap: 6, background: 'transparent' }}>
-        <Link href="/" style={{ color: '#888', fontSize: 13, textDecoration: 'none' }}>Hem</Link>
-        <ChevronRight size={12} color="#ccc" />
-        <Link href="/produkter" style={{ color: '#888', fontSize: 13, textDecoration: 'none' }}>Produkter</Link>
-        <ChevronRight size={12} color="#ccc" />
-        <span style={{ color: '#111', fontSize: 13, fontWeight: 600 }}>
-          {selectedCat === 'all' ? 'Alla Produkter' : categories.find(c => c.id === selectedCat)?.name || 'Alla'}
-        </span>
-      </div>
 
       {/* ── CATEGORY ICONS ── */}
       <div style={{ borderBottom: '1px solid rgba(0,0,0,.08)', padding: '28px 48px', overflowX: 'auto', background: 'transparent' }}>
