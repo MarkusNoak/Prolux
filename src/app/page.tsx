@@ -843,13 +843,16 @@ function CustomerPortalSection({ customer, authUser, openLogin }: { customer: an
 ════════════════════════════════════════════════════════ */
 const BADGES = ['Storsäljare', 'Storsäljare', 'Nyhet', 'Storsäljare', 'Nyhet', 'Storsäljare', 'Storsäljare', 'Nyhet', 'Storsäljare', 'Nyhet', 'Storsäljare', 'Nyhet']
 
+const BASE = 'https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/category-images'
 const CAT_CARDS = [
-  { name: 'Tvätt & Rengöring', img: 'https://proluxshine.com/wp-content/uploads/2025/11/a7ffd562-2bb4-4699-aaeb-ce4da03ba0ac.png' },
-  { name: 'Interiör',           img: 'https://proluxshine.com/wp-content/uploads/2025/11/80690ec5-0a73-4a38-aa98-1c6d03d6b8e7.png' },
-  { name: 'Vax & Polish',       img: 'https://proluxshine.com/wp-content/uploads/2025/11/df6ba40f-5d3d-4c32-8cfd-55f9c68de3e7.png' },
-  { name: 'Fälgvård',           img: 'https://proluxshine.com/wp-content/uploads/2025/11/575e0484-0ee1-4e5f-a8a2-e91ebe0e3547.png' },
-  { name: 'Avfettning',         img: 'https://proluxshine.com/wp-content/uploads/2025/11/IMG_8356-scaled.png' },
-  { name: 'Exteriör',           img: 'https://proluxshine.com/wp-content/uploads/2025/11/IMG_7192-Edited-scaled.png' },
+  { name: 'Exteriör',         img: `${BASE}/card-exterior.jpg` },
+  { name: 'Interiör',         img: `${BASE}/card-interior.jpg` },
+  { name: 'Polering',         img: `${BASE}/card-polering.jpg` },
+  { name: 'Högtryckstvätt',   img: `${BASE}/card-hogtryckstvatt.jpg` },
+  { name: 'Torkdukar',        img: `${BASE}/card-torkdukar.jpg` },
+  { name: 'Tillbehör',        img: `${BASE}/card-tillbehor.jpg` },
+  { name: 'Paket',            img: `${BASE}/card-paket.jpg` },
+  { name: 'Hemstäd',          img: `${BASE}/card-hemstad.jpg` },
 ]
 
 const GUIDES = [
@@ -905,46 +908,27 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
         </div>
       </section>
 
-      {/* ── CATEGORIES — dark overlay cards with Supabase product images ── */}
-      {products.length > 0 && (() => {
-        // Build unique category list with one product image each
-        const seen = new Set<string>()
-        const cats: { name: string; img: string }[] = []
-        for (const p of products) {
-          const cname = (p.category_name || p.category || '').trim()
-          if (cname && !seen.has(cname) && p.image_url) {
-            seen.add(cname)
-            cats.push({ name: cname, img: p.image_url })
-          }
-        }
-        // Fallback: use any product with image if no category names
-        if (cats.length === 0) {
-          products.filter(p => p.image_url).slice(0, 6).forEach((p, i) => cats.push({ name: p.name, img: p.image_url }))
-        }
-        const display = cats.slice(0, 6)
-        return (
-          <section style={{ background: 'transparent', padding: '48px 24px 56px' }}>
-            <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-              <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 800, color: '#111' }}>Utvalda kategorier</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 10 }} className="cat-grid">
-                {display.map((cat, i) => (
-                  <Reveal key={cat.name} delay={i * 50}>
-                    <Link href="/produkter" style={{ display: 'block', position: 'relative', borderRadius: 10, overflow: 'hidden', textDecoration: 'none', aspectRatio: '3/4', background: '#1a1a1a', transition: 'transform .2s' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'none' }}>
-                      <img src={cat.img} alt={cat.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', padding: 16, background: '#1a1a1a', opacity: 0.85 }} />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.2) 50%, transparent 100%)' }} />
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 12px 14px' }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '.08em', lineHeight: 1.3 }}>{cat.name}</div>
-                      </div>
-                    </Link>
-                  </Reveal>
-                ))}
-              </div>
-            </div>
-          </section>
-        )
-      })()}
+      {/* ── CATEGORIES ── */}
+      <section style={{ background: 'transparent', padding: '48px 24px 56px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <h2 style={{ margin: '0 0 24px', fontSize: 22, fontWeight: 800, color: '#111' }}>Utvalda kategorier</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12 }} className="cat-grid">
+            {CAT_CARDS.map((cat, i) => (
+              <Reveal key={cat.name} delay={i * 50}>
+                <Link href="/produkter" style={{ display: 'block', position: 'relative', borderRadius: 12, overflow: 'hidden', textDecoration: 'none', aspectRatio: '16/10', background: '#1a1a1a', transition: 'transform .2s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.02)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'none' }}>
+                  <img src={cat.img} alt={cat.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.1) 60%, transparent 100%)' }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '14px 16px' }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{cat.name}</div>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── PRODUCTS — Populära produkter ── */}
       {products.length > 0 && (
