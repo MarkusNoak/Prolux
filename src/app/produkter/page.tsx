@@ -83,17 +83,21 @@ function ProductsContent() {
       <style>{`
         .prod-page-bg {
           position: fixed; inset: 0; pointer-events: none; z-index: 0;
-          background:
-            radial-gradient(ellipse 70% 50% at 10% 20%, rgba(232,184,75,.10) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 60% at 90% 80%, rgba(74,143,212,.08) 0%, transparent 60%),
-            radial-gradient(ellipse 50% 40% at 50% 50%, rgba(232,184,75,.05) 0%, transparent 70%),
-            #F5F3EF;
-          animation: bgShift 12s ease-in-out infinite alternate;
+          background: #F0EDE8;
         }
-        @keyframes bgShift {
-          0%   { opacity: 1; }
-          50%  { opacity: .85; }
-          100% { opacity: 1; }
+        .prod-page-bg::before {
+          content: '';
+          position: absolute; inset: 0;
+          background:
+            radial-gradient(ellipse 55% 45% at 8% 15%, rgba(232,184,75,.22) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 55% at 92% 85%, rgba(74,143,212,.16) 0%, transparent 55%),
+            radial-gradient(ellipse 40% 35% at 55% 55%, rgba(232,184,75,.10) 0%, transparent 60%);
+          animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+        @keyframes bgPulse {
+          0%   { opacity: 0.7; transform: scale(1); }
+          50%  { opacity: 1;   transform: scale(1.04); }
+          100% { opacity: 0.7; transform: scale(1); }
         }
         .prod-page-content { position: relative; z-index: 1; }
         .prod-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; }
@@ -106,19 +110,15 @@ function ProductsContent() {
       <div className="prod-page-content">
 
       {/* ── HERO ── */}
-      <div style={{ position: 'relative', height: 280, overflow: 'hidden', marginTop: 64 }}>
-        <img
-          src="https://proluxshine.com/wp-content/uploads/2025/11/a7ffd562-5a98-4bc9-86a4-9af4db4d2282.webp"
-          alt=""
-          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }}
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,.72) 0%, rgba(0,0,0,.4) 60%, rgba(0,0,0,.15) 100%)' }} />
+      <div style={{ position: 'relative', height: 260, overflow: 'hidden', background: 'linear-gradient(135deg, #0a0c10 0%, #1a1200 40%, #0f1a0a 70%, #0a0c10 100%)' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 100% at 20% 50%, rgba(232,184,75,.18) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 30%, rgba(74,143,212,.10) 0%, transparent 60%)' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 48px' }}>
+          <p style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase', margin: '0 0 10px' }}>Sortiment</p>
           <h1 style={{ color: '#fff', fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, margin: '0 0 10px', letterSpacing: '-.01em' }}>
             Alla Produkter
           </h1>
-          <p style={{ color: 'rgba(255,255,255,.78)', fontSize: 15, maxWidth: 520, margin: 0, lineHeight: 1.6 }}>
-            Professionella bilvårdsprodukter från Frescura, Virtus och Prolux Shine. Allt du behöver för exteriör, interiör och polering.
+          <p style={{ color: 'rgba(255,255,255,.65)', fontSize: 15, maxWidth: 520, margin: 0, lineHeight: 1.6 }}>
+            Professionella bilvårdsprodukter från Frescura, Virtus och Prolux Shine.
           </p>
         </div>
       </div>
