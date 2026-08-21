@@ -79,25 +79,25 @@ function ProductsContent() {
   }
 
   return (
-    <div style={{ background: '#F5F3EF', minHeight: '100vh', position: 'relative' }}>
+    <div style={{ background: '#f0f0f0', minHeight: '100vh', position: 'relative' }}>
       <style>{`
         .prod-page-bg {
           position: fixed; inset: 0; pointer-events: none; z-index: 0;
-          background: #F0EDE8;
+          background-color: #eaeaea;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpolygon points='40,0 80,20 80,60 40,80 0,60 0,20' fill='none' stroke='%23c8c8c8' stroke-width='0.8'/%3E%3Cpolygon points='40,10 70,25 70,55 40,70 10,55 10,25' fill='none' stroke='%23d4d4d4' stroke-width='0.4'/%3E%3C/svg%3E");
+          background-size: 80px 80px;
         }
-        .prod-page-bg::before {
+        .prod-page-bg::after {
           content: '';
           position: absolute; inset: 0;
           background:
-            radial-gradient(ellipse 55% 45% at 8% 15%, rgba(232,184,75,.22) 0%, transparent 55%),
-            radial-gradient(ellipse 50% 55% at 92% 85%, rgba(74,143,212,.16) 0%, transparent 55%),
-            radial-gradient(ellipse 40% 35% at 55% 55%, rgba(232,184,75,.10) 0%, transparent 60%);
-          animation: bgPulse 8s ease-in-out infinite alternate;
+            radial-gradient(ellipse 60% 50% at 15% 20%, rgba(232,184,75,.18) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 60% at 88% 80%, rgba(74,143,212,.12) 0%, transparent 55%);
+          animation: bgPulse 10s ease-in-out infinite alternate;
         }
         @keyframes bgPulse {
-          0%   { opacity: 0.7; transform: scale(1); }
-          50%  { opacity: 1;   transform: scale(1.04); }
-          100% { opacity: 0.7; transform: scale(1); }
+          0%   { opacity: 0.6; }
+          100% { opacity: 1; }
         }
         .prod-page-content { position: relative; z-index: 1; }
         .prod-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; }
