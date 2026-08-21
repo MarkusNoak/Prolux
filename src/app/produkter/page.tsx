@@ -109,7 +109,7 @@ function ProductsContent() {
       </div>
 
       {/* ── TRUST STRIP ── */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #ececec', padding: '32px 48px' }}>
+      <div style={{ background: 'transparent', borderBottom: '1px solid rgba(0,0,0,.08)', padding: '32px 48px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 32 }} className="trust-strip">
           {[
             { title: 'Säker för alla ytor', text: 'Skonsamma men extremt effektiva formuleringar utvecklade för att aldrig skada känsliga material.' },
@@ -130,7 +130,7 @@ function ProductsContent() {
       <style>{`.trust-strip { } @media(max-width:800px){.trust-strip{grid-template-columns:1fr 1fr!important}} @media(max-width:500px){.trust-strip{grid-template-columns:1fr!important}}`}</style>
 
       {/* ── BREADCRUMB ── */}
-      <div style={{ borderBottom: '1px solid #e8e8e8', padding: '12px 48px', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ borderBottom: '1px solid rgba(0,0,0,.08)', padding: '12px 48px', display: 'flex', alignItems: 'center', gap: 6, background: 'transparent' }}>
         <Link href="/" style={{ color: '#888', fontSize: 13, textDecoration: 'none' }}>Hem</Link>
         <ChevronRight size={12} color="#ccc" />
         <Link href="/produkter" style={{ color: '#888', fontSize: 13, textDecoration: 'none' }}>Produkter</Link>
@@ -141,7 +141,7 @@ function ProductsContent() {
       </div>
 
       {/* ── CATEGORY ICONS ── */}
-      <div style={{ borderBottom: '1px solid #e8e8e8', padding: '28px 48px', overflowX: 'auto', background: '#fff' }}>
+      <div style={{ borderBottom: '1px solid rgba(0,0,0,.08)', padding: '28px 48px', overflowX: 'auto', background: 'transparent' }}>
         <div style={{ display: 'flex', gap: 28, minWidth: 'max-content' }}>
           <button
             onClick={() => selectCat('all')}
@@ -200,7 +200,7 @@ function ProductsContent() {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
             placeholder="Sök produkt..."
-            style={{ width: '100%', padding: '8px 36px 8px 36px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 14, color: '#111', background: '#fff', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '8px 36px 8px 36px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 14, color: '#111', background: 'rgba(255,255,255,.8)', outline: 'none', boxSizing: 'border-box' }}
           />
           {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 16, lineHeight: 1 }}>×</button>}
         </div>
