@@ -845,14 +845,14 @@ const BADGES = ['Storsäljare', 'Storsäljare', 'Nyhet', 'Storsäljare', 'Nyhet'
 
 const BASE = 'https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/category-images'
 const CAT_CARDS = [
-  { name: 'Exteriör',         img: `${BASE}/card-exterior.jpg` },
-  { name: 'Interiör',         img: `${BASE}/card-interior.jpg` },
-  { name: 'Polering',         img: `${BASE}/card-polering.jpg` },
-  { name: 'Högtryckstvätt',   img: `${BASE}/card-hogtryckstvatt.jpg` },
-  { name: 'Torkdukar',        img: `${BASE}/card-torkdukar.jpg` },
-  { name: 'Tillbehör',        img: `${BASE}/card-tillbehor.jpg` },
-  { name: 'Paket',            img: `${BASE}/card-paket.jpg` },
-  { name: 'Hemstäd',          img: `${BASE}/card-hemstad.jpg` },
+  { name: 'Exteriör',         img: `${BASE}/category-exterior.png` },
+  { name: 'Interiör',         img: `${BASE}/category-interior.png` },
+  { name: 'Polering',         img: `${BASE}/category-polering.png` },
+  { name: 'Högtryckstvätt',   img: `${BASE}/category-hoftryckstvatt.png` },
+  { name: 'Torkdukar',        img: `${BASE}/category-torkdukar.png` },
+  { name: 'Tillbehör',        img: `${BASE}/category-tillbehor.png` },
+  { name: 'Paket',            img: `${BASE}/category-paket.png` },
+  { name: 'Hemstäd',          img: `${BASE}/category-hemstad.png` },
 ]
 
 const GUIDES = [
