@@ -155,7 +155,7 @@ function ProductsContent() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   {cat.image_url ? (
-                    <img src={cat.image_url} alt={cat.name} style={{ width: '88%', height: '88%', objectFit: 'contain' }} />
+                    <img src={cat.image_url} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 60%' }} />
                   ) : (
                     <Package size={36} color={isActive ? '#C9971A' : '#ccc'} strokeWidth={1.2} />
                   )}
