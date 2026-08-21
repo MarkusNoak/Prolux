@@ -919,10 +919,7 @@ function MarketingHome({ products, allImages, openLogin, authUser, customer }: {
                   onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.02)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.transform = 'none' }}>
                   <img src={cat.img} alt={cat.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.1) 60%, transparent 100%)' }} />
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '14px 16px' }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{cat.name}</div>
-                  </div>
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.08)', transition: 'background .2s' }} />
                 </Link>
               </Reveal>
             ))}
