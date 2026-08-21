@@ -91,15 +91,19 @@ function ProductsContent() {
       <div className="prod-page-content">
 
       {/* ── HERO ── */}
-      <div style={{ position: 'relative', height: 260, overflow: 'hidden', background: 'linear-gradient(135deg, #0a0c10 0%, #1a1200 40%, #0f1a0a 70%, #0a0c10 100%)' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 100% at 20% 50%, rgba(232,184,75,.18) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 30%, rgba(74,143,212,.10) 0%, transparent 60%)' }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 48px' }}>
-          <p style={{ color: '#E8B84B', fontSize: 11, fontWeight: 700, letterSpacing: '.18em', textTransform: 'uppercase', margin: '0 0 10px' }}>Sortiment</p>
-          <h1 style={{ color: '#fff', fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 800, margin: '0 0 10px', letterSpacing: '-.01em' }}>
+      <div style={{ position: 'relative', height: 300, overflow: 'hidden', background: '#0a0c10' }}>
+        <img
+          src="https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/hero-images/category-hero.png"
+          alt="Alla Produkter"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+        />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,.6) 0%, rgba(0,0,0,.1) 60%, transparent 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 48px 32px' }}>
+          <h1 style={{ color: '#fff', fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 900, margin: '0 0 8px', letterSpacing: '-.02em', lineHeight: 1.1 }}>
             Alla Produkter
           </h1>
-          <p style={{ color: 'rgba(255,255,255,.65)', fontSize: 15, maxWidth: 520, margin: 0, lineHeight: 1.6 }}>
-            Professionella bilvårdsprodukter från Frescura, Virtus och Prolux Shine.
+          <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 15, maxWidth: 520, margin: 0, lineHeight: 1.6 }}>
+            Professionella bilvårdsprodukter från Frescura, Virtus och Prolux Shine. Allt du behöver för exteriör, interiör och polering.
           </p>
         </div>
       </div>
@@ -156,7 +160,6 @@ function ProductsContent() {
           </button>
 
           {categories.map(cat => {
-            const catProduct = products.find(p => p.category_id === cat.id && p.image_url)
             const isActive = selectedCat === cat.id
             return (
               <button
@@ -166,13 +169,13 @@ function ProductsContent() {
               >
                 <div style={{
                   width: 110, height: 110, borderRadius: '50%',
-                  background: isActive ? 'rgba(232,184,75,.15)' : '#f2f2f2',
+                  background: isActive ? 'rgba(232,184,75,.12)' : '#f2f2f2',
                   border: isActive ? '2.5px solid #E8B84B' : '2px solid #e0e0e0',
                   transition: 'all .2s', overflow: 'hidden',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {catProduct?.image_url ? (
-                    <img src={catProduct.image_url} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {cat.image_url ? (
+                    <img src={cat.image_url} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <Package size={36} color={isActive ? '#C9971A' : '#ccc'} strokeWidth={1.2} />
                   )}
