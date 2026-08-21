@@ -8,7 +8,7 @@ import { Search, Package, ShoppingCart, ChevronRight, Star, SlidersHorizontal, X
 import Link from 'next/link'
 
 const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
-const SORT_OPTIONS = ['Popularast', 'Lägsta pris', 'Högsta pris', 'Namn A–Ö']
+const SORT_OPTIONS = ['Populärast', 'Lägsta pris', 'Högsta pris', 'Namn A–Ö']
 
 const PAGE_SIZE = 8
 
@@ -62,7 +62,7 @@ function ProductsContent() {
   // Sort
   if (sort === 'Lägsta pris') filtered = [...filtered].sort((a, b) => a.list_price - b.list_price)
   else if (sort === 'Högsta pris') filtered = [...filtered].sort((a, b) => b.list_price - a.list_price)
-  else if (sort === 'Namn A–Ö') filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+  else if (sort === 'Namn A–Ö') filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'sv'))
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -155,7 +155,7 @@ function ProductsContent() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   {cat.image_url ? (
-                    <img src={cat.image_url} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={cat.image_url} alt={cat.name} style={{ width: '88%', height: '88%', objectFit: 'contain' }} />
                   ) : (
                     <Package size={36} color={isActive ? '#C9971A' : '#ccc'} strokeWidth={1.2} />
                   )}
