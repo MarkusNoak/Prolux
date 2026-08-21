@@ -137,26 +137,24 @@ function ProductsContent() {
       </div>
 
       {/* ── CATEGORY ICONS ── */}
-      <div style={{ borderBottom: '1px solid #e8e8e8', padding: '20px 48px', overflowX: 'auto' }}>
-        <div style={{ display: 'flex', gap: 20, minWidth: 'max-content' }}>
-          {/* "Alla"-knapp med ProLux-logo */}
+      <div style={{ borderBottom: '1px solid #e8e8e8', padding: '28px 48px', overflowX: 'auto', background: '#fff' }}>
+        <div style={{ display: 'flex', gap: 28, minWidth: 'max-content' }}>
           <button
             onClick={() => selectCat('all')}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', minWidth: 72 }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', minWidth: 110 }}
           >
             <div style={{
-              width: 72, height: 72, borderRadius: '50%',
-              background: selectedCat === 'all' ? '#E8B84B' : '#f4f4f4',
+              width: 110, height: 110, borderRadius: '50%',
+              background: selectedCat === 'all' ? 'rgba(232,184,75,.15)' : '#f2f2f2',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: selectedCat === 'all' ? '2px solid #E8B84B' : '2px solid #e8e8e8',
+              border: selectedCat === 'all' ? '2.5px solid #E8B84B' : '2px solid #e0e0e0',
               transition: 'all .2s', overflow: 'hidden',
             }}>
-              <span style={{ fontSize: 28 }}>🏪</span>
+              <span style={{ fontSize: 36 }}>🏪</span>
             </div>
-            <span style={{ fontSize: 11, color: selectedCat === 'all' ? '#111' : '#666', fontWeight: selectedCat === 'all' ? 700 : 400, textAlign: 'center', lineHeight: 1.3 }}>Alla</span>
+            <span style={{ fontSize: 13, color: selectedCat === 'all' ? '#111' : '#555', fontWeight: selectedCat === 'all' ? 700 : 500, textAlign: 'center', lineHeight: 1.3 }}>Alla</span>
           </button>
 
-          {/* En knapp per unik kategori med produktbild */}
           {categories.map(cat => {
             const catProduct = products.find(p => p.category_id === cat.id && p.image_url)
             const isActive = selectedCat === cat.id
@@ -164,27 +162,22 @@ function ProductsContent() {
               <button
                 key={cat.id}
                 onClick={() => selectCat(cat.id)}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', minWidth: 72 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', minWidth: 110 }}
               >
                 <div style={{
-                  width: 72, height: 72, borderRadius: '50%',
-                  background: isActive ? '#E8B84B' : '#f4f4f4',
-                  border: isActive ? '2px solid #E8B84B' : '2px solid #e8e8e8',
+                  width: 110, height: 110, borderRadius: '50%',
+                  background: isActive ? 'rgba(232,184,75,.15)' : '#f2f2f2',
+                  border: isActive ? '2.5px solid #E8B84B' : '2px solid #e0e0e0',
                   transition: 'all .2s', overflow: 'hidden',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: catProduct?.image_url ? 8 : 0,
                 }}>
                   {catProduct?.image_url ? (
-                    <img
-                      src={catProduct.image_url}
-                      alt={cat.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                    />
+                    <img src={catProduct.image_url} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <Package size={28} color={isActive ? '#111' : '#bbb'} strokeWidth={1.5} />
+                    <Package size={36} color={isActive ? '#C9971A' : '#ccc'} strokeWidth={1.2} />
                   )}
                 </div>
-                <span style={{ fontSize: 11, color: isActive ? '#111' : '#666', fontWeight: isActive ? 700 : 400, textAlign: 'center', lineHeight: 1.3, maxWidth: 80 }}>
+                <span style={{ fontSize: 13, color: isActive ? '#111' : '#555', fontWeight: isActive ? 700 : 500, textAlign: 'center', lineHeight: 1.3, maxWidth: 110 }}>
                   {cat.name}
                 </span>
               </button>
