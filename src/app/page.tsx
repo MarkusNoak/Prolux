@@ -380,9 +380,9 @@ function PortalHome({ user, products }: { user: SupaUser; products: any[] }) {
 
 /* ─── Hero Slider ─────────────────────────────────────── */
 const HERO_IMAGES = [
-  'https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/hero-images/Property%201%3DDefault.png',
-  'https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/hero-images/Property%201%3DVariant2.png',
-  'https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/hero-images/Property%201%3DVariant3.png',
+  'https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/hero-images/hero-1.png',
+  'https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/hero-images/hero-2.png',
+  'https://fopshubqliboxgokbhnr.supabase.co/storage/v1/object/public/hero-images/hero-3.png',
 ]
 
 const HERO_TEXT = [
