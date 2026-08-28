@@ -213,7 +213,7 @@ function ProductsContent() {
                 <Link href={`/produkter/${p.id}`} style={{ textDecoration: 'none', display: 'block' }}>
                   <div style={{ background: '#f2f2f2', aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28, position: 'relative' }}>
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} style={{ maxWidth: '82%', maxHeight: '82%', objectFit: 'contain' }} />
+                      <img src={p.image_url} alt={p.name} style={{ maxWidth: '82%', maxHeight: '82%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
                     ) : (
                       <Package size={64} color="#ccc" strokeWidth={1} />
                     )}
