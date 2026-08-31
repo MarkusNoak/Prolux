@@ -32,12 +32,12 @@ export function usePublicCart() { return useContext(CartContext) }
 const DISCOUNT: Record<string, number> = { A: 0.40, B: 0.30, C: 0.20, Standard: 0 }
 
 const NAV_PUBLIC = [
-  { href: '/#pro-center',  label: 'Virtus Pro Center' },
+  { href: '/',             label: 'Hem' },
   { href: '/produkter',    label: 'Produkter' },
   { href: '/#pro-center',  label: 'Bli Återförsäljare' },
   { href: '/guider',       label: 'Bilvårdsutbildning' },
   { href: '/om-oss',       label: 'Om Oss' },
-  { href: '/om-oss',       label: 'Kontakta Oss' },
+  { href: '/om-oss',       label: 'Kontakt' },
 ]
 
 
@@ -578,12 +578,16 @@ export function PublicShell({ children }: { children: ReactNode }) {
                   <span style={{ fontFamily: 'var(--font-sans)', fontSize: 6.5, fontWeight: 700, letterSpacing: '.45em', color: '#E8B84B', textTransform: 'uppercase' }}>Shine</span>
                 </div>
               </div>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,.45)', lineHeight: 1.75, maxWidth: 240, marginBottom: 24 }}>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,.55)', lineHeight: 1.75, maxWidth: 240, marginBottom: 20 }}>
                 Exklusiv distributör för premium bilvårdssystem i Norden. Vi levererar prestanda och resultat till professionella användare.
               </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                <a href="mailto:info@proluxshine.com" style={{ fontSize: 14, color: 'rgba(255,255,255,.6)', textDecoration: 'none' }}>info@proluxshine.com</a>
+                <a href="tel:+46700000000" style={{ fontSize: 14, color: 'rgba(255,255,255,.6)', textDecoration: 'none' }}>+46 70-000 00 00</a>
+              </div>
               <div style={{ display: 'flex', gap: 14 }}>
                 {['IG', 'FB', 'YT'].map(s => (
-                  <span key={s} style={{ fontSize: 11, color: 'rgba(255,255,255,.3)', fontWeight: 700, cursor: 'pointer' }}>{s}</span>
+                  <span key={s} style={{ fontSize: 12, color: 'rgba(255,255,255,.4)', fontWeight: 700, cursor: 'pointer' }}>{s}</span>
                 ))}
               </div>
             </div>
@@ -592,7 +596,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Produkter</div>
               {['Exteriör rengöring', 'Interiörvård', 'Polermedel & Trissor', 'Keramiskt Lackskydd', 'Paketerbjudanden'].map(c => (
-                <Link key={c} href="/produkter" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.45)', textDecoration: 'none', marginBottom: 11, lineHeight: 1.4 }}>{c}</Link>
+                <Link key={c} href="/produkter" style={{ display: 'block', fontSize: 14, color: 'rgba(255,255,255,.55)', textDecoration: 'none', marginBottom: 12, lineHeight: 1.5 }}>{c}</Link>
               ))}
             </div>
 
@@ -600,7 +604,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.12em', marginBottom: 18 }}>Kundtjänst</div>
               {['Kontakta Oss', 'Köpvillkor & Returer', 'Frakt & Leverans', 'Vanliga Frågor (FAQ)', 'Säkerhetsdatablad'].map(c => (
-                <Link key={c} href="/om-oss" style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,.45)', textDecoration: 'none', marginBottom: 11, lineHeight: 1.4 }}>{c}</Link>
+                <Link key={c} href="/om-oss" style={{ display: 'block', fontSize: 14, color: 'rgba(255,255,255,.55)', textDecoration: 'none', marginBottom: 12, lineHeight: 1.5 }}>{c}</Link>
               ))}
             </div>
 
@@ -619,7 +623,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
 
           {/* Bottom bar */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,.07)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.25)' }}>© {new Date().getFullYear()} ProLux vi Shine Sverige. Alla rättigheter reserverade.</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,.25)' }}>© {new Date().getFullYear()} ProLuxShine Sverige AB. Alla rättigheter reserverade.</p>
             <div style={{ display: 'flex', gap: 20 }}>
               <Link href="/om-oss" style={{ fontSize: 12, color: 'rgba(255,255,255,.25)', textDecoration: 'none' }}>Integritetspolicy</Link>
               <Link href="/om-oss" style={{ fontSize: 12, color: 'rgba(255,255,255,.25)', textDecoration: 'none' }}>Allmänna villkor</Link>
