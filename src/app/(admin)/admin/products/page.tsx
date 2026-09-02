@@ -1,8 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fmt } from '@/lib/utils'
-import { X, Pencil, Trash2, Plus, Package, Search } from 'lucide-react'
+import { X, Pencil, Trash2, Plus, Package, Search, Upload, Loader } from 'lucide-react'
 
 const EMPTY_FORM = {
   name: '', sku: '', category_id: '', brand: 'Frescura', description: '',
@@ -36,6 +36,8 @@ export default function AdminProducts() {
   const [toast, setToast]           = useState('')
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [canEdit, setCanEdit]       = useState(false)
+  const [imgUploading, setImgUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { load(); checkUser() }, [])
 
@@ -74,6 +76,22 @@ export default function AdminProducts() {
       image_url: p.image_url || '',
     })
     setShowModal(true)
+  }
+
+  async function uploadImage(file: File) {
+    setImgUploading(true)
+    try {
+      const sb = createClient()
+      const ext = file.name.split('.').pop()
+      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await sb.storage.from('product-images').upload(filename, file, { upsert: false })
+      if (error) { showToast('Uppladdning misslyckades: ' + error.message); return }
+      const { data } = sb.storage.from('product-images').getPublicUrl(filename)
+      setForm(f => ({ ...f, image_url: data.publicUrl }))
+      showToast('Bild uppladdad!')
+    } finally {
+      setImgUploading(false)
+    }
   }
 
   async function save() {
@@ -310,16 +328,60 @@ export default function AdminProducts() {
                   placeholder="0" style={inputStyle} />
               </div>
 
-              {/* Bild-URL */}
+              {/* Bild-upload */}
               <div style={{ gridColumn: '1/-1' }}>
-                {label('Bild-URL')}
-                <input value={form.image_url} onChange={e => setForm(p => ({ ...p, image_url: e.target.value }))}
-                  placeholder="https://proluxshine.com/cdn/rapidet.jpg" style={inputStyle} />
-                {form.image_url && (
-                  <div style={{ marginTop: 8, width: 64, height: 64, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--line)', background: 'var(--bg3)' }}>
-                    <img src={form.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.opacity = '0.2' }} />
+                {label('Produktbild')}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f) }}
+                />
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  {/* Förhandsvisning */}
+                  <div
+                    onClick={() => !imgUploading && fileInputRef.current?.click()}
+                    style={{
+                      width: 96, height: 96, borderRadius: 10, overflow: 'hidden',
+                      border: '2px dashed var(--line)', background: 'var(--bg3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: imgUploading ? 'wait' : 'pointer', flexShrink: 0,
+                      position: 'relative',
+                    }}
+                  >
+                    {imgUploading ? (
+                      <Loader size={22} color="var(--text3)" style={{ animation: 'spin 1s linear infinite' }} />
+                    ) : form.image_url ? (
+                      <img src={form.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+                    ) : (
+                      <div style={{ textAlign: 'center' }}>
+                        <Upload size={22} color="var(--text3)" />
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>Klicka</div>
+                      </div>
+                    )}
                   </div>
-                )}
+                  <div style={{ flex: 1 }}>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={imgUploading}
+                      style={{ padding: '9px 16px', background: 'var(--bg3)', border: '1px solid var(--line)', borderRadius: 7, color: 'var(--text2)', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}
+                    >
+                      <Upload size={14} /> {imgUploading ? 'Laddar upp…' : 'Välj bild'}
+                    </button>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>
+                      JPG, PNG eller WebP · Max 5 MB<br />
+                      Eller klistra in URL nedan
+                    </div>
+                    <input
+                      value={form.image_url}
+                      onChange={e => setForm(p => ({ ...p, image_url: e.target.value }))}
+                      placeholder="https://…"
+                      style={{ ...inputStyle, marginTop: 8, fontSize: 12 }}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Beskrivning */}
@@ -376,6 +438,7 @@ export default function AdminProducts() {
           {toast}
         </div>
       )}
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
